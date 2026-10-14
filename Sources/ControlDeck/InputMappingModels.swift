@@ -722,6 +722,7 @@ enum TouchpadMotionMode: String, Codable, CaseIterable, Identifiable, Sendable {
 struct TouchpadSettings: Codable, Equatable, Sendable {
     var oneFingerMode: TouchpadMotionMode
     var twoFingerScroll: Bool
+    var naturalScrolling: Bool
     var pointerSensitivity: Double
     var scrollSensitivity: Double
     var gestureBindings: [String: String]
@@ -731,10 +732,12 @@ struct TouchpadSettings: Codable, Equatable, Sendable {
         twoFingerScroll: Bool,
         pointerSensitivity: Double,
         scrollSensitivity: Double,
-        gestureBindings: [String: String]
+        gestureBindings: [String: String],
+        naturalScrolling: Bool = true
     ) {
         self.oneFingerMode = oneFingerMode
         self.twoFingerScroll = twoFingerScroll
+        self.naturalScrolling = naturalScrolling
         self.pointerSensitivity = pointerSensitivity
         self.scrollSensitivity = scrollSensitivity
         self.gestureBindings = gestureBindings
@@ -744,6 +747,7 @@ struct TouchpadSettings: Codable, Equatable, Sendable {
         case oneFingerMode
         case oneFingerPointer
         case twoFingerScroll
+        case naturalScrolling
         case pointerSensitivity
         case scrollSensitivity
         case gestureBindings
@@ -763,6 +767,7 @@ struct TouchpadSettings: Codable, Equatable, Sendable {
             ) ?? true
             oneFingerMode = legacyPointer ? .pointer : .scroll
         }
+        naturalScrolling = try values.decodeIfPresent(Bool.self, forKey: .naturalScrolling) ?? true
         twoFingerScroll = try values.decode(
             Bool.self,
             forKey: .twoFingerScroll
@@ -785,6 +790,7 @@ struct TouchpadSettings: Codable, Equatable, Sendable {
         var values = encoder.container(keyedBy: CodingKeys.self)
         try values.encode(oneFingerMode, forKey: .oneFingerMode)
         try values.encode(twoFingerScroll, forKey: .twoFingerScroll)
+        try values.encode(naturalScrolling, forKey: .naturalScrolling)
         try values.encode(pointerSensitivity, forKey: .pointerSensitivity)
         try values.encode(scrollSensitivity, forKey: .scrollSensitivity)
         try values.encode(gestureBindings, forKey: .gestureBindings)

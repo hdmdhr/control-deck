@@ -172,7 +172,7 @@ enum ProfileTransfer {
             hasOnlyKeys(
                 touchpad,
                 allowed: [
-                    "oneFingerMode", "twoFingerScroll",
+                    "oneFingerMode", "twoFingerScroll", "naturalScrolling",
                     "pointerSensitivity", "scrollSensitivity",
                     "gestureBindings"
                 ]

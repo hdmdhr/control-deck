@@ -477,6 +477,33 @@ struct ControlDeckLogicTestRunner {
                 Set(ProfileWheelSlot.defaults.map(\.profileKind)).count == 8,
             "Options layer has eight unique popular-app profile slots"
         )
+        for fingers in [1, 2] {
+            func scrollSample(natural: Bool) -> CGPoint {
+                let engine = TouchpadGestureEngine()
+                engine.settings.naturalScrolling = natural
+                var sample = CGPoint.zero
+                engine.onScrollDelta = { sample = CGPoint(x: $0, y: $1) }
+                engine.update(finger: .primary, x: 0, y: 0, active: true)
+                if fingers == 2 {
+                    engine.update(finger: .secondary, x: 0, y: 0, active: true)
+                }
+                engine.update(finger: .primary, x: 0.1, y: 0.1, active: true)
+                engine.cancel()
+                return sample
+            }
+            let natural = scrollSample(natural: true)
+            let traditional = scrollSample(natural: false)
+            expect(natural.x > 0 && natural.y < 0,
+                   "Natural scroll follows both finger axes for \(fingers) fingers")
+            expect(natural.x == -traditional.x && natural.y == -traditional.y,
+                   "Scroll direction can be reversed for \(fingers) fingers")
+        }
+        var reversedProfile = ControllerProfile.general
+        reversedProfile.touchpad.naturalScrolling = false
+        let directionData = try! ProfileTransfer.encode(profile: reversedProfile)
+        let directionProfile = try! ProfileTransfer.decode(directionData)
+        expect(!directionProfile.profile.touchpad.naturalScrolling,
+               "Non-natural scrolling survives profile export and import")
         let tutorialDefaultsName = "ControlDeckTests.QuickTutorial"
         let tutorialDefaults = UserDefaults(suiteName: tutorialDefaultsName)!
         tutorialDefaults.removePersistentDomain(forName: tutorialDefaultsName)
@@ -666,6 +693,8 @@ struct ControlDeckLogicTestRunner {
             migratedTouchpad.oneFingerMode == .pointer,
             "legacy touchpad pointer setting remains compatible"
         )
+
+        expect(migratedTouchpad.naturalScrolling, "Legacy profiles adopt natural scrolling")
 
         let horizontalDisplays = [
             CGRect(x: 0, y: 0, width: 1_920, height: 1_080),

@@ -195,15 +195,22 @@ final class TouchpadGestureEngine {
                 continuousMotionRouted = true
             case .scroll:
                 let scale = 540 * CGFloat(settings.scrollSensitivity)
-                onScrollDelta?(-deltaX * scale, deltaY * scale)
+                emitScroll(deltaX: deltaX, deltaY: deltaY, scale: scale)
                 continuousMotionRouted = true
             case .gesturesOnly:
                 break
             }
         } else if fingerCount >= 2, settings.twoFingerScroll {
             let scale = 820 * CGFloat(settings.scrollSensitivity)
-            onScrollDelta?(-deltaX * scale, deltaY * scale)
+            emitScroll(deltaX: deltaX, deltaY: deltaY, scale: scale)
             continuousMotionRouted = true
         }
     }
+    private func emitScroll(deltaX: CGFloat, deltaY: CGFloat, scale: CGFloat) {
+        // Controller Y increases upward. Natural scrolling moves the content
+        // with the fingers, on both axes, without changing pointer/gesture input.
+        let direction: CGFloat = settings.naturalScrolling ? -1 : 1
+        onScrollDelta?(-deltaX * scale * direction, deltaY * scale * direction)
+    }
+
 }
