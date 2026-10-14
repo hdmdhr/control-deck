@@ -1033,3 +1033,17 @@
 "−1 sec" = "−1 sec";
 "Natural scrolling" = "Natural scrolling";
 "Move content in the same direction as your fingers." = "Move content in the same direction as your fingers.";
+
+"Cursor" = "Cursor";
+
+"Grok Bot" = "Grok Bot";
+
+"Codex · App snapshot" = "Codex · App snapshot";
+
+"Native Codex control is unavailable in the focused window" = "Native Codex control is unavailable in the focused window";
+
+"Native Codex control was not uniquely identified; no action was taken" = "Native Codex control was not uniquely identified; no action was taken";
+
+"Native Codex control activated" = "Native Codex control activated";
+
+"Could not activate native Codex control" = "Could not activate native Codex control";

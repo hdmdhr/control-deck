@@ -1033,3 +1033,17 @@
 "−1 sec" = "−1 秒";
 "Natural scrolling" = "自然滚动";
 "Move content in the same direction as your fingers." = "内容随手指移动方向滚动。";
+
+"Cursor" = "Cursor";
+
+"Grok Bot" = "Grok Bot";
+
+"Codex · App snapshot" = "Codex · 应用快照";
+
+"Native Codex control is unavailable in the focused window" = "当前窗口中找不到 Codex 原生控件";
+
+"Native Codex control was not uniquely identified; no action was taken" = "无法唯一确定 Codex 原生控件，未执行操作";
+
+"Native Codex control activated" = "已触发 Codex 原生控件";
+
+"Could not activate native Codex control" = "无法触发 Codex 原生控件";

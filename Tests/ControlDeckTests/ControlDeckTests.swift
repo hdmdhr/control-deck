@@ -64,10 +64,19 @@ struct ControlDeckLogicTestRunner {
         )
         expect(
             ControllerProfile.defaults.allSatisfy {
-                $0.action(for: .r2) == .screenshotSelection
+                $0.action(for: .r2) == ($0.kind == .codex ? .codexAppSnapshot : .screenshotSelection)
             },
-            "R2 captures a selected area in every default profile"
+            "Codex R2 captures the app while other profiles capture a selected area"
         )
+        var legacyCodexCapture = ControllerProfile.codex
+        legacyCodexCapture.setAction(.screenshotSelection, for: .r2)
+        legacyCodexCapture.migrateLegacyCodexSnapshot()
+        expect(legacyCodexCapture.action(for: .r2) == .codexAppSnapshot,
+               "legacy Codex R2 capture upgrades to app snapshot")
+        legacyCodexCapture.setAction(.copy, for: .r2)
+        legacyCodexCapture.migrateLegacyCodexSnapshot()
+        expect(legacyCodexCapture.action(for: .r2) == .copy,
+               "Codex R2 migration preserves custom actions")
         var appSwitcherHold = AppSwitcherHoldGate()
         let deferredTouchpad = appSwitcherHold.handle(
             .touchpadClick,
@@ -295,8 +304,8 @@ struct ControlDeckLogicTestRunner {
             "Spotify Cross controls playback"
         )
         expect(
-            ControllerProfile.defaults.count == 16,
-            "ControlDeck has sixteen curated app profiles"
+            ControllerProfile.defaults.count == 18,
+            "ControlDeck has eighteen curated app profiles"
         )
         expect(
             ControllerProfile.codex.pointer.source == .left,
@@ -304,8 +313,8 @@ struct ControlDeckLogicTestRunner {
         )
         expect(
             ControllerProfile.codex.action(for: .r2)
-                == .screenshotSelection,
-            "Codex R2 selects a screenshot area"
+                == .codexAppSnapshot,
+            "Codex R2 captures the Codex app"
         )
         let captureDefaultsName = "ControlDeckTests.ScreenCapture"
         let captureDefaults = UserDefaults(suiteName: captureDefaultsName)!
@@ -442,13 +451,28 @@ struct ControlDeckLogicTestRunner {
             "Switch 2 controller identification"
         )
         expect(
-            CodexDictationIntent.start.keyDown,
-            "dictation starts by holding Codex's shortcut down"
+            CodexDictationIntent.start.matches(["听写"]) &&
+                !CodexDictationIntent.start.matches(["Start voice mode", "Send", "听写设置"]),
+            "dictation start only accepts exact native dictation controls"
         )
         expect(
-            !CodexDictationIntent.stopAndInsert.keyDown,
-            "dictation inserts by releasing Codex's held shortcut"
+            CodexDictationIntent.stopAndInsert.matches(["停止听写"]) &&
+                !CodexDictationIntent.stopAndInsert.matches(["听写"]),
+            "dictation stop only accepts the native stop control"
         )
+        for eligibility in [(false, true, true), (true, false, true), (true, true, false)] {
+            expect(!NativeCodexSemanticMatch.matches(
+                labels: ["听写"], exact: CodexDictationIntent.start.exactLabels,
+                isButton: eligibility.0, enabled: eligibility.1, pressable: eligibility.2
+            ), "native dictation rejects ineligible controls")
+        }
+        expect(NativeCodexSemanticMatch.isUnique(desiredCount: 1, opposingCount: 0, traversalComplete: true),
+               "one verified native control is actionable")
+        for counts in [(0, 0, true), (2, 0, true), (1, 1, true), (1, 0, false)] {
+            expect(!NativeCodexSemanticMatch.isUnique(
+                desiredCount: counts.0, opposingCount: counts.1, traversalComplete: counts.2
+            ), "missing, ambiguous, opposing or incomplete native controls fail closed")
+        }
         expect(
             ControllerProfile.general.pointer.source == .left,
             "General pointer uses left stick"
@@ -537,6 +561,30 @@ struct ControlDeckLogicTestRunner {
             "tutorial completion persists and suppresses future offers"
         )
         tutorialDefaults.removePersistentDomain(forName: tutorialDefaultsName)
+        expect(
+            ControllerProfile.cursor.bundleIdentifiers == ["com.todesktop.230313mzl4w4u92"] &&
+                ControllerProfile.grokBot.bundleIdentifiers == ["com.anysphere.sand"] &&
+                !ControllerProfile.xcode.bundleIdentifiers.contains("com.todesktop.230313mzl4w4u92"),
+            "Cursor and Grok Bot have distinct native application profiles"
+        )
+        expect(
+            ProfileWheelSlot.defaults.map(\.profileKind) == [.codex, .chrome, .cursor, .grokBot, .general, .finder, .terminal, .slack],
+            "default wheel keeps the six retained profiles and adds Cursor and Grok Bot"
+        )
+        var legacyWheel = ProfileWheelSlot.defaults
+        legacyWheel[2].profileKind = .claude
+        legacyWheel[3].profileKind = .spotify
+        expect(
+            ShiftLayerStore.migrateLegacyDefaults(legacyWheel) == ProfileWheelSlot.defaults,
+            "unchanged legacy assistant and music slots migrate to the new defaults"
+        )
+        legacyWheel[2].profileKind = .terminal
+        legacyWheel[6].profileKind = .claude
+        let customMigrated = ShiftLayerStore.migrateLegacyDefaults(legacyWheel)
+        expect(
+            customMigrated[2].profileKind == .terminal && customMigrated[6].profileKind == .claude,
+            "legacy wheel migration preserves reordered custom slots"
+        )
         let wheelDefaultsName = "ControlDeckTests.ProfileWheel"
         let wheelDefaults = UserDefaults(suiteName: wheelDefaultsName)!
         wheelDefaults.removePersistentDomain(forName: wheelDefaultsName)
@@ -548,6 +596,10 @@ struct ControlDeckLogicTestRunner {
                 Set(wheelStore.profileSlots.map(\.profileKind)).count == 8,
             "assigning an existing profile swaps wheel slots without duplicates"
         )
+        wheelStore.setProfile(.claude, at: 2)
+        let reloadedWheel = ShiftLayerStore(defaults: wheelDefaults)
+        expect(reloadedWheel.slot(at: 2).profileKind == .claude,
+               "completed wheel migration does not replace later user customizations")
         wheelDefaults.removePersistentDomain(forName: wheelDefaultsName)
 
         var profileSelector = RadialProfileSelector()

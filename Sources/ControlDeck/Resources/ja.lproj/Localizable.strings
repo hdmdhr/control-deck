@@ -1033,3 +1033,17 @@
 "−1 sec" = "−1 秒";
 "Natural scrolling" = "ナチュラルなスクロール";
 "Move content in the same direction as your fingers." = "指を動かす方向にコンテンツをスクロールします。";
+
+"Cursor" = "Cursor";
+
+"Grok Bot" = "Grok Bot";
+
+"Codex · App snapshot" = "Codex · アプリのスナップショット";
+
+"Native Codex control is unavailable in the focused window" = "現在のウインドウで Codex の標準コントロールを利用できません";
+
+"Native Codex control was not uniquely identified; no action was taken" = "Codex の標準コントロールを一意に特定できないため、操作しませんでした";
+
+"Native Codex control activated" = "Codex の標準コントロールを操作しました";
+
+"Could not activate native Codex control" = "Codex の標準コントロールを操作できませんでした";
