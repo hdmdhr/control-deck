@@ -28,6 +28,7 @@ final class ProfileStore: ObservableObject {
     private let grokSectionControlsKey = "grokSectionControls.v1"
     private let chatGPTSidebarNavigationKey = "chatGPTSidebarNavigation.v1"
     private let aiConversationControlsKey = "aiConversationControls.v1"
+    private let slackHistoryNavigationKey = "slackHistoryNavigation.v1"
     private let cursorNavigationKey = "cursorConversationNavigation.v1"
     private let cursorProfileMigrationKey = "cursorProfile.v1"
     private let allAppsSnapshotKey = "allAppsR2Snapshot.v1"
@@ -238,6 +239,11 @@ final class ProfileStore: ObservableObject {
         if !UserDefaults.standard.bool(forKey: chatGPTSidebarNavigationKey) {
             for index in profiles.indices { profiles[index].migrateChatGPTSidebarNavigation() }
             UserDefaults.standard.set(true, forKey: chatGPTSidebarNavigationKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: slackHistoryNavigationKey) {
+            for index in profiles.indices { profiles[index].migrateSlackHistoryNavigation() }
+            UserDefaults.standard.set(true, forKey: slackHistoryNavigationKey)
         }
 
         if !UserDefaults.standard.bool(forKey: cursorNavigationKey) {

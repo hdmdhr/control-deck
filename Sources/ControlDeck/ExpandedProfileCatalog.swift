@@ -78,7 +78,7 @@ extension ControllerProfile {
         bindings: mapping([
             .cross: .mouseLeftClick, .circle: .escapeKey,
             .square: .slackThreads, .triangle: .slackActivity,
-            .l1: .slackPreviousUnread, .r1: .slackNextUnread,
+            .l1: .back, .r1: .forward,
             .l2: .systemDictation, .r2: .codexAppSnapshot,
             .l3: .slackJumpConversation, .r3: .slackHuddle,
             .create: .slackJumpConversation, .options: .escapeKey,

@@ -1247,6 +1247,13 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         }
     }
 
+    /// Apply the requested Slack shoulder-button history controls once.
+    mutating func migrateSlackHistoryNavigation() {
+        guard kind == .slack else { return }
+        setAction(.back, for: .l1)
+        setAction(.forward, for: .r1)
+    }
+
     mutating func migrateAIConversationControls() {
         if kind == .codex {
             let replacements: [(ControllerInput, MappedAction, MappedAction)] = [
