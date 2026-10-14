@@ -22,6 +22,7 @@ swiftc \
   "$ROOT/Sources/ControlDeck/AppSnapshotShortcut.swift" \
   "$ROOT/Sources/ControlDeck/AssistantDictationShortcut.swift" \
   "$ROOT/Sources/ControlDeck/GrokBotNavigation.swift" \
+  "$ROOT/Sources/ControlDeck/CursorConversationNavigation.swift" \
   "$ROOT/Sources/ControlDeck/TouchpadGestureEngine.swift" \
   "$ROOT/Sources/ControlDeck/PointerService.swift" \
   "$ROOT/Sources/ControlDeck/ScreenshotEditorModels.swift" \
@@ -43,6 +44,14 @@ swiftc -parse-as-library -framework AppKit \
   "$ROOT/Tests/ControlDeckTests/ProfileApplicationActivationTests.swift" \
   -o "$ACTIVATION_OUTPUT"
 "$ACTIVATION_OUTPUT"
+CURSOR_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-cursor.XXXXXX")"
+swiftc -parse-as-library -framework AppKit -framework ApplicationServices \
+  "$ROOT/Sources/ControlDeck/AppResources.swift" \
+  "$ROOT/Sources/ControlDeck/CursorConversationNavigation.swift" \
+  "$ROOT/Tests/ControlDeckTests/CursorConversationNavigationTests.swift" \
+  -o "$CURSOR_OUTPUT"
+"$CURSOR_OUTPUT"
+rm -f "$CURSOR_OUTPUT"
 "$ROOT/scripts/test-resource-bundle.sh"
 "$ROOT/scripts/test-localization.sh"
 
