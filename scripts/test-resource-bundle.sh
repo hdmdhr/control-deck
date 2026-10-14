@@ -20,6 +20,7 @@ cat > "$FIXTURE/Package.swift" <<'SWIFT'
 import PackageDescription
 let package = Package(
     name: "ControlDeck",
+    defaultLocalization: "en",
     platforms: [.macOS(.v14)],
     targets: [.executableTarget(
         name: "ControlDeck", resources: [.process("Resources")]
@@ -48,7 +49,7 @@ extension Foundation.Bundle {
     }()
 }
 SWIFT
-xcrun swiftc -parse-as-library -swift-version 5 -O \
+xcrun swiftc -parse-as-library -swift-version 5 -D SWIFT_PACKAGE -O \
   "$SOURCE/AppResources.swift" "$SOURCE/DesignSupport.swift" \
   "$SOURCE/ResourceBundleSmoke.swift" \
   "$SCRATCH/legacy_resource_bundle_accessor.swift" \
