@@ -28,67 +28,92 @@ import ApplicationServices
         node(kAXGroupRole, children: [node(kAXButtonRole, "Wrapped Workspace", sortable: true), button("New Agent")])
     }
     static func tree(_ workspaces: [N], current: String, pinned: [String] = ["Pinned Chat"]) -> N {
-        let sidebar = node(kAXGroupRole, children: [button("Hide Sidebar"), button("Projects"),
+        var sidebar = node(kAXGroupRole, children: [button("Hide Sidebar"), button("Projects"),
             node(kAXGroupRole, children: [button("Pinned"), list(pinned)]), button("Workspaces")]
             + workspaces)
+        sidebar.domClasses = ["ui-sidebar"]
         return node(kAXWindowRole, children: [sidebar, node(kAXTabGroupRole, "Tabs", children: [node(kAXRadioButtonRole, current, selected: true)])])
     }
     static func require(_ condition: @autoclosure () -> Bool, _ message: String) {
         if !condition() { fatalError(message) }
     }
     static func main() throws {
-        // Exercise the production discovery traversal, including the observed
-        // depth-pruned unrelated branch before both exact roots are found.
-        var deep = node(kAXGroupRole, "irrelevant leaf")
-        for _ in 0..<24 { deep = node(kAXGroupRole, children: [deep]) }
-        let discoveryTree = node(kAXWindowRole, children: [deep, node(kAXGroupRole, "sidebar root"),
-            node(kAXTabGroupRole, "Tabs"), node(kAXGroupRole, "must not visit")])
-        var foundSidebar = false
-        var foundTabs = false
-        var visitedTail = false
-        let discovered = CursorConversationNavigation.discoverStructure(discoveryTree, budget: 1200, maxDepth: 18,
-            isComplete: { foundSidebar && foundTabs }, visit: { item in
-                if item.label == "sidebar root" { foundSidebar = true }
-                if item.role == kAXTabGroupRole && item.label == "Tabs" { foundTabs = true }
-                if item.label == "must not visit" { visitedTail = true }
-                return true
-            }, children: { $0.children })
-        require(discovered, "Pruned unrelated depth must not poison subsequently discovered exact roots")
-        require(!visitedTail, "Discovery stops immediately once both roots are found")
-        require(!CursorConversationNavigation.discoverStructure(discoveryTree, budget: 1, maxDepth: 18,
-            isComplete: { false }, visit: { _ in true }, children: { $0.children }), "Exhausted discovery budget without roots must fail")
-        var foundDeepMarker = false
-        let onlyDeep = node(kAXWindowRole, children: [deep])
-        require(!CursorConversationNavigation.discoverStructure(onlyDeep, budget: 1200, maxDepth: 18,
-            isComplete: { foundDeepMarker }, visit: { item in
-                foundDeepMarker = item.label == "irrelevant leaf"
-                return true
-            }, children: { $0.children }), "A desired root beyond depth limit remains unavailable")
-        // The supported CUA tree shows sidebar then Panel/main tab group then
-        // optional Pane/Apps tabs. Raw AX scrolling wrappers and a tab group's
-        // absent AXTitle must not hide that first conversation group.
-        let mainTab = node(kAXTabGroupRole, children: [node(kAXRadioButtonRole, "Observed Current", selected: true)])
+        // Exercise the production semantic BFS against Cursor's observed
+        // sidebar / Panel / optional Apps hierarchy with hidden AX wrappers.
+        var semanticSidebar = node(kAXGroupRole, children: [button("Hide Sidebar"), button("Workspaces"),
+            node(kAXTabGroupRole, "Unrelated sidebar tabs")])
+        semanticSidebar.domClasses = ["ui-sidebar"]
+        var semanticTab = node(kAXGroupRole, children: [node(kAXRadioButtonRole, "Observed Current", selected: true)])
+        semanticTab.domClasses = ["ui-tab-system-tabs__viewport"]
+        let unrelatedRoleTab = node(kAXTabGroupRole, "Unrelated nested group")
+        var panelBody = node(kAXGroupRole, children: [unrelatedRoleTab, semanticTab, node(kAXGroupRole, "transcript")])
+        for _ in 0..<24 { panelBody = node(kAXScrollAreaRole, children: [panelBody]) }
+        var semanticPanel = node(kAXGroupRole, "Panel", children: [panelBody])
+        semanticPanel.domClasses = ["ui-tiling-panel"]
         let appsTab = node(kAXTabGroupRole, "Tabs", children: [node(kAXRadioButtonRole, "Changes", selected: true)])
-        let observedLayout = node(kAXWindowRole, "Cursor Agents", children: [
-            node(kAXGroupRole, "sidebar marker"),
-            node(kAXScrollAreaRole, children: [node(kAXGroupRole, "Panel", children: [
-                node(kAXGroupRole, children: [mainTab, node(kAXGroupRole, "transcript must not visit")])])]),
+        let observedLayout = node(kAXWindowRole, "Cursor Agents", children: [semanticSidebar, semanticPanel,
             node(kAXGroupRole, "Pane", children: [appsTab])])
-        var foundObservedSidebar = false
-        var observedTabs: [N] = []
-        var visitedTranscript = false
-        let observedFound = CursorConversationNavigation.discoverStructure(observedLayout, budget: 1200, maxDepth: 18,
-            isComplete: { foundObservedSidebar && !observedTabs.isEmpty }, visit: { item in
-                if item.label == "sidebar marker" { foundObservedSidebar = true; return false }
-                if item.label == "transcript must not visit" { visitedTranscript = true }
-                switch CursorConversationNavigation.discoveryKind(role: item.role) {
-                case .tabGroup: observedTabs.append(item); return false
-                case .leaf: return false
-                case .container: return true
-                }
-            }, children: { $0.children })
-        require(observedFound && observedTabs.map(\.id) == [mainTab.id], "Discover main tab through structural scroll wrapper without requiring AXTitle Tabs")
-        require(!visitedTranscript, "Main tab discovery stops before transcript and secondary Apps tabs")
+        let roots = CursorConversationNavigation.semanticRoots(observedLayout,
+            classes: { $0.domClasses }, role: { $0.role }, children: { $0.children })
+        require(roots.sidebar?.id == semanticSidebar.id && roots.panel?.id == semanticPanel.id,
+                "Semantic roots stay scoped despite unrelated sidebar and Apps branches")
+        require(roots.tab?.id == semanticTab.id, "Source-defined tab viewport outranks earlier generic tab group and survives wrappers beyond depth18")
+        require(!roots.budgetExhausted && roots.depthPruned == 0, "Observed semantic layout fits bounded BFS")
+        let normalized = CursorConversationNavigation.normalizedTabRoot(roots.tab!)
+        require(normalized.role == kAXTabGroupRole && normalized.children[0].selected,
+                "Normalize only identified viewport so selected tab can be parsed")
+        let exhausted = CursorConversationNavigation.semanticRoots(observedLayout, budget: 1,
+            classes: { $0.domClasses }, role: { $0.role }, children: { $0.children })
+        require(exhausted.budgetExhausted && exhausted.tab == nil, "Discovery budget fails safely before roots are found")
+        let bounded = CursorConversationNavigation.semanticRoots(observedLayout, maxDepth: 18,
+            classes: { $0.domClasses }, role: { $0.role }, children: { $0.children })
+        require(bounded.tab == nil && bounded.depthPruned > 0, "Depth bound remains effective")
+        let absentClasses = node(kAXWindowRole, children: [button("Hide Sidebar"), button("Workspaces"), appsTab])
+        let absent = CursorConversationNavigation.semanticRoots(absentClasses,
+            classes: { $0.domClasses }, role: { $0.role }, children: { $0.children })
+        require(absent.sidebar == nil && absent.panel == nil && absent.tab == nil, "Markers alone never select broad arbitrary ancestors")
+        // Authorized raw metadata probe: window depth0, ui-sidebar depth12,
+        // ui-tiling-panel depth15, tab viewport AXTabGroup depth19, selected
+        // AXRadioButton depth20. CUA flattens these otherwise hidden wrappers.
+        func wrap(_ child: N, count: Int) -> N {
+            (0..<count).reduce(child) { wrapped, _ in node(kAXGroupRole, children: [wrapped]) }
+        }
+        var observedPrimary = button("Probe Current")
+        observedPrimary.domClasses = ["ui-sidebar-menu-button-trigger"]
+        var observedNext = button("Probe Next")
+        observedNext.domClasses = ["ui-sidebar-menu-button-trigger"]
+        let probeRows = node(kAXListRole, children: [
+            node(kAXGroupRole, children: [wrap(observedPrimary, count: 2), button("Pin"), button("Archive")]),
+            node(kAXGroupRole, children: [wrap(observedNext, count: 2), button("Pin"), button("Archive")])])
+        var probeSidebar = node(kAXGroupRole, children: [button("Hide Sidebar"), button("Workspaces"),
+            node(kAXButtonRole, "Probe Workspace", sortable: true), button("New Agent"), wrap(probeRows, count: 1)])
+        probeSidebar.domClasses = ["ui-sidebar"]
+        let selectedRadio = node(kAXRadioButtonRole, "Probe Current", selected: true)
+        var probeTabs = node(kAXTabGroupRole, children: [selectedRadio])
+        probeTabs.domClasses = ["ui-tab-system-tabs__viewport"]
+        var probePanel = node(kAXGroupRole, "Panel", children: [wrap(probeTabs, count: 3)])
+        probePanel.domClasses = ["ui-tiling-panel"]
+        let depth11Hub = node(kAXGroupRole, children: [probeSidebar, wrap(probePanel, count: 3)])
+        let probeLayout = node(kAXWindowRole, children: [wrap(depth11Hub, count: 10)])
+        func depth(of id: Int, in root: N, at value: Int = 0) -> Int? {
+            if root.id == id { return value }
+            for child in root.children { if let found = depth(of: id, in: child, at: value + 1) { return found } }
+            return nil
+        }
+        require(depth(of: probeSidebar.id, in: probeLayout) == 12 && depth(of: probePanel.id, in: probeLayout) == 15,
+                "Fixture matches measured sidebar and Panel depths")
+        require(depth(of: probeTabs.id, in: probeLayout) == 19 && depth(of: selectedRadio.id, in: probeLayout) == 20,
+                "Fixture reproduces definitive old depth18 cutoff failure")
+        let probeRoots = CursorConversationNavigation.semanticRoots(probeLayout,
+            classes: { $0.domClasses }, role: { $0.role }, children: { $0.children })
+        require(probeRoots.sidebar?.id == probeSidebar.id && probeRoots.panel?.id == probePanel.id && probeRoots.tab?.id == probeTabs.id,
+                "Production semantic BFS recognizes exact authorized-probe hierarchy")
+        let probeReadTree = node(kAXWindowRole, children: [probeRoots.sidebar!, CursorConversationNavigation.normalizedTabRoot(probeRoots.tab!)])
+        let probeParsed = CursorConversationNavigation.parse(probeReadTree)!
+        require(probeParsed.current == "Probe Current" && probeParsed.rows.map(\.label) == ["Probe Current", "Probe Next"],
+                "Production parser retains wrapped primary rows and verifies exact selected radio title")
+        require(try! CursorConversationNavigation.adjacentIndex(order: probeParsed.anchors.map(\.label), visible: probeParsed.rows.map(\.label), current: probeParsed.current, offset: 1) == 1,
+                "Measured structure resolves next eligible conversation")
         let expanded = workspace("Current Workspace", names: ["First", "Current"], expanded: true, retained: [])
         let collapsed = workspace("Folded", names: ["Hidden"], expanded: false)
         let last = workspace("Last", names: ["Next"], expanded: true)

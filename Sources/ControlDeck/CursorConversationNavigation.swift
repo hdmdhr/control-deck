@@ -36,12 +36,10 @@ enum CursorConversationNavigation {
     /// Parse the same small tree representation used by live AX snapshots and regression fixtures.
     static func parse(_ root: Node, rememberedCurrent: String? = nil,
                       diagnose: (String) -> Void = { _ in }) -> Parsed? {
-        let candidates = root.descendants.filter { node in
-            let all = node.descendants
-            return all.contains { $0.role == kAXButtonRole && $0.label == "Hide Sidebar" }
-                && all.contains { $0.role == kAXButtonRole && $0.label == "Workspaces" }
+        let candidates = root.descendants.filter { $0.domClasses.contains("ui-sidebar") }
+        guard candidates.count == 1, let sidebar = candidates.first else {
+            diagnose("semantic sidebar count=\(candidates.count)"); return nil
         }
-        guard let sidebar = candidates.last else { diagnose("missing sidebar markers"); return nil }
         let sidebarIDs = Set(sidebar.descendants.map(\.id))
         let activeTabNames = Set(root.descendants.filter { $0.role == kAXTabGroupRole && !sidebarIDs.contains($0.id) }
             .flatMap(\.descendants).filter(\.selected).map(\.label).filter { !$0.isEmpty })
@@ -155,37 +153,63 @@ enum CursorConversationNavigation {
         }
         throw SelectionError.boundary
     }
-    enum DiscoveryKind { case tabGroup, leaf, container }
-    static func discoveryKind(role: String) -> DiscoveryKind {
-        if role == kAXTabGroupRole { return .tabGroup }
-        if [kAXTextAreaRole, kAXTextFieldRole, kAXStaticTextRole].contains(role) { return .leaf }
-        // Chromium may retain a scrolling layout wrapper around the main Panel.
-        // A scroll role alone cannot establish that this is transcript content.
-        return .container
+    struct SemanticDiscovery<Element> {
+        var sidebar: Element?
+        var panel: Element?
+        var tab: Element?
+        var visited = 0
+        var depthPruned = 0
+        var budgetExhausted = false
+    }
+    /// Cursor's source gives semantic classes to the sidebar, main panel and
+    /// tab viewport. Search breadth first through layout wrappers; never use a
+    /// marker's arbitrary ancestor as a boundary for the rest of the window.
+    static func semanticRoots<Element>(
+        _ root: Element, budget: Int = 3000, maxDepth: Int = 60,
+        classes: (Element) -> [String], role: (Element) -> String,
+        children: (Element) -> [Element]
+    ) -> SemanticDiscovery<Element> {
+        var result = SemanticDiscovery<Element>()
+        func search(_ start: Element, visit: (Element, [String]) -> Bool) {
+            var queue: [(Element, Int)] = [(start, 0)]
+            var cursor = 0
+            while cursor < queue.count {
+                let (node, depth) = queue[cursor]
+                cursor += 1
+                guard depth <= maxDepth else { result.depthPruned += 1; continue }
+                guard result.visited < budget else { result.budgetExhausted = true; return }
+                result.visited += 1
+                let names = classes(node)
+                if visit(node, names) { return }
+                guard ![kAXTextAreaRole, kAXTextFieldRole, kAXStaticTextRole].contains(role(node)) else { continue }
+                queue.append(contentsOf: children(node).map { ($0, depth + 1) })
+            }
+        }
+        var sidebar: Element?
+        var panel: Element?
+        search(root) { node, names in
+            if sidebar == nil && names.contains("ui-sidebar") { sidebar = node }
+            if panel == nil && names.contains("ui-tiling-panel") { panel = node }
+            return sidebar != nil && panel != nil
+        }
+        result.sidebar = sidebar
+        result.panel = panel
+        guard let panel, !result.budgetExhausted else { return result }
+        var exactTab: Element?
+        var roleTab: Element?
+        search(panel) { node, names in
+            if names.contains("ui-tab-system-tabs__viewport") { exactTab = node; return true }
+            if roleTab == nil && role(node) == kAXTabGroupRole { roleTab = node }
+            return false
+        }
+        result.tab = exactTab ?? roleTab
+        return result
     }
 
-    /// A targeted discovery search may prune unrelated deep branches. Success
-    /// depends on finding the exact requested roots, unlike strict subtree reads.
-    static func discoverStructure<Element>(
-        _ root: Element, budget: Int, maxDepth: Int,
-        isComplete: () -> Bool,
-        visit: (Element) -> Bool,
-        children: (Element) -> [Element]
-    ) -> Bool {
-        var stack: [(Element, Int)] = [(root, 0)]
-        var visited = 0
-        while let (node, depth) = stack.popLast() {
-            if isComplete() { return true }
-            // Reaching an unrelated depth boundary does not invalidate roots
-            // found later in a sibling branch.
-            guard depth <= maxDepth else { continue }
-            guard visited < budget else { return false }
-            visited += 1
-            guard visit(node) else { continue }
-            if isComplete() { return true }
-            stack.append(contentsOf: children(node).reversed().map { ($0, depth + 1) })
-        }
-        return isComplete()
+    static func normalizedTabRoot(_ node: Node) -> Node {
+        var normalized = node
+        normalized.role = kAXTabGroupRole
+        return normalized
     }
 
     private struct Live {
@@ -229,57 +253,32 @@ enum CursorConversationNavigation {
                         children: (attribute(element, kAXChildrenAttribute) as? [AXUIElement] ?? []).map { read($0, depth: depth + 1) },
                         domClasses: attribute(element, "AXDOMClassList") as? [String] ?? [])
         }
-        // Discover the sidebar and first main tab group in layout order. Stop
-        // before its following transcript; editable text never participates.
-        var sidebarRoot: AXUIElement?
-        var tabRoots: [AXUIElement] = []
-        let discoveryComplete = discoverStructure(window, budget: 1200, maxDepth: 18,
-            isComplete: { sidebarRoot != nil && !tabRoots.isEmpty }, visit: { node in
-            let role = string(node, kAXRoleAttribute)
-            switch discoveryKind(role: role) {
-            case .tabGroup:
-                // The main conversation tab group precedes the optional Apps
-                // pane in Cursor's layout. Scope to that first external group;
-                // its accessible name need not be exposed as AXTitle/Description.
-                tabRoots.append(node)
-                return false
-            case .leaf: return false
-            case .container: break
-            }
-            if sidebarRoot == nil, role == kAXButtonRole, label(node) == "Hide Sidebar" {
-                // The marker's nearest enclosing branch also needs Workspaces.
-                var candidate: AXUIElement? = element(node, kAXParentAttribute)
-                for _ in 0..<10 {
-                    guard let branch = candidate else { break }
-                    var found = false
-                    var localComplete = true
-                    walk(branch, budget: 1500, complete: &localComplete) { child in
-                        if string(child, kAXRoleAttribute) == kAXButtonRole && label(child) == "Workspaces" { found = true; return false }
-                        return !found
-                    }
-                    if found && localComplete { sidebarRoot = branch; break }
-                    candidate = element(branch, kAXParentAttribute)
-                }
-                if let sidebarRoot, CFEqual(sidebarRoot, node) { return false }
-            }
-            return true
-        }, children: { node in
-            // Once its marker resolves the sidebar ancestor, no further sidebar
-            // discovery is needed; its selected subtree is read strictly below.
-            if let sidebarRoot, CFEqual(node, sidebarRoot) { return [] }
-            return (attribute(node, kAXChildrenAttribute) as? [AXUIElement] ?? []).filter { child in
-                sidebarRoot.map { !CFEqual(child, $0) } ?? true
-            }
-        })
-        guard discoveryComplete, let sidebarRoot, !tabRoots.isEmpty else {
-            diagnose("discovery complete=\(discoveryComplete) sidebar=\(sidebarRoot != nil) tabs=\(tabRoots.count)")
+        let roots = semanticRoots(window,
+            classes: { attribute($0, "AXDOMClassList") as? [String] ?? [] },
+            role: { string($0, kAXRoleAttribute) },
+            children: { attribute($0, kAXChildrenAttribute) as? [AXUIElement] ?? [] })
+        guard let sidebar = roots.sidebar, let panel = roots.panel, let tab = roots.tab else {
+            let sidebarRole = roots.sidebar.map { string($0, kAXRoleAttribute) } ?? "missing"
+            let panelRole = roots.panel.map { string($0, kAXRoleAttribute) } ?? "missing"
+            diagnose("semantic discovery sidebar=\(roots.sidebar != nil) panel=\(roots.panel != nil) tab=\(roots.tab != nil) sidebarRole=\(sidebarRole) panelRole=\(panelRole) visits=\(roots.visited) depthPruned=\(roots.depthPruned) exhausted=\(roots.budgetExhausted)")
             return nil
         }
-        let tree = Node(id: -1, role: kAXWindowRole, children:
-            [read(sidebarRoot, depth: 0)] + tabRoots.map { read($0, depth: 0) })
+        let rawTabTree = read(tab, depth: 0)
+        // Normalize only the positively identified viewport or scoped tab group.
+        let rawTabRole = rawTabTree.role
+        let tabTree = normalizedTabRoot(rawTabTree)
+        let sidebarTree = read(sidebar, depth: 0)
+        let tree = Node(id: -1, role: kAXWindowRole, children: [sidebarTree, tabTree])
+        let selectedCount = tabTree.descendants.filter(\.selected).count
+        if !complete {
+            diagnose("semantic materialization sidebarRole=\(string(sidebar, kAXRoleAttribute)) panelRole=\(string(panel, kAXRoleAttribute)) tabRole=\(rawTabRole) visits=\(roots.visited) depthPruned=\(roots.depthPruned) selected=\(selectedCount) nodes=\(count)")
+        }
         let remembered = folded.flatMap { CFEqual($0.window, window) ? $0 : nil }
         guard complete else { diagnose("materialization limit nodes=\(count)"); return nil }
-        guard let parsed = parse(tree, rememberedCurrent: remembered?.current, diagnose: diagnose) else { return nil }
+        guard let parsed = parse(tree, rememberedCurrent: remembered?.current, diagnose: diagnose) else {
+            diagnose("semantic parse tabRole=\(rawTabRole) selected=\(selectedCount) visits=\(roots.visited) depthPruned=\(roots.depthPruned)")
+            return nil
+        }
         if !parsed.anchors.contains(where: { $0.label == parsed.current }) {
             guard let remembered, remembered.current == parsed.current,
                   parsed.workspaces.contains(where: { !$0.expanded && $0.name == remembered.name && elements[$0.header].map { CFEqual($0, remembered.header) } == true }) else { return nil }
@@ -458,16 +457,4 @@ enum CursorConversationNavigation {
         return (value as! AXUIElement)
     }
 
-    private static func walk(_ root: AXUIElement, budget: Int, complete: inout Bool,
-                             visit: (AXUIElement) -> Bool) {
-        var stack: [(AXUIElement, Int)] = [(root, 0)]
-        var visited = 0
-        while let (node, depth) = stack.popLast() {
-            visited += 1
-            guard visited <= budget, depth <= 80 else { complete = false; return }
-            guard visit(node) else { continue }
-            let children = attribute(node, kAXChildrenAttribute) as? [AXUIElement] ?? []
-            stack.append(contentsOf: children.reversed().map { ($0, depth + 1) })
-        }
-    }
 }
