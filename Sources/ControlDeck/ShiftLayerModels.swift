@@ -9,15 +9,15 @@ struct ProfileWheelSlot: Codable, Equatable, Identifiable, Sendable {
 
     var positionLabel: String {
         switch position {
-        case 0: "Top"
-        case 1: "Upper right"
-        case 2: "Right"
-        case 3: "Lower right"
-        case 4: "Bottom"
-        case 5: "Lower left"
-        case 6: "Left"
-        case 7: "Upper left"
-        default: "Slot \(position + 1)"
+        case 0: String(localized: "Top", bundle: AppResources.localizationBundle)
+        case 1: String(localized: "Upper right", bundle: AppResources.localizationBundle)
+        case 2: String(localized: "Right", bundle: AppResources.localizationBundle)
+        case 3: String(localized: "Lower right", bundle: AppResources.localizationBundle)
+        case 4: String(localized: "Bottom", bundle: AppResources.localizationBundle)
+        case 5: String(localized: "Lower left", bundle: AppResources.localizationBundle)
+        case 6: String(localized: "Left", bundle: AppResources.localizationBundle)
+        case 7: String(localized: "Upper left", bundle: AppResources.localizationBundle)
+        default: String(localized: "Slot \(position + 1)", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -155,8 +155,8 @@ enum ReasoningStep: Equatable, Sendable {
 
     var title: String {
         switch self {
-        case .smarter: "Smarter"
-        case .faster: "Faster"
+        case .smarter: String(localized: "Smarter", bundle: AppResources.localizationBundle)
+        case .faster: String(localized: "Faster", bundle: AppResources.localizationBundle)
         }
     }
 }

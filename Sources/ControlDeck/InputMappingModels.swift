@@ -7,9 +7,9 @@ enum ControllerTransport: String, Codable, CaseIterable, Sendable {
 
     var label: String {
         switch self {
-        case .usb: "USB"
-        case .bluetooth: "Bluetooth"
-        case .unknown: "Wireless / USB"
+        case .usb: String(localized: "USB", bundle: AppResources.localizationBundle)
+        case .bluetooth: String(localized: "Bluetooth", bundle: AppResources.localizationBundle)
+        case .unknown: String(localized: "Wireless / USB", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -47,25 +47,25 @@ enum ControllerInput: String, Codable, CaseIterable, Identifiable, Hashable, Sen
 
     var label: String {
         switch self {
-        case .cross: "Cross"
-        case .circle: "Circle"
-        case .square: "Square"
-        case .triangle: "Triangle"
-        case .dpadUp: "D-pad Up"
-        case .dpadDown: "D-pad Down"
-        case .dpadLeft: "D-pad Left"
-        case .dpadRight: "D-pad Right"
-        case .l1: "L1"
-        case .r1: "R1"
-        case .l2: "L2"
-        case .r2: "R2"
-        case .l3: "L3"
-        case .r3: "R3"
-        case .create: "Create"
-        case .options: "Options"
-        case .ps: "PS"
-        case .touchpadClick: "Touchpad Click"
-        case .microphone: "Microphone"
+        case .cross: String(localized: "Cross", bundle: AppResources.localizationBundle)
+        case .circle: String(localized: "Circle", bundle: AppResources.localizationBundle)
+        case .square: String(localized: "Square", bundle: AppResources.localizationBundle)
+        case .triangle: String(localized: "Triangle", bundle: AppResources.localizationBundle)
+        case .dpadUp: String(localized: "D-pad Up", bundle: AppResources.localizationBundle)
+        case .dpadDown: String(localized: "D-pad Down", bundle: AppResources.localizationBundle)
+        case .dpadLeft: String(localized: "D-pad Left", bundle: AppResources.localizationBundle)
+        case .dpadRight: String(localized: "D-pad Right", bundle: AppResources.localizationBundle)
+        case .l1: String(localized: "L1", bundle: AppResources.localizationBundle)
+        case .r1: String(localized: "R1", bundle: AppResources.localizationBundle)
+        case .l2: String(localized: "L2", bundle: AppResources.localizationBundle)
+        case .r2: String(localized: "R2", bundle: AppResources.localizationBundle)
+        case .l3: String(localized: "L3", bundle: AppResources.localizationBundle)
+        case .r3: String(localized: "R3", bundle: AppResources.localizationBundle)
+        case .create: String(localized: "Create", bundle: AppResources.localizationBundle)
+        case .options: String(localized: "Options", bundle: AppResources.localizationBundle)
+        case .ps: String(localized: "PS", bundle: AppResources.localizationBundle)
+        case .touchpadClick: String(localized: "Touchpad Click", bundle: AppResources.localizationBundle)
+        case .microphone: String(localized: "Microphone", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -75,8 +75,8 @@ enum ControllerInput: String, Codable, CaseIterable, Identifiable, Hashable, Sen
         case .dpadDown: "↓"
         case .dpadLeft: "←"
         case .dpadRight: "→"
-        case .touchpadClick: "Pad"
-        case .microphone: "Mic"
+        case .touchpadClick: String(localized: "Pad", bundle: AppResources.localizationBundle)
+        case .microphone: String(localized: "Mic", bundle: AppResources.localizationBundle)
         default: label
         }
     }
@@ -201,9 +201,9 @@ enum ControllerStick: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .off: "Off"
-        case .left: "Left stick"
-        case .right: "Right stick"
+        case .off: String(localized: "Off", bundle: AppResources.localizationBundle)
+        case .left: String(localized: "Left stick", bundle: AppResources.localizationBundle)
+        case .right: String(localized: "Right stick", bundle: AppResources.localizationBundle)
         }
     }
 }
@@ -231,18 +231,18 @@ enum TouchGesture: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .oneFingerTap: "One-finger tap"
-        case .twoFingerTap: "Two-finger tap"
-        case .oneFingerLongPress: "One-finger hold"
-        case .twoFingerLongPress: "Two-finger hold"
-        case .oneFingerSwipeLeft: "One-finger swipe left"
-        case .oneFingerSwipeRight: "One-finger swipe right"
-        case .oneFingerSwipeUp: "One-finger swipe up"
-        case .oneFingerSwipeDown: "One-finger swipe down"
-        case .twoFingerSwipeLeft: "Two-finger swipe left"
-        case .twoFingerSwipeRight: "Two-finger swipe right"
-        case .twoFingerSwipeUp: "Two-finger swipe up"
-        case .twoFingerSwipeDown: "Two-finger swipe down"
+        case .oneFingerTap: String(localized: "One-finger tap", bundle: AppResources.localizationBundle)
+        case .twoFingerTap: String(localized: "Two-finger tap", bundle: AppResources.localizationBundle)
+        case .oneFingerLongPress: String(localized: "One-finger hold", bundle: AppResources.localizationBundle)
+        case .twoFingerLongPress: String(localized: "Two-finger hold", bundle: AppResources.localizationBundle)
+        case .oneFingerSwipeLeft: String(localized: "One-finger swipe left", bundle: AppResources.localizationBundle)
+        case .oneFingerSwipeRight: String(localized: "One-finger swipe right", bundle: AppResources.localizationBundle)
+        case .oneFingerSwipeUp: String(localized: "One-finger swipe up", bundle: AppResources.localizationBundle)
+        case .oneFingerSwipeDown: String(localized: "One-finger swipe down", bundle: AppResources.localizationBundle)
+        case .twoFingerSwipeLeft: String(localized: "Two-finger swipe left", bundle: AppResources.localizationBundle)
+        case .twoFingerSwipeRight: String(localized: "Two-finger swipe right", bundle: AppResources.localizationBundle)
+        case .twoFingerSwipeUp: String(localized: "Two-finger swipe up", bundle: AppResources.localizationBundle)
+        case .twoFingerSwipeDown: String(localized: "Two-finger swipe down", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -282,14 +282,14 @@ enum ActionCategory: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .codex: "Codex"
-        case .claude: "Claude"
-        case .meeting: "Meetings"
-        case .presentation: "Presentations"
-        case .communication: "Communication"
-        case .files: "Files & photos"
-        case .creative: "Creative tools"
-        case .terminal: "Terminal"
+        case .codex: String(localized: "Codex", bundle: AppResources.localizationBundle)
+        case .claude: String(localized: "Claude", bundle: AppResources.localizationBundle)
+        case .meeting: String(localized: "Meetings", bundle: AppResources.localizationBundle)
+        case .presentation: String(localized: "Presentations", bundle: AppResources.localizationBundle)
+        case .communication: String(localized: "Communication", bundle: AppResources.localizationBundle)
+        case .files: String(localized: "Files & photos", bundle: AppResources.localizationBundle)
+        case .creative: String(localized: "Creative tools", bundle: AppResources.localizationBundle)
+        case .terminal: String(localized: "Terminal", bundle: AppResources.localizationBundle)
         default: rawValue.capitalized
         }
     }
@@ -439,128 +439,128 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .none: "No action"
-        case .codexSend: "Codex · Send"
-        case .codexStop: "Codex · Stop"
-        case .codexReview: "Codex · Review changes"
-        case .codexPlan: "Codex · Plan mode"
-        case .codexNewTask: "Codex · New task"
-        case .codexCommandMenu: "Codex · Command menu"
-        case .codexFocus: "Codex · Focus"
-        case .codexPreviousTask: "Codex · Previous task"
-        case .codexNextTask: "Codex · Next task"
-        case .codexBack: "Codex · Back"
-        case .codexForward: "Codex · Forward"
-        case .codexSidebar: "Codex · Toggle sidebar"
-        case .codexQuickChat: "Codex · Quick chat"
-        case .codexTerminal: "Codex · Toggle terminal"
-        case .codexApprove: "Codex · Approve"
-        case .codexDecline: "Codex · Decline"
-        case .codexDictation: "Codex · Dictation"
-        case .codexFastMode: "Codex · Fast mode"
-        case .codexContinueInNewTask: "Codex · Continue in new task"
-        case .claudeNewChat: "Claude · New chat"
-        case .claudeSidebar: "Claude · Toggle sidebar"
-        case .claudeCode: "Claude · Code"
-        case .claudeProjects: "Claude · Projects"
-        case .meetingMute: "Meeting · Mute / unmute"
-        case .meetingPushToTalk: "Meeting · Push to talk"
-        case .meetingVideo: "Meeting · Camera"
-        case .meetingChat: "Meeting · Chat"
-        case .meetingParticipants: "Meeting · Participants"
-        case .meetingShare: "Meeting · Share tray"
-        case .meetingRaiseHand: "Meeting · Raise hand"
-        case .presentationStart: "Presentation · Start"
-        case .presentationNext: "Presentation · Next"
-        case .presentationPrevious: "Presentation · Previous"
-        case .presentationBlackScreen: "Presentation · Black screen"
-        case .presentationPointer: "Presentation · Pointer"
-        case .presentationNotesUp: "Presentation · Notes up"
-        case .presentationNotesDown: "Presentation · Notes down"
-        case .presentationExit: "Presentation · Exit"
-        case .slackJumpConversation: "Slack · Jump to conversation"
-        case .slackPreviousUnread: "Slack · Previous unread"
-        case .slackNextUnread: "Slack · Next unread"
-        case .slackThreads: "Slack · Threads"
-        case .slackActivity: "Slack · Activity"
-        case .slackHuddle: "Slack · Huddle"
-        case .mailArchive: "Mail · Archive"
-        case .mailReply: "Mail · Reply"
-        case .mailUnread: "Mail · Read / unread"
-        case .photosFavorite: "Photos · Favourite"
-        case .photosEdit: "Photos · Edit"
-        case .photosRotate: "Photos · Rotate"
-        case .photosInfo: "Photos · Info"
-        case .timelinePlayPause: "Timeline · Play / pause"
-        case .timelineReverse: "Timeline · Reverse"
-        case .timelinePause: "Timeline · Pause"
-        case .timelineForward: "Timeline · Forward"
-        case .timelineMarkIn: "Timeline · Mark in"
-        case .timelineMarkOut: "Timeline · Mark out"
-        case .timelinePreviousEdit: "Timeline · Previous edit"
-        case .timelineNextEdit: "Timeline · Next edit"
-        case .timelineRecord: "Timeline · Record"
-        case .timelineRewind: "Timeline · Rewind"
-        case .timelineFastForward: "Timeline · Fast forward"
-        case .figmaComment: "Figma · Comment tool"
-        case .figmaFrame: "Figma · Frame tool"
-        case .figmaHand: "Figma · Hand tool"
-        case .figmaDevMode: "Figma · Dev mode"
-        case .terminalNewTab: "Terminal · New tab"
-        case .terminalCloseTab: "Terminal · Close tab"
-        case .terminalNextTab: "Terminal · Next tab"
-        case .terminalPreviousTab: "Terminal · Previous tab"
-        case .terminalClear: "Terminal · Clear"
-        case .terminalInterrupt: "Terminal · Interrupt"
-        case .terminalSearchHistory: "Terminal · Search history"
-        case .terminalSplitPane: "Terminal · Split pane"
-        case .terminalClosePane: "Terminal · Close pane"
-        case .mouseLeftClick: "Mouse · Left click"
-        case .mouseRightClick: "Mouse · Right click"
-        case .mouseMiddleClick: "Mouse · Middle click"
-        case .screenshotSelection: "Screenshot · Select area"
-        case .back: "Navigate back"
-        case .forward: "Navigate forward"
-        case .missionControl: "Mission Control"
-        case .showDesktop: "Show desktop"
-        case .appSwitcher: "App switcher"
-        case .returnKey: "Return"
-        case .escapeKey: "Escape"
-        case .spaceKey: "Space"
-        case .tabKey: "Tab"
-        case .copy: "Edit · Copy"
-        case .paste: "Edit · Paste"
-        case .cut: "Edit · Cut"
-        case .selectAll: "Edit · Select all"
-        case .undo: "Edit · Undo"
-        case .redo: "Edit · Redo"
-        case .zoomIn: "View · Zoom in"
-        case .zoomOut: "View · Zoom out"
-        case .arrowUp: "Arrow up"
-        case .arrowDown: "Arrow down"
-        case .arrowLeft: "Arrow left"
-        case .arrowRight: "Arrow right"
-        case .browserAddress: "Browser · Address bar"
-        case .browserNewTab: "Browser · New tab"
-        case .browserCloseTab: "Browser · Close tab"
-        case .browserReopenTab: "Browser · Reopen tab"
-        case .browserReload: "Browser · Reload"
-        case .browserFind: "Browser · Find"
-        case .browserNextTab: "Browser · Next tab"
-        case .browserPreviousTab: "Browser · Previous tab"
-        case .mediaPlayPause: "Media · Play / pause"
-        case .mediaNext: "Media · Next"
-        case .mediaPrevious: "Media · Previous"
-        case .volumeUp: "Volume up"
-        case .volumeDown: "Volume down"
-        case .volumeMute: "Mute"
-        case .openCodex: "Open Codex"
-        case .openChrome: "Open Chrome"
-        case .openSpotify: "Open Spotify"
-        case .openClaude: "Open Claude"
-        case .systemDictation: "Universal dictation"
-        case .showControllerOverlay: "Show controller overlay"
-        case .deleteTextWithConfirmation: "Text · Delete with confirmation"
+        case .none: String(localized: "No action", bundle: AppResources.localizationBundle)
+        case .codexSend: String(localized: "Codex · Send", bundle: AppResources.localizationBundle)
+        case .codexStop: String(localized: "Codex · Stop", bundle: AppResources.localizationBundle)
+        case .codexReview: String(localized: "Codex · Review changes", bundle: AppResources.localizationBundle)
+        case .codexPlan: String(localized: "Codex · Plan mode", bundle: AppResources.localizationBundle)
+        case .codexNewTask: String(localized: "Codex · New task", bundle: AppResources.localizationBundle)
+        case .codexCommandMenu: String(localized: "Codex · Command menu", bundle: AppResources.localizationBundle)
+        case .codexFocus: String(localized: "Codex · Focus", bundle: AppResources.localizationBundle)
+        case .codexPreviousTask: String(localized: "Codex · Previous task", bundle: AppResources.localizationBundle)
+        case .codexNextTask: String(localized: "Codex · Next task", bundle: AppResources.localizationBundle)
+        case .codexBack: String(localized: "Codex · Back", bundle: AppResources.localizationBundle)
+        case .codexForward: String(localized: "Codex · Forward", bundle: AppResources.localizationBundle)
+        case .codexSidebar: String(localized: "Codex · Toggle sidebar", bundle: AppResources.localizationBundle)
+        case .codexQuickChat: String(localized: "Codex · Quick chat", bundle: AppResources.localizationBundle)
+        case .codexTerminal: String(localized: "Codex · Toggle terminal", bundle: AppResources.localizationBundle)
+        case .codexApprove: String(localized: "Codex · Approve", bundle: AppResources.localizationBundle)
+        case .codexDecline: String(localized: "Codex · Decline", bundle: AppResources.localizationBundle)
+        case .codexDictation: String(localized: "Codex · Dictation", bundle: AppResources.localizationBundle)
+        case .codexFastMode: String(localized: "Codex · Fast mode", bundle: AppResources.localizationBundle)
+        case .codexContinueInNewTask: String(localized: "Codex · Continue in new task", bundle: AppResources.localizationBundle)
+        case .claudeNewChat: String(localized: "Claude · New chat", bundle: AppResources.localizationBundle)
+        case .claudeSidebar: String(localized: "Claude · Toggle sidebar", bundle: AppResources.localizationBundle)
+        case .claudeCode: String(localized: "Claude · Code", bundle: AppResources.localizationBundle)
+        case .claudeProjects: String(localized: "Claude · Projects", bundle: AppResources.localizationBundle)
+        case .meetingMute: String(localized: "Meeting · Mute / unmute", bundle: AppResources.localizationBundle)
+        case .meetingPushToTalk: String(localized: "Meeting · Push to talk", bundle: AppResources.localizationBundle)
+        case .meetingVideo: String(localized: "Meeting · Camera", bundle: AppResources.localizationBundle)
+        case .meetingChat: String(localized: "Meeting · Chat", bundle: AppResources.localizationBundle)
+        case .meetingParticipants: String(localized: "Meeting · Participants", bundle: AppResources.localizationBundle)
+        case .meetingShare: String(localized: "Meeting · Share tray", bundle: AppResources.localizationBundle)
+        case .meetingRaiseHand: String(localized: "Meeting · Raise hand", bundle: AppResources.localizationBundle)
+        case .presentationStart: String(localized: "Presentation · Start", bundle: AppResources.localizationBundle)
+        case .presentationNext: String(localized: "Presentation · Next", bundle: AppResources.localizationBundle)
+        case .presentationPrevious: String(localized: "Presentation · Previous", bundle: AppResources.localizationBundle)
+        case .presentationBlackScreen: String(localized: "Presentation · Black screen", bundle: AppResources.localizationBundle)
+        case .presentationPointer: String(localized: "Presentation · Pointer", bundle: AppResources.localizationBundle)
+        case .presentationNotesUp: String(localized: "Presentation · Notes up", bundle: AppResources.localizationBundle)
+        case .presentationNotesDown: String(localized: "Presentation · Notes down", bundle: AppResources.localizationBundle)
+        case .presentationExit: String(localized: "Presentation · Exit", bundle: AppResources.localizationBundle)
+        case .slackJumpConversation: String(localized: "Slack · Jump to conversation", bundle: AppResources.localizationBundle)
+        case .slackPreviousUnread: String(localized: "Slack · Previous unread", bundle: AppResources.localizationBundle)
+        case .slackNextUnread: String(localized: "Slack · Next unread", bundle: AppResources.localizationBundle)
+        case .slackThreads: String(localized: "Slack · Threads", bundle: AppResources.localizationBundle)
+        case .slackActivity: String(localized: "Slack · Activity", bundle: AppResources.localizationBundle)
+        case .slackHuddle: String(localized: "Slack · Huddle", bundle: AppResources.localizationBundle)
+        case .mailArchive: String(localized: "Mail · Archive", bundle: AppResources.localizationBundle)
+        case .mailReply: String(localized: "Mail · Reply", bundle: AppResources.localizationBundle)
+        case .mailUnread: String(localized: "Mail · Read / unread", bundle: AppResources.localizationBundle)
+        case .photosFavorite: String(localized: "Photos · Favourite", bundle: AppResources.localizationBundle)
+        case .photosEdit: String(localized: "Photos · Edit", bundle: AppResources.localizationBundle)
+        case .photosRotate: String(localized: "Photos · Rotate", bundle: AppResources.localizationBundle)
+        case .photosInfo: String(localized: "Photos · Info", bundle: AppResources.localizationBundle)
+        case .timelinePlayPause: String(localized: "Timeline · Play / pause", bundle: AppResources.localizationBundle)
+        case .timelineReverse: String(localized: "Timeline · Reverse", bundle: AppResources.localizationBundle)
+        case .timelinePause: String(localized: "Timeline · Pause", bundle: AppResources.localizationBundle)
+        case .timelineForward: String(localized: "Timeline · Forward", bundle: AppResources.localizationBundle)
+        case .timelineMarkIn: String(localized: "Timeline · Mark in", bundle: AppResources.localizationBundle)
+        case .timelineMarkOut: String(localized: "Timeline · Mark out", bundle: AppResources.localizationBundle)
+        case .timelinePreviousEdit: String(localized: "Timeline · Previous edit", bundle: AppResources.localizationBundle)
+        case .timelineNextEdit: String(localized: "Timeline · Next edit", bundle: AppResources.localizationBundle)
+        case .timelineRecord: String(localized: "Timeline · Record", bundle: AppResources.localizationBundle)
+        case .timelineRewind: String(localized: "Timeline · Rewind", bundle: AppResources.localizationBundle)
+        case .timelineFastForward: String(localized: "Timeline · Fast forward", bundle: AppResources.localizationBundle)
+        case .figmaComment: String(localized: "Figma · Comment tool", bundle: AppResources.localizationBundle)
+        case .figmaFrame: String(localized: "Figma · Frame tool", bundle: AppResources.localizationBundle)
+        case .figmaHand: String(localized: "Figma · Hand tool", bundle: AppResources.localizationBundle)
+        case .figmaDevMode: String(localized: "Figma · Dev mode", bundle: AppResources.localizationBundle)
+        case .terminalNewTab: String(localized: "Terminal · New tab", bundle: AppResources.localizationBundle)
+        case .terminalCloseTab: String(localized: "Terminal · Close tab", bundle: AppResources.localizationBundle)
+        case .terminalNextTab: String(localized: "Terminal · Next tab", bundle: AppResources.localizationBundle)
+        case .terminalPreviousTab: String(localized: "Terminal · Previous tab", bundle: AppResources.localizationBundle)
+        case .terminalClear: String(localized: "Terminal · Clear", bundle: AppResources.localizationBundle)
+        case .terminalInterrupt: String(localized: "Terminal · Interrupt", bundle: AppResources.localizationBundle)
+        case .terminalSearchHistory: String(localized: "Terminal · Search history", bundle: AppResources.localizationBundle)
+        case .terminalSplitPane: String(localized: "Terminal · Split pane", bundle: AppResources.localizationBundle)
+        case .terminalClosePane: String(localized: "Terminal · Close pane", bundle: AppResources.localizationBundle)
+        case .mouseLeftClick: String(localized: "Mouse · Left click", bundle: AppResources.localizationBundle)
+        case .mouseRightClick: String(localized: "Mouse · Right click", bundle: AppResources.localizationBundle)
+        case .mouseMiddleClick: String(localized: "Mouse · Middle click", bundle: AppResources.localizationBundle)
+        case .screenshotSelection: String(localized: "Screenshot · Select area", bundle: AppResources.localizationBundle)
+        case .back: String(localized: "Navigate back", bundle: AppResources.localizationBundle)
+        case .forward: String(localized: "Navigate forward", bundle: AppResources.localizationBundle)
+        case .missionControl: String(localized: "Mission Control", bundle: AppResources.localizationBundle)
+        case .showDesktop: String(localized: "Show desktop", bundle: AppResources.localizationBundle)
+        case .appSwitcher: String(localized: "App switcher", bundle: AppResources.localizationBundle)
+        case .returnKey: String(localized: "Return", bundle: AppResources.localizationBundle)
+        case .escapeKey: String(localized: "Escape", bundle: AppResources.localizationBundle)
+        case .spaceKey: String(localized: "Space", bundle: AppResources.localizationBundle)
+        case .tabKey: String(localized: "Tab", bundle: AppResources.localizationBundle)
+        case .copy: String(localized: "Edit · Copy", bundle: AppResources.localizationBundle)
+        case .paste: String(localized: "Edit · Paste", bundle: AppResources.localizationBundle)
+        case .cut: String(localized: "Edit · Cut", bundle: AppResources.localizationBundle)
+        case .selectAll: String(localized: "Edit · Select all", bundle: AppResources.localizationBundle)
+        case .undo: String(localized: "Edit · Undo", bundle: AppResources.localizationBundle)
+        case .redo: String(localized: "Edit · Redo", bundle: AppResources.localizationBundle)
+        case .zoomIn: String(localized: "View · Zoom in", bundle: AppResources.localizationBundle)
+        case .zoomOut: String(localized: "View · Zoom out", bundle: AppResources.localizationBundle)
+        case .arrowUp: String(localized: "Arrow up", bundle: AppResources.localizationBundle)
+        case .arrowDown: String(localized: "Arrow down", bundle: AppResources.localizationBundle)
+        case .arrowLeft: String(localized: "Arrow left", bundle: AppResources.localizationBundle)
+        case .arrowRight: String(localized: "Arrow right", bundle: AppResources.localizationBundle)
+        case .browserAddress: String(localized: "Browser · Address bar", bundle: AppResources.localizationBundle)
+        case .browserNewTab: String(localized: "Browser · New tab", bundle: AppResources.localizationBundle)
+        case .browserCloseTab: String(localized: "Browser · Close tab", bundle: AppResources.localizationBundle)
+        case .browserReopenTab: String(localized: "Browser · Reopen tab", bundle: AppResources.localizationBundle)
+        case .browserReload: String(localized: "Browser · Reload", bundle: AppResources.localizationBundle)
+        case .browserFind: String(localized: "Browser · Find", bundle: AppResources.localizationBundle)
+        case .browserNextTab: String(localized: "Browser · Next tab", bundle: AppResources.localizationBundle)
+        case .browserPreviousTab: String(localized: "Browser · Previous tab", bundle: AppResources.localizationBundle)
+        case .mediaPlayPause: String(localized: "Media · Play / pause", bundle: AppResources.localizationBundle)
+        case .mediaNext: String(localized: "Media · Next", bundle: AppResources.localizationBundle)
+        case .mediaPrevious: String(localized: "Media · Previous", bundle: AppResources.localizationBundle)
+        case .volumeUp: String(localized: "Volume up", bundle: AppResources.localizationBundle)
+        case .volumeDown: String(localized: "Volume down", bundle: AppResources.localizationBundle)
+        case .volumeMute: String(localized: "Mute", bundle: AppResources.localizationBundle)
+        case .openCodex: String(localized: "Open Codex", bundle: AppResources.localizationBundle)
+        case .openChrome: String(localized: "Open Chrome", bundle: AppResources.localizationBundle)
+        case .openSpotify: String(localized: "Open Spotify", bundle: AppResources.localizationBundle)
+        case .openClaude: String(localized: "Open Claude", bundle: AppResources.localizationBundle)
+        case .systemDictation: String(localized: "Universal dictation", bundle: AppResources.localizationBundle)
+        case .showControllerOverlay: String(localized: "Show controller overlay", bundle: AppResources.localizationBundle)
+        case .deleteTextWithConfirmation: String(localized: "Text · Delete with confirmation", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -712,9 +712,9 @@ enum TouchpadMotionMode: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .scroll: "Scroll"
-        case .pointer: "Pointer"
-        case .gesturesOnly: "Gestures"
+        case .scroll: String(localized: "Scroll", bundle: AppResources.localizationBundle)
+        case .pointer: String(localized: "Pointer", bundle: AppResources.localizationBundle)
+        case .gesturesOnly: String(localized: "Gestures", bundle: AppResources.localizationBundle)
         }
     }
 }
@@ -838,22 +838,22 @@ enum ProfileKind: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .codex: "Codex"
-        case .general: "General"
-        case .chrome: "Chrome"
-        case .spotify: "Spotify"
-        case .claude: "Claude"
-        case .xcode: "Xcode"
-        case .finder: "Finder"
-        case .meetings: "Meetings"
-        case .presentations: "Presentations"
-        case .slack: "Slack"
-        case .mail: "Mail"
-        case .photos: "Photos"
-        case .figma: "Figma"
-        case .videoEditing: "Video Editing"
-        case .logic: "Logic Pro"
-        case .terminal: "Terminal"
+        case .codex: String(localized: "Codex", bundle: AppResources.localizationBundle)
+        case .general: String(localized: "General", bundle: AppResources.localizationBundle)
+        case .chrome: String(localized: "Chrome", bundle: AppResources.localizationBundle)
+        case .spotify: String(localized: "Spotify", bundle: AppResources.localizationBundle)
+        case .claude: String(localized: "Claude", bundle: AppResources.localizationBundle)
+        case .xcode: String(localized: "Xcode", bundle: AppResources.localizationBundle)
+        case .finder: String(localized: "Finder", bundle: AppResources.localizationBundle)
+        case .meetings: String(localized: "Meetings", bundle: AppResources.localizationBundle)
+        case .presentations: String(localized: "Presentations", bundle: AppResources.localizationBundle)
+        case .slack: String(localized: "Slack", bundle: AppResources.localizationBundle)
+        case .mail: String(localized: "Mail", bundle: AppResources.localizationBundle)
+        case .photos: String(localized: "Photos", bundle: AppResources.localizationBundle)
+        case .figma: String(localized: "Figma", bundle: AppResources.localizationBundle)
+        case .videoEditing: String(localized: "Video Editing", bundle: AppResources.localizationBundle)
+        case .logic: String(localized: "Logic Pro", bundle: AppResources.localizationBundle)
+        case .terminal: String(localized: "Terminal", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -882,6 +882,14 @@ enum ProfileKind: String, Codable, CaseIterable, Identifiable, Sendable {
 struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
     var kind: ProfileKind
     var name: String
+
+    /// Translate built-in names only. Persisted/exported names and user names stay unchanged.
+    var displayName: String {
+        guard Self.defaults.first(where: { $0.kind == kind })?.name == name else {
+            return name
+        }
+        return AppResources.localizationBundle.localizedString(forKey: name, value: name, table: nil)
+    }
     var bundleIdentifiers: [String]
     var windowTitleKeywords: [String]
     var bindings: [String: String]

@@ -17,12 +17,12 @@ enum ScreenshotEditorTool: String, Codable, CaseIterable, Identifiable,
 
     var label: String {
         switch self {
-        case .highlighter: "Highlight"
-        case .pen: "Pen"
-        case .arrow: "Arrow"
-        case .rectangle: "Rectangle"
-        case .text: "Text"
-        case .redact: "Redact"
+        case .highlighter: String(localized: "Highlight", bundle: AppResources.localizationBundle)
+        case .pen: String(localized: "Pen", bundle: AppResources.localizationBundle)
+        case .arrow: String(localized: "Arrow", bundle: AppResources.localizationBundle)
+        case .rectangle: String(localized: "Rectangle", bundle: AppResources.localizationBundle)
+        case .text: String(localized: "Text", bundle: AppResources.localizationBundle)
+        case .redact: String(localized: "Redact", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -215,7 +215,7 @@ final class ScreenshotEditorModel: ObservableObject {
     @Published private(set) var annotations: [ScreenshotAnnotation] = []
     @Published private(set) var draft: ScreenshotAnnotation?
     @Published private(set) var redoAnnotations: [ScreenshotAnnotation] = []
-    @Published private(set) var status = "Original copied to clipboard"
+    @Published private(set) var status = String(localized: "Original copied to clipboard", bundle: AppResources.localizationBundle)
 
     init(image: NSImage, preferences: ScreenCapturePreferences) {
         sourceImage = image
@@ -224,8 +224,8 @@ final class ScreenshotEditorModel: ObservableObject {
         color = preferences.defaultColor
         strokeSize = preferences.defaultStrokeSize
         status = originalOnClipboard
-            ? "Original copied to clipboard"
-            : "Capture ready to edit"
+            ? String(localized: "Original copied to clipboard", bundle: AppResources.localizationBundle)
+            : String(localized: "Capture ready to edit", bundle: AppResources.localizationBundle)
     }
 
     var canUndo: Bool { !annotations.isEmpty }
@@ -275,7 +275,7 @@ final class ScreenshotEditorModel: ObservableObject {
         if isValid {
             annotations.append(draft)
             redoAnnotations.removeAll()
-            status = "Added \(draft.tool.label.lowercased())"
+            status = String(localized: "Added \(draft.tool.label.lowercased())", bundle: AppResources.localizationBundle)
         }
         self.draft = nil
     }
@@ -287,27 +287,27 @@ final class ScreenshotEditorModel: ObservableObject {
     func undo() {
         guard let annotation = annotations.popLast() else { return }
         redoAnnotations.append(annotation)
-        status = "Undid \(annotation.tool.label.lowercased())"
+        status = String(localized: "Undid \(annotation.tool.label.lowercased())", bundle: AppResources.localizationBundle)
     }
 
     func redo() {
         guard let annotation = redoAnnotations.popLast() else { return }
         annotations.append(annotation)
-        status = "Redid \(annotation.tool.label.lowercased())"
+        status = String(localized: "Redid \(annotation.tool.label.lowercased())", bundle: AppResources.localizationBundle)
     }
 
     func clear() {
         guard !annotations.isEmpty else { return }
         redoAnnotations.append(contentsOf: annotations.reversed())
         annotations.removeAll()
-        status = "Cleared annotations"
+        status = String(localized: "Cleared annotations", bundle: AppResources.localizationBundle)
     }
 
     func selectAdjacentTool(offset: Int) {
         let tools = ScreenshotEditorTool.allCases
         guard let current = tools.firstIndex(of: tool) else { return }
         tool = tools[(current + offset + tools.count) % tools.count]
-        status = "\(tool.label) selected"
+        status = String(localized: "\(tool.label) selected", bundle: AppResources.localizationBundle)
     }
 
     func renderedImage() -> NSImage? {
@@ -327,13 +327,13 @@ final class ScreenshotEditorModel: ObservableObject {
     @discardableResult
     func copyRenderedImage() -> Bool {
         guard let image = renderedImage() else {
-            status = "Could not render the edited image"
+            status = String(localized: "Could not render the edited image", bundle: AppResources.localizationBundle)
             return false
         }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         let copied = pasteboard.writeObjects([image])
-        status = copied ? "Edited image copied" : "Could not copy image"
+        status = copied ? String(localized: "Edited image copied", bundle: AppResources.localizationBundle) : String(localized: "Could not copy image", bundle: AppResources.localizationBundle)
         return copied
     }
 
@@ -344,23 +344,23 @@ final class ScreenshotEditorModel: ObservableObject {
               let bitmap = NSBitmapImageRep(data: tiff),
               let png = bitmap.representation(using: .png, properties: [:])
         else {
-            status = "Could not render the edited image"
+            status = String(localized: "Could not render the edited image", bundle: AppResources.localizationBundle)
             return false
         }
         let panel = NSSavePanel()
-        panel.title = "Save Edited Screen Capture"
+        panel.title = String(localized: "Save Edited Screen Capture", bundle: AppResources.localizationBundle)
         panel.nameFieldStringValue = "ControlDeck Capture.png"
         panel.allowedContentTypes = [.png]
         guard panel.runModal() == .OK, let url = panel.url else {
-            status = "Save cancelled"
+            status = String(localized: "Save cancelled", bundle: AppResources.localizationBundle)
             return false
         }
         do {
             try png.write(to: url, options: .atomic)
-            status = "Saved \(url.lastPathComponent)"
+            status = String(localized: "Saved \(url.lastPathComponent)", bundle: AppResources.localizationBundle)
             return true
         } catch {
-            status = "Could not save: \(error.localizedDescription)"
+            status = String(localized: "Could not save: \(error.localizedDescription)", bundle: AppResources.localizationBundle)
             return false
         }
     }

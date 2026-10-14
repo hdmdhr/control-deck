@@ -10,6 +10,7 @@ swiftc \
   -framework ApplicationServices \
   -framework Carbon \
   -o "$OUTPUT" \
+  "$ROOT/Sources/ControlDeck/AppResources.swift" \
   "$ROOT/Sources/ControlDeck/Models.swift" \
   "$ROOT/Sources/ControlDeck/GyroModels.swift" \
   "$ROOT/Sources/ControlDeck/InputMappingModels.swift" \
