@@ -1168,3 +1168,4 @@
 "ChatGPT focus changed; try again" = "ChatGPT 窗口焦点已改变，请重试";
 "ChatGPT sidebar switch could not be verified" = "未能确认 ChatGPT 会话列表切换成功";
 "ChatGPT switched sidebar conversations" = "已切换 ChatGPT 侧栏会话";
+"Close the ChatGPT menu before switching conversations" = "请先关闭 ChatGPT 菜单，再切换会话";

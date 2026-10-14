@@ -23,6 +23,18 @@ import ApplicationServices
         require(ChatGPTSidebarNavigation.isCurrent(ariaCurrent: "page", descendants: []), "ARIA current continues working")
         let nestedConversation = N(id: 33, role: kAXButtonRole, classes: ["sidebar-item", marker], label: "nested", children: [activeTitle])
         require(!ChatGPTSidebarNavigation.isCurrent(ariaCurrent: "", descendants: [nestedConversation]), "Do not borrow another conversation selection")
+        var colored = chat(40, "Active")
+        colored.classes.append("bg-primary-ghost-hover")
+        require(ChatGPTSidebarNavigation.rows(in: colored).first!.node.current, "Observed unique background works when AX omits title containers")
+        var hovered = chat(41, "Hovered")
+        hovered.classes.append("hover:bg-primary-ghost-hover")
+        require(!ChatGPTSidebarNavigation.rows(in: hovered).first!.node.current, "Hover variant token is not selected")
+        var openMenu = colored
+        openMenu.children = [N(id: 42, role: kAXPopUpButtonRole, expanded: true)]
+        require(!ChatGPTSidebarNavigation.rows(in: openMenu).first!.node.current, "Open row menu suppresses background fallback")
+        var another = colored
+        another.id = 43; another.label = "Other"
+        require(!ChatGPTSidebarNavigation.rows(in: N(id: 44, role: kAXGroupRole, children: [colored, another])).contains { $0.node.current }, "Ambiguous background rows fail without clicking")
         let root = N(id: 0, role: kAXGroupRole, children: [
             chat(1, "Pinned", current: true),
             N(id: 2, role: kAXButtonRole, classes: ["sidebar-item"], label: "Project", children: [chat(3, "Project chat")]),

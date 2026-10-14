@@ -42,12 +42,28 @@ enum ChatGPTSidebarNavigation {
             node.children.forEach(visit)
         }
         visit(root)
+        if !nodes.contains(where: \.current) {
+            let highlighted = nodes.indices.filter { nodes[$0].classes.contains("bg-primary-ghost-hover") }
+            // _zo shares this background with an open row menu. Require a single
+            // conversation name (duplicate sidebar occurrences are allowed), and
+            // reject any row with an expanded accessory/menu before using it.
+            let unambiguous = Set(highlighted.map { nodes[$0].label }).count == 1
+            if unambiguous && !nodes.contains(where: hasOpenMenu) {
+                for index in highlighted { nodes[index].current = true }
+            }
+        }
         var counts: [String: Int] = [:]
         return nodes.map { node in
             let ordinal = counts[node.label, default: 0]
             counts[node.label] = ordinal + 1
             return Row(node: node, occurrence: "\(node.label)\u{1f}\(ordinal)")
         }
+    }
+
+    static func hasOpenMenu(_ node: Node) -> Bool {
+        if node.role == kAXMenuRole || node.role == kAXMenuItemRole { return true }
+        // This is scoped to a conversation's accessories, never project headings.
+        return node.children.contains { $0.expanded == true || hasOpenMenu($0) }
     }
 
     // Static ChatGPT 26.1007 source: _zo -> ORo emits this class only for
@@ -92,11 +108,15 @@ enum ChatGPTSidebarNavigation {
             return result(false, "Bring ChatGPT to the foreground to navigate its sidebar")
         }
         let application = AXUIElementCreateApplication(app.processIdentifier)
+        guard !focusedMenu(application) else {
+            return result(false, "Close the ChatGPT menu before switching conversations")
+        }
         guard let window = element(application, kAXFocusedWindowAttribute), let initial = snapshot(window) else {
             return result(false, "ChatGPT sidebar conversation is unavailable; open the chat sidebar")
         }
         func focused() -> Bool {
             NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier
+                && !focusedMenu(application)
                 && element(application, kAXFocusedWindowAttribute).map { CFEqual($0, window) } == true
         }
         let index: Int
@@ -229,6 +249,17 @@ enum ChatGPTSidebarNavigation {
         down.post(tap: .cghidEventTap)
         up.post(tap: .cghidEventTap)
         return true
+    }
+
+    private static func focusedMenu(_ application: AXUIElement) -> Bool {
+        var current = element(application, kAXFocusedUIElementAttribute)
+        for _ in 0..<30 {
+            guard let node = current else { break }
+            if [kAXMenuRole, kAXMenuItemRole].contains(string(node, kAXRoleAttribute)) { return true }
+            if CFEqual(node, application) { break }
+            current = element(node, kAXParentAttribute)
+        }
+        return false
     }
 
     private static func attribute(_ node: AXUIElement, _ name: String) -> CFTypeRef? {

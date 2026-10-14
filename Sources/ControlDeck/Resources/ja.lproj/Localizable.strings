@@ -1168,3 +1168,4 @@
 "ChatGPT focus changed; try again" = "ChatGPT のフォーカスが変わりました。再試行してください";
 "ChatGPT sidebar switch could not be verified" = "ChatGPT の会話切り替えを確認できませんでした";
 "ChatGPT switched sidebar conversations" = "ChatGPT のサイドバーの会話を切り替えました";
+"Close the ChatGPT menu before switching conversations" = "会話を切り替える前に ChatGPT のメニューを閉じてください";
