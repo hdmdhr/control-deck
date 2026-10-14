@@ -2,7 +2,7 @@
 
 ChatGPT.app 与 Codex 在当前安装中使用相同的应用标识 `com.openai.codex`，共用 Codex 配置。
 
-- L2：通过辅助功能触发原生「听写」按钮，不再发送旧版快捷键。
+- L2：按用户选择使用 ControlDeck 通用听写，识别后填入当前聚焦的输入框；首次升级将旧原生听写 L2 迁移为通用听写，其他自定义 L2 不变。原生听写动作仍可手动选择，但此版本 ChatGPT 的按钮查找未验证可用。
 - R2：模拟左右 Command 同时按下，触发用户确认的全局应用快照快捷键；不切换应用，以便截图当前台前应用。ChatGPT/Codex 需运行并启用该快捷键。
 - 轮盘默认八格：Codex、网页浏览器、Cursor、Grok Bot、通用 macOS、Finder、终端、Slack。
 - Cursor 和 Grok Bot 自动匹配各自应用；Cursor 的 L2 按住发送 Control+M，Grok Bot 的 L2 按住发送 Command+D，松开结束原生听写（快捷键来自用户提供的应用提示截图）。所有配置的 R2 均为全局应用快照。
@@ -17,7 +17,7 @@ ChatGPT.app 与 Codex 在当前安装中使用相同的应用标识 `com.openai.
 
 1. 退出 ControlDeck，替换 Applications 中的应用，再启动。
 2. 打开 ChatGPT/Codex 的输入框，确认 ControlDeck 当前配置为 Codex。
-3. 先轻按 L2，检查原生听写是否开始；再次按下或测试长按松开时，检查是否正常停止并插入文字。
+3. 先点击 ChatGPT/Codex 输入框，再按 L2 使用通用听写，检查识别文字是否填入；不会打开 ChatGPT 原生听写界面。
 4. 保持要截图的应用在台前，使用绑定「Codex · 应用快照」的配置按 R2，检查是否捕获该应用。先松开实体键盘修饰键；若无动作，先确认手动同时按左右 Command 能否触发。所有配置的 R2 默认均为应用快照。
 5. 打开轮盘，确认 Cursor 和 Grok Bot 两项；选中后松开 Options，会切换配置并请求激活或启动关联应用。通用 macOS 只换配置。未安装或激活失败会单独提示。
 

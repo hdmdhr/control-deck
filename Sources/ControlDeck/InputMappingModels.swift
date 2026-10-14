@@ -1042,7 +1042,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
             .triangle: .codexPlan,
             .l1: .codexPreviousTask,
             .r1: .codexNextTask,
-            .l2: .codexDictation,
+            .l2: .systemDictation,
             .r2: .codexAppSnapshot,
             .l3: .copy,
             .r3: .paste,
@@ -1189,6 +1189,11 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         pointer: .generalDefault,
         touchpad: .trackpadDefault
     )
+
+    mutating func migrateCodexUniversalDictation() {
+        guard kind == .codex, action(for: .l2) == .codexDictation else { return }
+        setAction(.systemDictation, for: .l2)
+    }
 
     mutating func migrateLegacyCodexSnapshot() {
         guard kind == .codex, action(for: .r2) == .screenshotSelection else { return }

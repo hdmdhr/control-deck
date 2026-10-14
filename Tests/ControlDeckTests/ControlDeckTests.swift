@@ -44,12 +44,12 @@ struct ControlDeckLogicTestRunner {
             "dictation modes expose system, live, balanced and high-accuracy choices"
         )
         expect(
-            ControllerProfile.codex.action(for: .l2) == .codexDictation,
-            "Codex L2 dictates"
+            ControllerProfile.codex.action(for: .l2) == .systemDictation,
+            "Codex L2 uses universal dictation"
         )
         expect(
             ControllerProfile.defaults
-                .filter { ![.codex, .cursor, .grokBot].contains($0.kind) }
+                .filter { ![.cursor, .grokBot].contains($0.kind) }
                 .allSatisfy { $0.action(for: .l2) == .systemDictation },
             "L2 provides universal dictation outside native assistant profiles"
         )
@@ -92,6 +92,15 @@ struct ControlDeckLogicTestRunner {
                grokShortcut?.keyCode == 2 && grokShortcut?.flags == .maskCommand &&
                AssistantDictationShortcut.shortcut(for: .codexSend) == nil,
                "Grok native dictation is Command D and unrelated actions have no shortcut")
+        var previousCodex = ControllerProfile.codex
+        previousCodex.setAction(.codexDictation, for: .l2)
+        previousCodex.migrateCodexUniversalDictation()
+        expect(previousCodex.action(for: .l2) == .systemDictation,
+               "old Codex native L2 migrates to universal dictation")
+        previousCodex.setAction(.copy, for: .l2)
+        previousCodex.migrateCodexUniversalDictation()
+        expect(previousCodex.action(for: .l2) == .copy,
+               "Codex dictation migration preserves a custom L2 action")
         let snapshotEvents = AppSnapshotShortcut.events() ?? []
         expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
                "app snapshot uses four modifier transitions")

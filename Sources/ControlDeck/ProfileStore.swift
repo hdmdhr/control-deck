@@ -25,6 +25,7 @@ final class ProfileStore: ObservableObject {
     private let assistantNativeDictationKey = "assistantNativeL2Dictation.v1"
     private let cursorProfileMigrationKey = "cursorProfile.v1"
     private let allAppsSnapshotKey = "allAppsR2Snapshot.v1"
+    private let codexUniversalDictationKey = "codexUniversalDictation.v1"
     private let codexSnapshotKey = "codexAppSnapshot.v1"
     private let universalR2CaptureKey = "universalR2Capture.v1"
     private var activationObserver: NSObjectProtocol?
@@ -192,6 +193,11 @@ final class ProfileStore: ObservableObject {
                 profiles[index].setAction(.codexAppSnapshot, for: .r2)
             }
             UserDefaults.standard.set(true, forKey: allAppsSnapshotKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: codexUniversalDictationKey) {
+            for index in profiles.indices { profiles[index].migrateCodexUniversalDictation() }
+            UserDefaults.standard.set(true, forKey: codexUniversalDictationKey)
         }
 
         if let data = try? JSONEncoder().encode(profiles) {
