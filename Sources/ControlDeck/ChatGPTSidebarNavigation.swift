@@ -98,7 +98,10 @@ enum ChatGPTSidebarNavigation {
     @MainActor
     static func navigate(offset: Int) async -> (succeeded: Bool, message: String) {
         func result(_ ok: Bool, _ message: String.LocalizationValue) -> (Bool, String) {
-            (ok, String(localized: message, bundle: AppResources.localizationBundle))
+            let text = String(localized: message, bundle: AppResources.localizationBundle)
+            // Only fixed action outcomes; never conversation names or contents.
+            logger.notice("Navigation outcome success=\(ok, privacy: .public): \(text, privacy: .public)")
+            return (ok, text)
         }
         guard !busy else { return result(false, "ChatGPT is already switching conversations") }
         busy = true
@@ -133,10 +136,16 @@ enum ChatGPTSidebarNavigation {
         guard focused(), let button = initial.elements[target.node.id] else {
             return result(false, "ChatGPT focus changed; try again")
         }
-        _ = AXUIElementPerformAction(button, kAXPressAction as CFString)
+        let pressResult = AXUIElementPerformAction(button, kAXPressAction as CFString)
+        logger.notice("Navigation press result=\(pressResult.rawValue, privacy: .public), rows=\(initial.rows.count, privacy: .public), targetIndex=\(index, privacy: .public)")
         for attempt in 0..<8 {
             try? await Task.sleep(nanoseconds: 100_000_000)
-            guard focused(), let updated = snapshot(window) else {
+            guard focused() else {
+                logger.notice("Readback aborted: focus/menu changed")
+                return result(false, "ChatGPT sidebar switch could not be verified")
+            }
+            guard let updated = snapshot(window) else {
+                logger.notice("Readback aborted: snapshot unavailable")
                 return result(false, "ChatGPT sidebar switch could not be verified")
             }
             // Preserve the actual element identity across reordering caused by Recents.
@@ -154,13 +163,16 @@ enum ChatGPTSidebarNavigation {
                }), !fresh.node.current, let freshButton = updated.elements[fresh.node.id] {
                 // AXPress may be accepted without invoking the web row handler.
                 // Only retry the same still-visible, hit-tested target in the same window.
-                _ = clickVisibleButton(freshButton, window: window, pid: app.processIdentifier)
+                let clicked = clickVisibleButton(freshButton, window: window, pid: app.processIdentifier)
+                logger.notice("Navigation visible click fallback=\(clicked, privacy: .public)")
             }
             if updated.rows.contains(where: { $0.node.current }) &&
                 Set(updated.rows.filter { $0.node.current }.map(\.occurrence)) != Set(initial.rows.filter { $0.node.current }.map(\.occurrence)) {
+                logger.notice("Readback selection changed but original target element was replaced")
                 return result(false, "ChatGPT sidebar switch could not be verified")
             }
         }
+        logger.notice("Readback timed out with unchanged selection")
         return result(false, "ChatGPT sidebar switch could not be verified")
     }
 
