@@ -435,11 +435,16 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case systemDictation
     case cursorDictation
     case grokDictation
+    case cursorPreviousConversation
+    case cursorNextConversation
+    case cursorCollapseWorkspace
+    case cursorExpandWorkspace
     case grokPreviousBot
     case grokNextBot
     case grokCollapseSection
     case grokExpandSection
     case assistantRightPanel
+    case assistantSend
     case showControllerOverlay
     case deleteTextWithConfirmation
 
@@ -568,7 +573,12 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .openSpotify: String(localized: "Open Spotify", bundle: AppResources.localizationBundle)
         case .openClaude: String(localized: "Open Claude", bundle: AppResources.localizationBundle)
         case .cursorDictation: String(localized: "Cursor · Hold to dictate", bundle: AppResources.localizationBundle)
+        case .cursorPreviousConversation: String(localized: "Cursor · Previous conversation", bundle: AppResources.localizationBundle)
+        case .cursorNextConversation: String(localized: "Cursor · Next conversation", bundle: AppResources.localizationBundle)
+        case .cursorCollapseWorkspace: String(localized: "Cursor · Collapse current workspace", bundle: AppResources.localizationBundle)
+        case .cursorExpandWorkspace: String(localized: "Cursor · Expand current workspace", bundle: AppResources.localizationBundle)
         case .grokPreviousBot: String(localized: "Grok Bot · Previous bot", bundle: AppResources.localizationBundle)
+        case .assistantSend: String(localized: "Assistant · Send message", bundle: AppResources.localizationBundle)
         case .assistantRightPanel: String(localized: "Assistant · Right panel", bundle: AppResources.localizationBundle)
         case .grokNextBot: String(localized: "Grok Bot · Next bot", bundle: AppResources.localizationBundle)
         case .grokCollapseSection: String(localized: "Grok Bot · Collapse current section", bundle: AppResources.localizationBundle)
@@ -600,7 +610,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
              .presentationPointer, .presentationNotesUp,
              .presentationNotesDown, .presentationExit:
             .presentation
-        case .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection, .slackJumpConversation, .slackPreviousUnread,
+        case .assistantSend, .cursorPreviousConversation, .cursorNextConversation, .cursorCollapseWorkspace, .cursorExpandWorkspace,
+             .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection, .slackJumpConversation, .slackPreviousUnread,
              .slackNextUnread, .slackThreads, .slackActivity,
              .slackHuddle, .mailArchive, .mailReply, .mailUnread:
             .communication
@@ -1047,11 +1058,11 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         ],
         bindings: mapping([
             .cross: .mouseLeftClick,
-            .circle: .codexStop,
+            .circle: .codexSend,
             .square: .codexReview,
             .triangle: .codexPlan,
-            .l1: .codexPreviousTask,
-            .r1: .codexNextTask,
+            .l1: .back,
+            .r1: .forward,
             .l2: .systemDictation,
             .r2: .codexAppSnapshot,
             .l3: .copy,
@@ -1061,8 +1072,8 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
             .ps: .codexFocus,
             .dpadUp: .codexSend,
             .dpadDown: .codexSidebar,
-            .dpadLeft: .codexBack,
-            .dpadRight: .codexForward,
+            .dpadLeft: .codexPreviousTask,
+            .dpadRight: .codexNextTask,
             .touchpadClick: .showControllerOverlay,
             .microphone: .codexDictation
         ]),
@@ -1221,10 +1232,43 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         }
     }
 
-    static let cursor = desktopAssistant(
-        kind: .cursor, name: "Cursor",
-        bundleIdentifier: "com.todesktop.230313mzl4w4u92", dictation: .cursorDictation
-    )
+    /// Upgrade the former AI defaults without touching dictation or custom mappings.
+    mutating func migrateAIConversationControls() {
+        if kind == .codex {
+            let replacements: [(ControllerInput, MappedAction, MappedAction)] = [
+                (.circle, .codexStop, .codexSend),
+                (.l1, .codexPreviousTask, .back), (.r1, .codexNextTask, .forward),
+                (.dpadLeft, .codexBack, .codexPreviousTask), (.dpadRight, .codexForward, .codexNextTask)
+            ]
+            for (input, old, new) in replacements where action(for: input) == old {
+                setAction(new, for: input)
+            }
+        } else if [.cursor, .grokBot].contains(kind), action(for: .circle) == .escapeKey {
+            setAction(.assistantSend, for: .circle)
+        }
+    }
+
+    mutating func migrateCursorConversationNavigation() {
+        guard kind == .cursor else { return }
+        let replacements: [(ControllerInput, MappedAction, MappedAction)] = [
+            (.dpadLeft, .arrowLeft, .cursorPreviousConversation),
+            (.dpadRight, .arrowRight, .cursorNextConversation),
+            (.dpadUp, .arrowUp, .cursorCollapseWorkspace),
+            (.dpadDown, .arrowDown, .cursorExpandWorkspace)
+        ]
+        for (input, old, new) in replacements where action(for: input) == old {
+            setAction(new, for: input)
+        }
+    }
+
+    static let cursor: ControllerProfile = {
+        var profile = desktopAssistant(
+            kind: .cursor, name: "Cursor",
+            bundleIdentifier: "com.todesktop.230313mzl4w4u92", dictation: .cursorDictation
+        )
+        profile.migrateCursorConversationNavigation()
+        return profile
+    }()
 
     static let grokBot: ControllerProfile = {
         var profile = desktopAssistant(
@@ -1246,7 +1290,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
             kind: kind, name: name,
             bundleIdentifiers: [bundleIdentifier],
             bindings: mapping([
-                .cross: .mouseLeftClick, .circle: .escapeKey,
+                .cross: .mouseLeftClick, .circle: .assistantSend,
                 .square: .assistantRightPanel, .triangle: .paste,
                 .l1: .back, .r1: .forward,
                 .l2: dictation, .r2: .codexAppSnapshot,

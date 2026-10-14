@@ -106,6 +106,54 @@ struct ControlDeckLogicTestRunner {
                ControllerProfile.grokBot.action(for: .dpadDown) == .grokExpandSection &&
                ControllerProfile.grokBot.action(for: .dpadRight) == .grokNextBot,
                "Grok horizontal controls select bots and vertical controls collapse or expand sections")
+        expect(ControllerProfile.cursor.action(for: .dpadLeft) == .cursorPreviousConversation &&
+               ControllerProfile.cursor.action(for: .dpadRight) == .cursorNextConversation &&
+               ControllerProfile.cursor.action(for: .dpadUp) == .cursorCollapseWorkspace &&
+               ControllerProfile.cursor.action(for: .dpadDown) == .cursorExpandWorkspace,
+               "Cursor defaults navigate conversations horizontally and workspaces vertically")
+        expect(ControllerProfile.codex.action(for: .circle) == .codexSend &&
+               ControllerProfile.cursor.action(for: .circle) == .assistantSend &&
+               ControllerProfile.grokBot.action(for: .circle) == .assistantSend,
+               "AI circles send rather than stop or escape")
+        expect(ControllerProfile.codex.action(for: .dpadLeft) == .codexPreviousTask &&
+               ControllerProfile.codex.action(for: .dpadRight) == .codexNextTask &&
+               ControllerProfile.codex.action(for: .l1) == .back &&
+               ControllerProfile.codex.action(for: .r1) == .forward &&
+               ControllerProfile.codex.action(for: .l2) == .systemDictation,
+               "Codex arrows select conversations and shoulders navigate history without replacing L2")
+        var oldAI = ControllerProfile.codex
+        for (input, action) in [(ControllerInput.circle, MappedAction.codexStop), (.l1, .codexPreviousTask),
+                                (.r1, .codexNextTask), (.dpadLeft, .codexBack), (.dpadRight, .codexForward)] {
+            oldAI.setAction(action, for: input)
+        }
+        oldAI.migrateAIConversationControls()
+        expect(oldAI == ControllerProfile.codex, "Legacy Codex controls migrate to requested conversation mapping")
+        oldAI.setAction(.copy, for: .circle)
+        oldAI.migrateAIConversationControls()
+        expect(oldAI.action(for: .circle) == .copy, "AI migration preserves custom mappings")
+        for profile in [ControllerProfile.cursor, ControllerProfile.grokBot] {
+            var legacy = profile
+            legacy.setAction(.escapeKey, for: .circle)
+            legacy.migrateAIConversationControls()
+            expect(legacy == profile, "Assistant migration changes only the former escape circle")
+        }
+        var oldCursor = ControllerProfile.cursor
+        for (input, action) in [(ControllerInput.dpadLeft, MappedAction.arrowLeft), (.dpadRight, .arrowRight),
+                                (.dpadUp, .arrowUp), (.dpadDown, .arrowDown)] {
+            oldCursor.setAction(action, for: input)
+        }
+        oldCursor.migrateCursorConversationNavigation()
+        expect(oldCursor == ControllerProfile.cursor, "Cursor legacy arrows migrate to conversation controls")
+        oldCursor.migrateCursorConversationNavigation()
+        expect(oldCursor == ControllerProfile.cursor, "Cursor navigation migration is idempotent")
+        oldCursor.setAction(.copy, for: .dpadLeft)
+        oldCursor.setAction(.paste, for: .dpadUp)
+        oldCursor.migrateCursorConversationNavigation()
+        expect(oldCursor.action(for: .dpadLeft) == .copy && oldCursor.action(for: .dpadUp) == .paste,
+               "Cursor navigation migration preserves customized buttons")
+        var unaffectedGrok = ControllerProfile.grokBot
+        unaffectedGrok.migrateCursorConversationNavigation()
+        expect(unaffectedGrok == ControllerProfile.grokBot, "Cursor migration leaves Grok profile unchanged")
         var previousGrok = ControllerProfile.grokBot
         previousGrok.setAction(.grokPreviousBot, for: .dpadUp)
         previousGrok.setAction(.grokNextBot, for: .dpadDown)

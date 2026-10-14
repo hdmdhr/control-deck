@@ -1769,6 +1769,11 @@ final class AppModel: ObservableObject {
             selectAdjacentTask(offset: -1)
         case .codexNextTask:
             selectAdjacentTask(offset: 1)
+        case .cursorPreviousConversation, .cursorNextConversation, .cursorCollapseWorkspace, .cursorExpandWorkspace:
+            Task { @MainActor in
+                let succeeded = await automation.navigateCursorConversation(action)
+                finish(action.label, succeeded: succeeded)
+            }
         case .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection:
             Task { @MainActor in
                 let succeeded = await automation.navigateGrokBot(action)

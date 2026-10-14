@@ -1136,3 +1136,23 @@
 "Grok Bot section change could not be verified" = "Grok Bot のセクションの変更を確認できませんでした";
 
 "Grok Bot section updated" = "Grok Bot のセクションを更新しました";
+
+"Cursor · Previous conversation" = "Cursor · 前の会話";
+"Cursor · Next conversation" = "Cursor · 次の会話";
+"Cursor · Collapse current workspace" = "Cursor · 現在のワークスペースを折りたたむ";
+"Cursor · Expand current workspace" = "Cursor · 現在のワークスペースを展開";
+"Cursor navigation requires asynchronous dispatch" = "Cursor の会話移動には非同期処理が必要です";
+
+"Cursor is already switching conversations" = "Cursor は会話を切り替え中です";
+"Bring Cursor to the foreground to navigate conversations" = "会話を切り替えるには Cursor を最前面にしてください";
+"Cursor current conversation is unavailable or ambiguous" = "Cursor の現在の会話を一意に特定できません";
+"Cursor has no adjacent conversation in this direction" = "表示中の会話リストの端に到達しました";
+"Cursor conversation change could not be verified" = "Cursor の会話またはワークスペースの変更を確認できません";
+"Cursor current conversation has no collapsible workspace" = "現在の会話には折りたためるワークスペースがありません";
+"Cursor workspace is already in the requested state" = "Cursor のワークスペースは既に指定の状態です";
+"Cursor focus changed; try again" = "Cursor のフォーカスが変わりました。もう一度お試しください";
+"Cursor workspace updated" = "Cursor のワークスペースを更新しました";
+"Cursor switched conversations" = "Cursor の会話を切り替えました";
+
+"Assistant · Send message" = "アシスタント · メッセージを送信";
+"Bring Cursor or Grok Bot to the foreground to send" = "送信するには Cursor または Grok Bot を最前面にしてください";

@@ -1136,3 +1136,23 @@
 "Grok Bot section change could not be verified" = "Grok Bot section change could not be verified";
 
 "Grok Bot section updated" = "Grok Bot section updated";
+
+"Cursor · Previous conversation" = "Cursor · Previous conversation";
+"Cursor · Next conversation" = "Cursor · Next conversation";
+"Cursor · Collapse current workspace" = "Cursor · Collapse current workspace";
+"Cursor · Expand current workspace" = "Cursor · Expand current workspace";
+"Cursor navigation requires asynchronous dispatch" = "Cursor navigation requires asynchronous dispatch";
+
+"Cursor is already switching conversations" = "Cursor is already switching conversations";
+"Bring Cursor to the foreground to navigate conversations" = "Bring Cursor to the foreground to navigate conversations";
+"Cursor current conversation is unavailable or ambiguous" = "Cursor current conversation is unavailable or ambiguous";
+"Cursor has no adjacent conversation in this direction" = "Cursor has no adjacent conversation in this direction";
+"Cursor conversation change could not be verified" = "Cursor conversation change could not be verified";
+"Cursor current conversation has no collapsible workspace" = "Cursor current conversation has no collapsible workspace";
+"Cursor workspace is already in the requested state" = "Cursor workspace is already in the requested state";
+"Cursor focus changed; try again" = "Cursor focus changed; try again";
+"Cursor workspace updated" = "Cursor workspace updated";
+"Cursor switched conversations" = "Cursor switched conversations";
+
+"Assistant · Send message" = "Assistant · Send message";
+"Bring Cursor or Grok Bot to the foreground to send" = "Bring Cursor or Grok Bot to the foreground to send";

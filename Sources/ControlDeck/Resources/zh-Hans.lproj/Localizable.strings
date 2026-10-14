@@ -1136,3 +1136,23 @@
 "Grok Bot section change could not be verified" = "无法确认 Grok Bot 分区状态已更改";
 
 "Grok Bot section updated" = "Grok Bot 分区已更新";
+
+"Cursor · Previous conversation" = "Cursor · 上一个会话";
+"Cursor · Next conversation" = "Cursor · 下一个会话";
+"Cursor · Collapse current workspace" = "Cursor · 折叠当前工作区";
+"Cursor · Expand current workspace" = "Cursor · 展开当前工作区";
+"Cursor navigation requires asynchronous dispatch" = "Cursor 会话导航需要异步执行";
+
+"Cursor is already switching conversations" = "Cursor 正在切换会话，请稍候";
+"Bring Cursor to the foreground to navigate conversations" = "请将 Cursor 切到前台再切换会话";
+"Cursor current conversation is unavailable or ambiguous" = "无法唯一确定 Cursor 当前会话";
+"Cursor has no adjacent conversation in this direction" = "已到可见会话列表的边界";
+"Cursor conversation change could not be verified" = "无法确认 Cursor 会话或工作区已切换";
+"Cursor current conversation has no collapsible workspace" = "当前会话没有可折叠的工作区";
+"Cursor workspace is already in the requested state" = "Cursor 工作区已处于目标状态";
+"Cursor focus changed; try again" = "Cursor 焦点已变化，请重试";
+"Cursor workspace updated" = "Cursor 工作区已更新";
+"Cursor switched conversations" = "Cursor 已切换会话";
+
+"Assistant · Send message" = "助手 · 发送消息";
+"Bring Cursor or Grok Bot to the foreground to send" = "请将 Cursor 或 Grok Bot 切到前台再发送";
