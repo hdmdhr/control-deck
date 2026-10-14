@@ -144,6 +144,31 @@ struct ControlDeckLogicTestRunner {
                (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["A", "B"], offset: 1)) == nil &&
                (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["C"], offset: 1)) == nil,
                "bot navigation rejects duplicates, ambiguous selection and unknown current bot")
+        let ordinaryButtonAttributes = ["AXRole", "AXTitle", "AXEnabled"]
+        let disclosureAttributes = ordinaryButtonAttributes + ["AXExpanded"]
+        let ordinaryButtonState = GrokBotNavigation.disclosureState(
+            advertisedAttributes: ordinaryButtonAttributes, value: false)
+        expect(ordinaryButtonState == nil && GrokBotNavigation.isBotButton(
+            role: "AXButton", expanded: ordinaryButtonState, roleDescription: "button"),
+            "Chromium ordinary buttons returning AXExpanded false remain navigable bot rows")
+        expect(GrokBotNavigation.disclosureState(advertisedAttributes: disclosureAttributes, value: false) == false &&
+               GrokBotNavigation.disclosureState(advertisedAttributes: disclosureAttributes, value: true) == true,
+               "advertised disclosure capability preserves both collapsed and expanded section states")
+        expect(GrokBotNavigation.disclosureState(advertisedAttributes: disclosureAttributes, value: nil) == nil,
+               "unreadable disclosure state is not assumed collapsed")
+        let sidebarRows: [(String, [String], Bool, String)] = [
+            ("Presenter", ordinaryButtonAttributes, false, "button"),
+            ("Engineering", disclosureAttributes, true, "sortable"),
+            ("Webber", ordinaryButtonAttributes, false, "button"),
+            ("Chores", disclosureAttributes, false, "sortable")
+        ]
+        let botNames = sidebarRows.filter { row in
+            GrokBotNavigation.isBotButton(role: "AXButton", expanded: GrokBotNavigation.disclosureState(
+                advertisedAttributes: row.1, value: row.2), roleDescription: row.3)
+        }.map { $0.0 }
+        expect(botNames == ["Presenter", "Webber"] &&
+               (try? GrokBotNavigation.adjacentIndex(names: botNames, currentNames: ["Presenter"], offset: 1)) == 1,
+               "cross-section navigation retains ordinary bots and excludes both expanded and folded headers")
         expect(GrokBotNavigation.isBotButton(role: "AXButton", expanded: nil, roleDescription: "button") &&
                !GrokBotNavigation.isBotButton(role: "AXButton", expanded: true, roleDescription: "button") &&
                !GrokBotNavigation.isBotButton(role: "AXButton", expanded: false, roleDescription: "button") &&

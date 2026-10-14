@@ -27,6 +27,12 @@ enum GrokBotNavigation {
 
     @MainActor private static var navigating = false
 
+    /// Chromium's AXExpanded getter returns false even on ordinary buttons.
+    /// Only its advertised attribute list establishes disclosure support.
+    static func disclosureState(advertisedAttributes: [String], value: Bool?) -> Bool? {
+        advertisedAttributes.contains(kAXExpandedAttribute) ? value : nil
+    }
+
     // A disclosure button is a section header even when macOS exposes AXButton.
     static func isBotButton(role: String, expanded: Bool?, roleDescription: String) -> Bool {
         role == kAXButtonRole && expanded == nil && roleDescription != "sortable"
@@ -205,7 +211,10 @@ enum GrokBotNavigation {
         var sections: [Section] = []
         walk(lists[0], budget: 2_000, complete: &complete) { node in
             let role = string(node, kAXRoleAttribute)
-            let expanded = attribute(node, kAXExpandedAttribute) as? Bool
+            let expanded = role == kAXButtonRole ? disclosureState(
+                advertisedAttributes: attributeNames(node),
+                value: attribute(node, kAXExpandedAttribute) as? Bool
+            ) : nil
             if let expanded, let parent = element(node, kAXParentAttribute), role == kAXButtonRole {
                 sections.append(Section(button: node, container: parent, expanded: expanded))
                 return false
@@ -297,6 +306,12 @@ enum GrokBotNavigation {
         down.post(tap: .cghidEventTap)
         up.post(tap: .cghidEventTap)
         return true
+    }
+
+    private static func attributeNames(_ node: AXUIElement) -> [String] {
+        var names: CFArray?
+        guard AXUIElementCopyAttributeNames(node, &names) == .success else { return [] }
+        return names as? [String] ?? []
     }
 
     private static func attribute(_ node: AXUIElement, _ name: String) -> CFTypeRef? {
