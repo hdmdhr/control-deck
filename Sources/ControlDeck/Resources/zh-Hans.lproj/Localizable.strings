@@ -1113,3 +1113,15 @@
 "Grok Bot has no adjacent bot in this direction" = "已到 Bot 列表的边界";
 
 "Grok Bot current bot is unavailable or ambiguous" = "无法确定 Grok Bot 当前选中的 Bot";
+
+"Assistant · Right panel" = "助手 · 右侧面板";
+
+"Bring Cursor or Grok Bot to the foreground first" = "请先将 Cursor 或 Grok Bot 切到台前";
+
+"Grok Bot is already switching bots" = "正在切换 Bot，请稍候";
+
+"Grok Bot switch could not be verified" = "未能确认 Bot 切换成功";
+
+"Grok Bot selection changed; try again" = "当前 Bot 已变化，请重试";
+
+"Grok Bot navigation requires asynchronous dispatch" = "Bot 导航需要异步执行";

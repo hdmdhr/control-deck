@@ -1113,3 +1113,15 @@
 "Grok Bot has no adjacent bot in this direction" = "Bot 一覧の端に達しました";
 
 "Grok Bot current bot is unavailable or ambiguous" = "Grok Bot で現在選択中の Bot を特定できません";
+
+"Assistant · Right panel" = "アシスタント · 右パネル";
+
+"Bring Cursor or Grok Bot to the foreground first" = "先に Cursor または Grok Bot を最前面にしてください";
+
+"Grok Bot is already switching bots" = "Bot を切り替えています。お待ちください";
+
+"Grok Bot switch could not be verified" = "Bot の切り替えを確認できませんでした";
+
+"Grok Bot selection changed; try again" = "現在の Bot が変わりました。再試行してください";
+
+"Grok Bot navigation requires asynchronous dispatch" = "Bot ナビゲーションには非同期実行が必要です";

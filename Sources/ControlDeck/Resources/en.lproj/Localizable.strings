@@ -1113,3 +1113,15 @@
 "Grok Bot has no adjacent bot in this direction" = "Grok Bot has no adjacent bot in this direction";
 
 "Grok Bot current bot is unavailable or ambiguous" = "Grok Bot current bot is unavailable or ambiguous";
+
+"Assistant · Right panel" = "Assistant · Right panel";
+
+"Bring Cursor or Grok Bot to the foreground first" = "Bring Cursor or Grok Bot to the foreground first";
+
+"Grok Bot is already switching bots" = "Grok Bot is already switching bots";
+
+"Grok Bot switch could not be verified" = "Grok Bot switch could not be verified";
+
+"Grok Bot selection changed; try again" = "Grok Bot selection changed; try again";
+
+"Grok Bot navigation requires asynchronous dispatch" = "Grok Bot navigation requires asynchronous dispatch";

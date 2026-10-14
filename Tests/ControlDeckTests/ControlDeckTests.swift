@@ -116,6 +116,15 @@ struct ControlDeckLogicTestRunner {
                (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["A", "B"], offset: 1)) == nil &&
                (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["C"], offset: 1)) == nil,
                "bot navigation rejects duplicates, ambiguous selection and unknown current bot")
+        expect(GrokBotNavigation.verification(current: "A", initial: "A", target: "B") == .unchanged &&
+               GrokBotNavigation.verification(current: "B", initial: "A", target: "B") == .confirmed &&
+               GrokBotNavigation.verification(current: "C", initial: "A", target: "B") == .unexpected,
+               "accepted click alone is not success; only the requested bot confirms navigation")
+        expect(ControllerProfile.cursor.action(for: .square) == .assistantRightPanel &&
+               ControllerProfile.grokBot.action(for: .square) == .assistantRightPanel &&
+               ControllerProfile.cursor.action(for: .l3) == .copy &&
+               ControllerProfile.grokBot.action(for: .triangle) == .paste,
+               "assistant square opens the right panel while copy and paste stay accessible")
         let snapshotEvents = AppSnapshotShortcut.events() ?? []
         expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
                "app snapshot uses four modifier transitions")
