@@ -155,6 +155,15 @@ enum CursorConversationNavigation {
         }
         throw SelectionError.boundary
     }
+    enum DiscoveryKind { case tabGroup, leaf, container }
+    static func discoveryKind(role: String) -> DiscoveryKind {
+        if role == kAXTabGroupRole { return .tabGroup }
+        if [kAXTextAreaRole, kAXTextFieldRole, kAXStaticTextRole].contains(role) { return .leaf }
+        // Chromium may retain a scrolling layout wrapper around the main Panel.
+        // A scroll role alone cannot establish that this is transcript content.
+        return .container
+    }
+
     /// A targeted discovery search may prune unrelated deep branches. Success
     /// depends on finding the exact requested roots, unlike strict subtree reads.
     static func discoverStructure<Element>(
@@ -220,18 +229,23 @@ enum CursorConversationNavigation {
                         children: (attribute(element, kAXChildrenAttribute) as? [AXUIElement] ?? []).map { read($0, depth: depth + 1) },
                         domClasses: attribute(element, "AXDOMClassList") as? [String] ?? [])
         }
-        // Discover only structural AX containers. Conversation transcript scroll areas
-        // and editable text never participate in sidebar/tab selection.
+        // Discover the sidebar and first main tab group in layout order. Stop
+        // before its following transcript; editable text never participates.
         var sidebarRoot: AXUIElement?
         var tabRoots: [AXUIElement] = []
         let discoveryComplete = discoverStructure(window, budget: 1200, maxDepth: 18,
             isComplete: { sidebarRoot != nil && !tabRoots.isEmpty }, visit: { node in
             let role = string(node, kAXRoleAttribute)
-            if role == kAXTabGroupRole {
-                if label(node) == "Tabs" { tabRoots.append(node) }
+            switch discoveryKind(role: role) {
+            case .tabGroup:
+                // The main conversation tab group precedes the optional Apps
+                // pane in Cursor's layout. Scope to that first external group;
+                // its accessible name need not be exposed as AXTitle/Description.
+                tabRoots.append(node)
                 return false
+            case .leaf: return false
+            case .container: break
             }
-            if [kAXTextAreaRole, kAXTextFieldRole, kAXScrollAreaRole, kAXStaticTextRole].contains(role) { return false }
             if sidebarRoot == nil, role == kAXButtonRole, label(node) == "Hide Sidebar" {
                 // The marker's nearest enclosing branch also needs Workspaces.
                 var candidate: AXUIElement? = element(node, kAXParentAttribute)

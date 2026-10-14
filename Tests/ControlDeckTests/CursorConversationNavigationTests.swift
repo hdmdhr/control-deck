@@ -64,6 +64,31 @@ import ApplicationServices
                 foundDeepMarker = item.label == "irrelevant leaf"
                 return true
             }, children: { $0.children }), "A desired root beyond depth limit remains unavailable")
+        // The supported CUA tree shows sidebar then Panel/main tab group then
+        // optional Pane/Apps tabs. Raw AX scrolling wrappers and a tab group's
+        // absent AXTitle must not hide that first conversation group.
+        let mainTab = node(kAXTabGroupRole, children: [node(kAXRadioButtonRole, "Observed Current", selected: true)])
+        let appsTab = node(kAXTabGroupRole, "Tabs", children: [node(kAXRadioButtonRole, "Changes", selected: true)])
+        let observedLayout = node(kAXWindowRole, "Cursor Agents", children: [
+            node(kAXGroupRole, "sidebar marker"),
+            node(kAXScrollAreaRole, children: [node(kAXGroupRole, "Panel", children: [
+                node(kAXGroupRole, children: [mainTab, node(kAXGroupRole, "transcript must not visit")])])]),
+            node(kAXGroupRole, "Pane", children: [appsTab])])
+        var foundObservedSidebar = false
+        var observedTabs: [N] = []
+        var visitedTranscript = false
+        let observedFound = CursorConversationNavigation.discoverStructure(observedLayout, budget: 1200, maxDepth: 18,
+            isComplete: { foundObservedSidebar && !observedTabs.isEmpty }, visit: { item in
+                if item.label == "sidebar marker" { foundObservedSidebar = true; return false }
+                if item.label == "transcript must not visit" { visitedTranscript = true }
+                switch CursorConversationNavigation.discoveryKind(role: item.role) {
+                case .tabGroup: observedTabs.append(item); return false
+                case .leaf: return false
+                case .container: return true
+                }
+            }, children: { $0.children })
+        require(observedFound && observedTabs.map(\.id) == [mainTab.id], "Discover main tab through structural scroll wrapper without requiring AXTitle Tabs")
+        require(!visitedTranscript, "Main tab discovery stops before transcript and secondary Apps tabs")
         let expanded = workspace("Current Workspace", names: ["First", "Current"], expanded: true, retained: [])
         let collapsed = workspace("Folded", names: ["Hidden"], expanded: false)
         let last = workspace("Last", names: ["Next"], expanded: true)
