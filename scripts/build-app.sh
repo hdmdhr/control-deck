@@ -58,9 +58,9 @@ minimum_macos_version() {
 verify_bundled_opus() {
   local binary="$1"
 
-  lipo "$binary" -verify_arch arm64 x86_64
   local architecture
   for architecture in arm64 x86_64; do
+    lipo "$binary" -verify_arch "$architecture"
     [[ "$(minimum_macos_version "$binary" "$architecture")" == \
       "$OPUS_DEPLOYMENT_TARGET" ]]
     [[ "$(otool -arch "$architecture" -D "$binary" | sed -n '2p')" == \
@@ -71,9 +71,9 @@ verify_bundled_opus() {
 verify_universal_executable() {
   local binary="$1"
 
-  lipo "$binary" -verify_arch arm64 x86_64
   local architecture
   for architecture in arm64 x86_64; do
+    lipo "$binary" -verify_arch "$architecture"
     [[ "$(minimum_macos_version "$binary" "$architecture")" == \
       "$OPUS_DEPLOYMENT_TARGET" ]]
   done
