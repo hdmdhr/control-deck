@@ -1156,3 +1156,15 @@
 
 "Assistant · Send message" = "助手 · 发送消息";
 "Bring Cursor or Grok Bot to the foreground to send" = "请将 Cursor 或 Grok Bot 切到前台再发送";
+
+"ChatGPT · Previous sidebar conversation" = "ChatGPT · 侧栏上一个会话";
+"ChatGPT · Next sidebar conversation" = "ChatGPT · 侧栏下一个会话";
+"ChatGPT sidebar navigation requires asynchronous dispatch" = "ChatGPT 侧栏导航需要异步执行";
+"ChatGPT is already switching conversations" = "ChatGPT 正在切换会话";
+"Bring ChatGPT to the foreground to navigate its sidebar" = "请将 ChatGPT 切到前台以导航会话列表";
+"ChatGPT sidebar conversation is unavailable; open the chat sidebar" = "无法读取 ChatGPT 会话列表，请展开聊天侧栏";
+"ChatGPT has no adjacent sidebar conversation" = "已到 ChatGPT 会话列表的边界";
+"ChatGPT current sidebar conversation is unavailable" = "无法确定 ChatGPT 会话列表中的当前会话";
+"ChatGPT focus changed; try again" = "ChatGPT 窗口焦点已改变，请重试";
+"ChatGPT sidebar switch could not be verified" = "未能确认 ChatGPT 会话列表切换成功";
+"ChatGPT switched sidebar conversations" = "已切换 ChatGPT 侧栏会话";

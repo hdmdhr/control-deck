@@ -1769,6 +1769,11 @@ final class AppModel: ObservableObject {
             selectAdjacentTask(offset: -1)
         case .codexNextTask:
             selectAdjacentTask(offset: 1)
+        case .chatGPTPreviousConversation, .chatGPTNextConversation:
+            Task { @MainActor in
+                let succeeded = await automation.navigateChatGPTSidebar(action)
+                finish(action.label, succeeded: succeeded)
+            }
         case .cursorPreviousConversation, .cursorNextConversation, .cursorCollapseWorkspace, .cursorExpandWorkspace:
             Task { @MainActor in
                 let succeeded = await automation.navigateCursorConversation(action)

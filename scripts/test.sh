@@ -52,6 +52,14 @@ swiftc -parse-as-library -framework AppKit -framework ApplicationServices \
   -o "$CURSOR_OUTPUT"
 "$CURSOR_OUTPUT"
 rm -f "$CURSOR_OUTPUT"
+CHAT_SIDEBAR_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-chat-sidebar.XXXXXX")"
+swiftc -parse-as-library -framework AppKit -framework ApplicationServices \
+  "$ROOT/Sources/ControlDeck/AppResources.swift" \
+  "$ROOT/Sources/ControlDeck/ChatGPTSidebarNavigation.swift" \
+  "$ROOT/Tests/ControlDeckTests/ChatGPTSidebarNavigationTests.swift" \
+  -o "$CHAT_SIDEBAR_OUTPUT"
+"$CHAT_SIDEBAR_OUTPUT"
+rm -f "$CHAT_SIDEBAR_OUTPUT"
 "$ROOT/scripts/test-resource-bundle.sh"
 "$ROOT/scripts/test-localization.sh"
 

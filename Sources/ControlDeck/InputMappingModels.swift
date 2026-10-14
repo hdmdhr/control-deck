@@ -305,6 +305,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case codexNewTask
     case codexCommandMenu
     case codexFocus
+    case chatGPTPreviousConversation
+    case chatGPTNextConversation
     case codexPreviousTask
     case codexNextTask
     case codexBack
@@ -460,6 +462,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .codexNewTask: String(localized: "Codex · New task", bundle: AppResources.localizationBundle)
         case .codexCommandMenu: String(localized: "Codex · Command menu", bundle: AppResources.localizationBundle)
         case .codexFocus: String(localized: "Codex · Focus", bundle: AppResources.localizationBundle)
+        case .chatGPTPreviousConversation: String(localized: "ChatGPT · Previous sidebar conversation", bundle: AppResources.localizationBundle)
+        case .chatGPTNextConversation: String(localized: "ChatGPT · Next sidebar conversation", bundle: AppResources.localizationBundle)
         case .codexPreviousTask: String(localized: "Codex · Previous task", bundle: AppResources.localizationBundle)
         case .codexNextTask: String(localized: "Codex · Next task", bundle: AppResources.localizationBundle)
         case .codexBack: String(localized: "Codex · Back", bundle: AppResources.localizationBundle)
@@ -592,7 +596,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var category: ActionCategory {
         switch self {
-        case .codexSend, .codexStop, .codexReview, .codexPlan, .codexNewTask,
+        case .chatGPTPreviousConversation, .chatGPTNextConversation, .codexSend, .codexStop, .codexReview, .codexPlan, .codexNewTask,
              .codexCommandMenu, .codexFocus, .codexPreviousTask, .codexNextTask,
              .codexBack, .codexForward, .codexSidebar, .codexQuickChat,
              .codexTerminal, .codexApprove, .codexDecline, .codexDictation, .codexAppSnapshot,
@@ -1072,8 +1076,8 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
             .ps: .codexFocus,
             .dpadUp: .codexSend,
             .dpadDown: .codexSidebar,
-            .dpadLeft: .codexPreviousTask,
-            .dpadRight: .codexNextTask,
+            .dpadLeft: .chatGPTPreviousConversation,
+            .dpadRight: .chatGPTNextConversation,
             .touchpadClick: .showControllerOverlay,
             .microphone: .codexDictation
         ]),
@@ -1233,6 +1237,16 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
     }
 
     /// Upgrade the former AI defaults without touching dictation or custom mappings.
+    mutating func migrateChatGPTSidebarNavigation() {
+        guard kind == .codex else { return }
+        if [.codexPreviousTask, .codexBack].contains(action(for: .dpadLeft)) {
+            setAction(.chatGPTPreviousConversation, for: .dpadLeft)
+        }
+        if [.codexNextTask, .codexForward].contains(action(for: .dpadRight)) {
+            setAction(.chatGPTNextConversation, for: .dpadRight)
+        }
+    }
+
     mutating func migrateAIConversationControls() {
         if kind == .codex {
             let replacements: [(ControllerInput, MappedAction, MappedAction)] = [

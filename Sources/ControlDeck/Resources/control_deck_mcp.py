@@ -31,7 +31,7 @@ VALID_ACTIONS = {
     "none",
     "codexSend", "codexStop", "codexReview", "codexPlan",
     "codexNewTask", "codexCommandMenu", "codexFocus",
-    "codexPreviousTask", "codexNextTask", "codexBack", "codexForward",
+    "chatGPTPreviousConversation", "chatGPTNextConversation", "codexPreviousTask", "codexNextTask", "codexBack", "codexForward",
     "codexSidebar", "codexQuickChat", "codexTerminal", "codexApprove",
     "codexDecline", "codexDictation", "codexAppSnapshot",
     "codexFastMode", "codexContinueInNewTask",

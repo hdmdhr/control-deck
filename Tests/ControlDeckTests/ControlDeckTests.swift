@@ -115,8 +115,8 @@ struct ControlDeckLogicTestRunner {
                ControllerProfile.cursor.action(for: .circle) == .assistantSend &&
                ControllerProfile.grokBot.action(for: .circle) == .assistantSend,
                "AI circles send rather than stop or escape")
-        expect(ControllerProfile.codex.action(for: .dpadLeft) == .codexPreviousTask &&
-               ControllerProfile.codex.action(for: .dpadRight) == .codexNextTask &&
+        expect(ControllerProfile.codex.action(for: .dpadLeft) == .chatGPTPreviousConversation &&
+               ControllerProfile.codex.action(for: .dpadRight) == .chatGPTNextConversation &&
                ControllerProfile.codex.action(for: .l1) == .back &&
                ControllerProfile.codex.action(for: .r1) == .forward &&
                ControllerProfile.codex.action(for: .l2) == .systemDictation,
@@ -127,6 +127,7 @@ struct ControlDeckLogicTestRunner {
             oldAI.setAction(action, for: input)
         }
         oldAI.migrateAIConversationControls()
+        oldAI.migrateChatGPTSidebarNavigation()
         expect(oldAI == ControllerProfile.codex, "Legacy Codex controls migrate to requested conversation mapping")
         oldAI.setAction(.copy, for: .circle)
         oldAI.migrateAIConversationControls()
@@ -137,6 +138,14 @@ struct ControlDeckLogicTestRunner {
             legacy.migrateAIConversationControls()
             expect(legacy == profile, "Assistant migration changes only the former escape circle")
         }
+        var oldChatGPT = ControllerProfile.codex
+        oldChatGPT.setAction(.codexPreviousTask, for: .dpadLeft)
+        oldChatGPT.setAction(.codexNextTask, for: .dpadRight)
+        oldChatGPT.migrateChatGPTSidebarNavigation()
+        expect(oldChatGPT == ControllerProfile.codex, "ChatGPT recent-task arrows migrate to sidebar conversation actions")
+        oldChatGPT.setAction(.copy, for: .dpadLeft)
+        oldChatGPT.migrateChatGPTSidebarNavigation()
+        expect(oldChatGPT.action(for: .dpadLeft) == .copy, "ChatGPT sidebar migration preserves custom actions")
         var oldCursor = ControllerProfile.cursor
         for (input, action) in [(ControllerInput.dpadLeft, MappedAction.arrowLeft), (.dpadRight, .arrowRight),
                                 (.dpadUp, .arrowUp), (.dpadDown, .arrowDown)] {

@@ -26,6 +26,7 @@ final class ProfileStore: ObservableObject {
     private let assistantRightPanelKey = "assistantSquareRightPanel.v1"
     private let grokBotNavigationKey = "grokBotNavigation.v1"
     private let grokSectionControlsKey = "grokSectionControls.v1"
+    private let chatGPTSidebarNavigationKey = "chatGPTSidebarNavigation.v1"
     private let aiConversationControlsKey = "aiConversationControls.v1"
     private let cursorNavigationKey = "cursorConversationNavigation.v1"
     private let cursorProfileMigrationKey = "cursorProfile.v1"
@@ -232,6 +233,11 @@ final class ProfileStore: ObservableObject {
         if !UserDefaults.standard.bool(forKey: aiConversationControlsKey) {
             for index in profiles.indices { profiles[index].migrateAIConversationControls() }
             UserDefaults.standard.set(true, forKey: aiConversationControlsKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: chatGPTSidebarNavigationKey) {
+            for index in profiles.indices { profiles[index].migrateChatGPTSidebarNavigation() }
+            UserDefaults.standard.set(true, forKey: chatGPTSidebarNavigationKey)
         }
 
         if !UserDefaults.standard.bool(forKey: cursorNavigationKey) {

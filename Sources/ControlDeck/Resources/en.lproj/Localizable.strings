@@ -1156,3 +1156,15 @@
 
 "Assistant · Send message" = "Assistant · Send message";
 "Bring Cursor or Grok Bot to the foreground to send" = "Bring Cursor or Grok Bot to the foreground to send";
+
+"ChatGPT · Previous sidebar conversation" = "ChatGPT · Previous sidebar conversation";
+"ChatGPT · Next sidebar conversation" = "ChatGPT · Next sidebar conversation";
+"ChatGPT sidebar navigation requires asynchronous dispatch" = "ChatGPT sidebar navigation requires asynchronous dispatch";
+"ChatGPT is already switching conversations" = "ChatGPT is already switching conversations";
+"Bring ChatGPT to the foreground to navigate its sidebar" = "Bring ChatGPT to the foreground to navigate its sidebar";
+"ChatGPT sidebar conversation is unavailable; open the chat sidebar" = "ChatGPT sidebar conversation is unavailable; open the chat sidebar";
+"ChatGPT has no adjacent sidebar conversation" = "ChatGPT has no adjacent sidebar conversation";
+"ChatGPT current sidebar conversation is unavailable" = "ChatGPT current sidebar conversation is unavailable";
+"ChatGPT focus changed; try again" = "ChatGPT focus changed; try again";
+"ChatGPT sidebar switch could not be verified" = "ChatGPT sidebar switch could not be verified";
+"ChatGPT switched sidebar conversations" = "ChatGPT switched sidebar conversations";

@@ -115,6 +115,13 @@ final class CodexAutomation: ObservableObject {
         return result.succeeded
     }
 
+    @discardableResult
+    func navigateChatGPTSidebar(_ action: MappedAction) async -> Bool {
+        let result = await ChatGPTSidebarNavigation.navigate(offset: action == .chatGPTPreviousConversation ? -1 : 1)
+        lastResult = result.message
+        return result.succeeded
+    }
+
     func run(_ action: MappedAction) -> Bool {
         switch action {
         case .none:
@@ -376,6 +383,9 @@ final class CodexAutomation: ObservableObject {
             )
         case .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection:
             lastResult = "Grok Bot navigation requires asynchronous dispatch"
+            return false
+        case .chatGPTPreviousConversation, .chatGPTNextConversation:
+            lastResult = String(localized: "ChatGPT sidebar navigation requires asynchronous dispatch", bundle: AppResources.localizationBundle)
             return false
         case .cursorPreviousConversation, .cursorNextConversation, .cursorCollapseWorkspace, .cursorExpandWorkspace:
             lastResult = String(localized: "Cursor navigation requires asynchronous dispatch", bundle: AppResources.localizationBundle)

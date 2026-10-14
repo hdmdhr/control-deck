@@ -1156,3 +1156,15 @@
 
 "Assistant · Send message" = "アシスタント · メッセージを送信";
 "Bring Cursor or Grok Bot to the foreground to send" = "送信するには Cursor または Grok Bot を最前面にしてください";
+
+"ChatGPT · Previous sidebar conversation" = "ChatGPT · サイドバーの前の会話";
+"ChatGPT · Next sidebar conversation" = "ChatGPT · サイドバーの次の会話";
+"ChatGPT sidebar navigation requires asynchronous dispatch" = "ChatGPT のサイドバー移動には非同期処理が必要です";
+"ChatGPT is already switching conversations" = "ChatGPT は会話を切り替え中です";
+"Bring ChatGPT to the foreground to navigate its sidebar" = "会話一覧を操作するには ChatGPT を最前面にしてください";
+"ChatGPT sidebar conversation is unavailable; open the chat sidebar" = "ChatGPT の会話一覧を読み取れません。サイドバーを開いてください";
+"ChatGPT has no adjacent sidebar conversation" = "ChatGPT の会話一覧の端です";
+"ChatGPT current sidebar conversation is unavailable" = "ChatGPT の会話一覧で現在の会話を特定できません";
+"ChatGPT focus changed; try again" = "ChatGPT のフォーカスが変わりました。再試行してください";
+"ChatGPT sidebar switch could not be verified" = "ChatGPT の会話切り替えを確認できませんでした";
+"ChatGPT switched sidebar conversations" = "ChatGPT のサイドバーの会話を切り替えました";

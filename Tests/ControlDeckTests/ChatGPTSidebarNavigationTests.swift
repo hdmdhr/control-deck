@@ -1,0 +1,38 @@
+import Foundation
+import ApplicationServices
+
+@main struct ChatGPTSidebarNavigationTests {
+    typealias N = ChatGPTSidebarNavigation.Node
+    static let marker = "data-[app-action-sidebar-thread-selected=true]:bg-primary-ghost-hover"
+    static func chat(_ id: Int, _ title: String, current: Bool = false) -> N {
+        N(id: id, role: kAXButtonRole, classes: ["sidebar-item", marker], label: title, current: current)
+    }
+    static func require(_ value: @autoclosure () -> Bool, _ message: String) {
+        if !value() { fatalError(message) }
+    }
+    static func main() throws {
+        let root = N(id: 0, role: kAXGroupRole, children: [
+            chat(1, "Pinned", current: true),
+            N(id: 2, role: kAXButtonRole, classes: ["sidebar-item"], label: "Project", children: [chat(3, "Project chat")]),
+            N(id: 4, role: kAXButtonRole, classes: ["sidebar-item"], label: "Folded", expanded: false, children: [chat(5, "Hidden")]),
+            N(id: 6, role: kAXButtonRole, classes: ["sidebar-item"], label: "Show more"),
+            chat(7, "Recent"), chat(8, "Project chat"), chat(9, "Pinned", current: true)
+        ])
+        let rows = ChatGPTSidebarNavigation.rows(in: root)
+        require(rows.map(\.node.id) == [1,3,7,8,9], "Read rendered sidebar order; exclude project headers, More, hidden children")
+        require(rows[1].occurrence != rows[3].occurrence, "Same title occurrences are distinct")
+        require(try! ChatGPTSidebarNavigation.adjacentIndex(rows: rows, remembered: nil, offset: 1) == 1, "Initial duplicate active rows use first occurrence")
+        require(try! ChatGPTSidebarNavigation.adjacentIndex(rows: rows, remembered: rows[4].occurrence, offset: -1) == 3, "Remember last navigated occurrence")
+        let adjacentDuplicates = ChatGPTSidebarNavigation.rows(in: N(id: 0, role: kAXGroupRole, children: [chat(1,"Same",current:true),chat(2,"Same",current:true),chat(3,"Other")]))
+        require(try! ChatGPTSidebarNavigation.adjacentIndex(rows: adjacentDuplicates, remembered: nil, offset: 1) == 2, "Do not claim switching to an already selected duplicate")
+        do {
+            _ = try ChatGPTSidebarNavigation.adjacentIndex(rows: rows, remembered: nil, offset: -1)
+            fatalError("Must stop at list boundary")
+        } catch ChatGPTSidebarNavigation.SelectionError.boundary { }
+        do {
+            _ = try ChatGPTSidebarNavigation.adjacentIndex(rows: ChatGPTSidebarNavigation.rows(in: chat(1,"No current")), remembered: nil, offset: 1)
+            fatalError("Missing aria-current must not click")
+        } catch ChatGPTSidebarNavigation.SelectionError.unavailable { }
+        print("PASS: ChatGPT sidebar navigation fixtures")
+    }
+}
