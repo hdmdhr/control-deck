@@ -28,6 +28,9 @@ final class ProfileStore: ObservableObject {
     private var activationObserver: NSObjectProtocol?
     private var contextTimer: Timer?
     private var wheelOverrideBundleIdentifier: String?
+    private var wheelActivationToken: UUID?
+    private var wheelActivationSource: String?
+    private var wheelActivationGraceUntil: Date?
     private let logger = Logger(
         subsystem: "com.ianhansel.controldeck",
         category: "profiles"
@@ -224,11 +227,27 @@ final class ProfileStore: ObservableObject {
         logger.notice("Manual profile selected: \(kind.rawValue)")
     }
 
-    func setActiveProfileFromWheel(_ kind: ProfileKind) {
+    @discardableResult
+    func setActiveProfileFromWheel(_ kind: ProfileKind) -> UUID {
+        let token = UUID()
+        wheelActivationToken = token
         setActiveProfile(kind)
         wheelOverrideBundleIdentifier =
             NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         logger.notice("Profile wheel selected: \(kind.rawValue)")
+        return token
+    }
+
+    /// Keep the selected layout while macOS opens/focuses its app, including
+    /// intermediate foreground notifications from the window manager.
+    func finishWheelActivation(_ token: UUID, targetBundleIdentifier: String? = nil) -> Bool {
+        guard wheelActivationToken == token else { return false }
+        let foreground = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        wheelActivationSource = foreground
+        wheelOverrideBundleIdentifier = targetBundleIdentifier ?? foreground
+        wheelActivationGraceUntil = targetBundleIdentifier == nil ? nil : Date().addingTimeInterval(2)
+        wheelActivationToken = nil
+        return true
     }
 
     func setAction(_ action: MappedAction, for input: ControllerInput) {
@@ -364,12 +383,17 @@ final class ProfileStore: ObservableObject {
     }
 
     func refreshActiveProfile() {
-        guard autoSwitchEnabled else {
+        guard autoSwitchEnabled, wheelActivationToken == nil else {
             return
         }
         let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         if let wheelOverrideBundleIdentifier {
-            if bundleID == wheelOverrideBundleIdentifier { return }
+            if bundleID == wheelOverrideBundleIdentifier {
+                wheelActivationGraceUntil = nil
+                return
+            }
+            if bundleID == wheelActivationSource,
+               let graceUntil = wheelActivationGraceUntil, Date() < graceUntil { return }
             self.wheelOverrideBundleIdentifier = nil
         }
         let windowTitle = focusedWindowTitle()

@@ -1029,14 +1029,38 @@ final class AppModel: ObservableObject {
         if let selectedIndex {
             let slot = shiftLayer.slot(at: selectedIndex)
             let profile = profiles.profile(for: slot.profileKind)
-            profiles.setActiveProfileFromWheel(slot.profileKind)
-            lastAction = String(localized: "Profile switched · \(profile.displayName)", bundle: AppResources.localizationBundle)
-            hud.show(
-                profile.displayName,
-                detail: String(localized: "Controller profile selected", bundle: AppResources.localizationBundle),
-                color: .systemCyan
-            )
-            controller.playHaptic(.success)
+            let activationToken = profiles.setActiveProfileFromWheel(slot.profileKind)
+            Task { @MainActor [weak self] in
+                let outcome = await ProfileApplicationActivator.activate(profile)
+                let targetBundleIdentifier: String?
+                if case let .activationRequested(identifier) = outcome {
+                    targetBundleIdentifier = identifier
+                } else {
+                    targetBundleIdentifier = nil
+                }
+                guard let self, self.profiles.finishWheelActivation(
+                    activationToken, targetBundleIdentifier: targetBundleIdentifier
+                ) else { return }
+                let detail: String
+                let success: Bool
+                switch outcome {
+                case .profileOnly:
+                    detail = String(localized: "Controller profile selected", bundle: AppResources.localizationBundle)
+                    success = true
+                case .activationRequested:
+                    detail = String(localized: "App activation requested", bundle: AppResources.localizationBundle)
+                    success = true
+                case .unavailable:
+                    detail = String(localized: "Profile selected · assigned app not found", bundle: AppResources.localizationBundle)
+                    success = false
+                case .failed:
+                    detail = String(localized: "Profile selected · could not activate app", bundle: AppResources.localizationBundle)
+                    success = false
+                }
+                self.lastAction = "\(profile.displayName) · \(detail)"
+                self.hud.show(profile.displayName, detail: detail, color: success ? .systemCyan : .systemOrange)
+                if success { self.controller.playHaptic(.success) }
+            }
             return
         }
         if shouldRunTapAction {
