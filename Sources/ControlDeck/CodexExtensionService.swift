@@ -118,7 +118,7 @@ final class CodexExtensionService: ObservableObject {
             withIntermediateDirectories: true
         )
 
-        guard let bundledServer = Bundle.module.url(
+        guard let bundledServer = AppResources.bundle?.url(
             forResource: "control_deck_mcp",
             withExtension: "py"
         ) else {
@@ -141,10 +141,10 @@ final class CodexExtensionService: ObservableObject {
             at: agents,
             withIntermediateDirectories: true
         )
-        guard let bundledSkill = Bundle.module.url(
+        guard let bundledSkill = AppResources.bundle?.url(
             forResource: "SKILL",
             withExtension: "md"
-        ), let bundledMetadata = Bundle.module.url(
+        ), let bundledMetadata = AppResources.bundle?.url(
             forResource: "openai",
             withExtension: "yaml"
         ) else {

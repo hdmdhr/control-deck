@@ -216,11 +216,11 @@ private struct TiltRunWebView: NSViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.underPageBackgroundColor = .clear
 
-        let resourceURL = Bundle.module.url(
+        let resourceURL = AppResources.bundle?.url(
             forResource: "index",
             withExtension: "html",
             subdirectory: "GyroGame"
-        ) ?? Bundle.module.url(forResource: "index", withExtension: "html")
+        ) ?? AppResources.bundle?.url(forResource: "index", withExtension: "html")
         if let resourceURL {
             webView.loadFileURL(
                 resourceURL,
