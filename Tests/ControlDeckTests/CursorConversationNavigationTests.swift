@@ -24,6 +24,9 @@ import ApplicationServices
         return node(kAXGroupRole, children: [node(kAXGroupRole, children: [header, button("New Agent")])]
             + (retained.isEmpty ? [] : [list(retained)]) + (expanded ? [list(names)] : []))
     }
+    static func headerForWrapped() -> N {
+        node(kAXGroupRole, children: [node(kAXButtonRole, "Wrapped Workspace", sortable: true), button("New Agent")])
+    }
     static func tree(_ workspaces: [N], current: String, pinned: [String] = ["Pinned Chat"]) -> N {
         let sidebar = node(kAXGroupRole, children: [button("Hide Sidebar"), button("Projects"),
             node(kAXGroupRole, children: [button("Pinned"), list(pinned)]), button("Workspaces")]
@@ -73,6 +76,25 @@ import ApplicationServices
         let hidden = CursorConversationNavigation.parse(folded, rememberedCurrent: "Current")!
         require(hidden.rows.map(\.label) == ["Pinned Chat", "Next"], "Retained selected row in a folded workspace is an anchor, never a target")
         require(try! CursorConversationNavigation.adjacentIndex(order: ["Pinned Chat", "First", "Current", "Next"], visible: hidden.rows.map(\.label), current: "Current", offset: 1) == 1, "Hidden current anchor can reach next visible row")
+        // Real AX descendants can retain presentation wrappers omitted by the
+        // human-readable CUA tree. Source-defined primary trigger classes must
+        // survive those wrappers without capturing action buttons.
+        var markedTitle = button("Wrapped Current")
+        markedTitle.domClasses = ["ui-sidebar-menu-button-trigger", "ui-button"]
+        var markedMore = button("More")
+        markedMore.domClasses = ["ui-sidebar-menu-button-trigger"]
+        let wrappedRow = node("AXUnknown", children: [node(kAXGroupRole, children: [markedTitle]),
+            node("AXUnknown", children: [button("Pin"), button("Archive"), button("Unrelated accessory")])])
+        let wrappedList = node(kAXListRole, children: [node("AXUnknown", children: [wrappedRow]), markedMore])
+        let wrappedParsed = CursorConversationNavigation.parse(tree([headerForWrapped(), wrappedList], current: "Wrapped Current"))!
+        require(wrappedParsed.anchors.map(\.label) == ["Pinned Chat", "Wrapped Current"], "DOM primary trigger marker ignores nested action buttons and More")
+        let noMetadata = node(kAXListRole, children: [node("AXUnknown", children: [
+            node(kAXGroupRole, children: [button("Fallback title")]),
+            node("AXUnknown", children: [button("Pin"), button("Archive")])])])
+        require(CursorConversationNavigation.conversationButtons(in: noMetadata).map(\.label) == ["Fallback title"], "Accessory row signature tolerates nested opaque wrappers without DOM metadata")
+        require(CursorConversationNavigation.conversationButtons(in: list(["More"])).isEmpty, "More and accessory buttons never become a conversation")
+        let arbitrary = node(kAXListRole, children: [node(kAXGroupRole, children: [button("Dangerous action")])])
+        require(CursorConversationNavigation.conversationButtons(in: arbitrary).isEmpty, "Unmarked arbitrary list buttons require conversation row evidence")
         // Exact flattened CUA shape: each list is a sibling of its header
         // container, including the residual current row after manual folding.
         let headerA = node(kAXGroupRole, children: [node(kAXButtonRole, "Manual Fold", sortable: true, expanded: false), button("New Agent")])

@@ -14,6 +14,7 @@ enum CursorConversationNavigation {
         var advertisedAttributes: [String] = []
         var expandedValue: Bool? = nil
         var children: [Node] = []
+        var domClasses: [String] = []
         var descendants: [Node] { [self] + children.flatMap(\.descendants) }
         var expanded: Bool? { advertisedAttributes.contains(kAXExpandedAttribute) ? expandedValue : nil }
     }
@@ -60,12 +61,8 @@ enum CursorConversationNavigation {
         var valid = true
         func listRows(_ list: Node) {
             guard acceptsLists else { return }
-            for row in list.children {
-                guard row.role == kAXGroupRole else { continue }
-                let buttons = row.children.filter { $0.role == kAXButtonRole }
-                guard let first = buttons.first, !first.label.isEmpty,
-                      !["More", "Archive", "Pin", "Unpin", "New Agent"].contains(first.label),
-                      buttons.dropFirst().allSatisfy({ ["Archive", "Pin", "Unpin"].contains($0.label) }) else { continue }
+            let primary = conversationButtons(in: list)
+            for first in primary {
                 anchors.append(first)
                 if let currentWorkspace { owners[first.id] = currentWorkspace }
             }
@@ -109,12 +106,44 @@ enum CursorConversationNavigation {
         let known = Set(names + [rememberedCurrent].compactMap { $0 })
         guard known.contains(activeTabName) else {
             let sortableRoles = sidebar.descendants.filter { $0.roleDescription == "sortable" }.map(\.role).joined(separator: ",")
-            diagnose("current tab absent from sidebar anchors=\(anchors.count) headers=\(headers.count) sortableRoles=\(sortableRoles)")
+            let listCount = sidebar.descendants.filter { $0.role == kAXListRole }.count
+            let triggerCount = sidebar.descendants.filter { $0.domClasses.contains("ui-sidebar-menu-button-trigger") }.count
+            diagnose("current tab absent from sidebar anchors=\(anchors.count) headers=\(headers.count) lists=\(listCount) primaryTriggers=\(triggerCount) sortableRoles=\(sortableRoles)")
             return nil
         }
         return Parsed(rows: rows, anchors: anchors, workspaces: workspaces,
                       workspaceByRow: owners, current: activeTabName)
     }
+    /// Cursor's SidebarMenuButton places the primary role=button trigger
+    /// beneath presentation wrappers, separate from its accessory action group.
+    /// Match its source-defined class inside a sidebar list, never arbitrary
+    /// buttons elsewhere in the workspace or conversation transcript.
+    static func conversationButtons(in list: Node) -> [Node] {
+        let excluded = Set(["More", "Archive", "Pin", "Unpin", "New Agent"])
+        func eligible(_ node: Node) -> Bool {
+            node.role == kAXButtonRole && !node.label.isEmpty && !excluded.contains(node.label)
+        }
+        let marked = list.descendants.filter {
+            $0.role == kAXButtonRole && $0.domClasses.contains("ui-sidebar-menu-button-trigger")
+        }
+        if !marked.isEmpty { return marked.filter(eligible) }
+        // If DOM metadata is unavailable, the observed row signature still
+        // identifies a conversation: one title button plus Pin/Unpin/Archive.
+        // Require that accessory evidence rather than accepting arbitrary list
+        // buttons through wrappers.
+        let accessories = Set(["Archive", "Pin", "Unpin"])
+        func collect(_ node: Node) -> [Node] {
+            guard node.role != kAXButtonRole else { return [] }
+            let buttons = node.descendants.filter { $0.role == kAXButtonRole }
+            let titles = buttons.filter(eligible)
+            if titles.count == 1 && buttons.contains(where: { accessories.contains($0.label) }) {
+                return titles
+            }
+            return node.children.flatMap(collect)
+        }
+        return collect(list)
+    }
+
     static func adjacentIndex(order: [String], visible: [String], current: String, offset: Int) throws -> Int {
         guard [-1, 1].contains(offset), Set(order).count == order.count,
               Set(visible).count == visible.count, let start = order.firstIndex(of: current),
@@ -188,7 +217,8 @@ enum CursorConversationNavigation {
                             (role == kAXRadioButtonRole && (attribute(element, kAXValueAttribute) as? NSNumber)?.intValue == 1),
                         advertisedAttributes: names,
                         expandedValue: names.contains(kAXExpandedAttribute) ? attribute(element, kAXExpandedAttribute) as? Bool : nil,
-                        children: (attribute(element, kAXChildrenAttribute) as? [AXUIElement] ?? []).map { read($0, depth: depth + 1) })
+                        children: (attribute(element, kAXChildrenAttribute) as? [AXUIElement] ?? []).map { read($0, depth: depth + 1) },
+                        domClasses: attribute(element, "AXDOMClassList") as? [String] ?? [])
         }
         // Discover only structural AX containers. Conversation transcript scroll areas
         // and editable text never participate in sidebar/tab selection.
