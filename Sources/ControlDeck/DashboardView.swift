@@ -410,6 +410,17 @@ struct DashboardView: View {
                             set: { profiles.updateTwoFingerScroll($0) }
                         )
                     )
+                    Toggle(
+                        "Natural scrolling",
+                        isOn: Binding(
+                            get: { profiles.editingProfile.touchpad.naturalScrolling },
+                            set: { profiles.updateNaturalScrolling($0) }
+                        )
+                    )
+                    Text("Move content in the same direction as your fingers.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                     LabeledSlider(
                         label: String(localized: "Scroll sensitivity", bundle: AppResources.localizationBundle),
                         value: Binding(

@@ -265,6 +265,10 @@ final class ProfileStore: ObservableObject {
         updateEditingProfile { $0.touchpad.twoFingerScroll = enabled }
     }
 
+    func updateNaturalScrolling(_ enabled: Bool) {
+        updateEditingProfile { $0.touchpad.naturalScrolling = enabled }
+    }
+
     func updateTouchPointerSensitivity(_ value: Double) {
         updateEditingProfile { $0.touchpad.pointerSensitivity = value }
     }
