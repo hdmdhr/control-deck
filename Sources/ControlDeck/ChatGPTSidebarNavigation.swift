@@ -136,8 +136,29 @@ enum ChatGPTSidebarNavigation {
         guard focused(), let button = initial.elements[target.node.id] else {
             return result(false, "ChatGPT focus changed; try again")
         }
-        let pressResult = AXUIElementPerformAction(button, kAXPressAction as CFString)
-        logger.notice("Navigation press result=\(pressResult.rawValue, privacy: .public), rows=\(initial.rows.count, privacy: .public), targetIndex=\(index, privacy: .public)")
+        // Observed AXPress returns success without activating this web row.
+        // Prefer the same validated pointer click that succeeded in live logs.
+        var clicked = clickVisibleButton(button, window: window, pid: app.processIdentifier)
+        logger.notice("Initial validated click=\(clicked, privacy: .public), targetIndex=\(index, privacy: .public)")
+        if !clicked {
+            var actions: CFArray?
+            if AXUIElementCopyActionNames(button, &actions) == .success,
+               (actions as? [String] ?? []).contains("AXScrollToVisible") {
+                let scrolled = AXUIElementPerformAction(button, "AXScrollToVisible" as CFString)
+                logger.notice("Scroll target into view result=\(scrolled.rawValue, privacy: .public)")
+                try? await Task.sleep(nanoseconds: 100_000_000)
+                guard focused(), let refreshed = snapshot(window),
+                      let row = refreshed.rows.first(where: { refreshed.elements[$0.node.id].map { CFEqual($0, button) } == true }),
+                      !row.node.current, let freshButton = refreshed.elements[row.node.id] else {
+                    return result(false, "ChatGPT sidebar switch could not be verified")
+                }
+                clicked = clickVisibleButton(freshButton, window: window, pid: app.processIdentifier)
+            }
+        }
+        if !clicked {
+            let pressResult = AXUIElementPerformAction(button, kAXPressAction as CFString)
+            logger.notice("AXPress fallback result=\(pressResult.rawValue, privacy: .public)")
+        }
         for attempt in 0..<8 {
             try? await Task.sleep(nanoseconds: 100_000_000)
             guard focused() else {
@@ -156,14 +177,14 @@ enum ChatGPTSidebarNavigation {
                 remembered = (window, selected.occurrence)
                 return result(true, "ChatGPT switched sidebar conversations")
             }
-            if attempt == 3,
+            if attempt == 1, !clicked,
                updated.rows.map(\.occurrence) == initial.rows.map(\.occurrence),
                let fresh = updated.rows.first(where: { row in
                    updated.elements[row.node.id].map { CFEqual($0, button) } == true
                }), !fresh.node.current, let freshButton = updated.elements[fresh.node.id] {
                 // AXPress may be accepted without invoking the web row handler.
                 // Only retry the same still-visible, hit-tested target in the same window.
-                let clicked = clickVisibleButton(freshButton, window: window, pid: app.processIdentifier)
+                clicked = clickVisibleButton(freshButton, window: window, pid: app.processIdentifier)
                 logger.notice("Navigation visible click fallback=\(clicked, privacy: .public)")
             }
             if updated.rows.contains(where: { $0.node.current }) &&
@@ -233,13 +254,33 @@ enum ChatGPTSidebarNavigation {
         return CGRect(origin: point, size: dimensions)
     }
 
+    static func visibleRect(frame: CGRect, window: CGRect, clips: [CGRect]) -> CGRect? {
+        let visible = clips.reduce(frame.intersection(window)) { $0.intersection($1) }
+        guard !visible.isNull, visible.width >= 2, visible.height >= 2 else { return nil }
+        return visible
+    }
+
     @MainActor
     private static func clickVisibleButton(_ button: AXUIElement, window: AXUIElement, pid: pid_t) -> Bool {
         guard (attribute(button, kAXEnabledAttribute) as? Bool) == true,
               (attribute(button, "AXHidden") as? Bool) != true,
               (attribute(window, kAXMinimizedAttribute) as? Bool) != true,
-              let frame = rect(button), let windowFrame = rect(window), windowFrame.contains(frame) else { return false }
-        let point = CGPoint(x: frame.midX, y: frame.midY)
+              let frame = rect(button), let windowFrame = rect(window) else {
+            logger.notice("Click rejected: disabled/hidden/minimized/invalid geometry")
+            return false
+        }
+        var clips: [CGRect] = []
+        var ancestor = element(button, kAXParentAttribute)
+        for _ in 0..<50 {
+            guard let node = ancestor, !CFEqual(node, window) else { break }
+            if string(node, kAXRoleAttribute) == kAXScrollAreaRole, let clip = rect(node) { clips.append(clip) }
+            ancestor = element(node, kAXParentAttribute)
+        }
+        guard let visible = visibleRect(frame: frame, window: windowFrame, clips: clips) else {
+            logger.notice("Click rejected: target outside visible viewport")
+            return false
+        }
+        let point = CGPoint(x: visible.midX, y: visible.midY)
         var displayCount: UInt32 = 0
         guard CGGetDisplaysWithPoint(point, 0, nil, &displayCount) == .success, displayCount > 0 else { return false }
         // AX hit testing also rejects clipped and covered elements.
@@ -253,7 +294,11 @@ enum ChatGPTSidebarNavigation {
             guard let parent = element(node, kAXParentAttribute) else { break }
             node = parent
         }
-        guard matched, NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
+        guard matched else {
+            logger.notice("Click rejected: point covered or hit a different element")
+            return false
+        }
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
               let focused = element(AXUIElementCreateApplication(pid), kAXFocusedWindowAttribute), CFEqual(focused, window),
               let down = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown, mouseCursorPosition: point, mouseButton: .left),
               let up = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: point, mouseButton: .left) else { return false }

@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import ApplicationServices
 
 @main struct ChatGPTSidebarNavigationTests {
@@ -35,6 +36,10 @@ import ApplicationServices
         var another = colored
         another.id = 43; another.label = "Other"
         require(!ChatGPTSidebarNavigation.rows(in: N(id: 44, role: kAXGroupRole, children: [colored, another])).contains { $0.node.current }, "Ambiguous background rows fail without clicking")
+        let viewport = CGRect(x: 0, y: 40, width: 300, height: 400)
+        let partial = ChatGPTSidebarNavigation.visibleRect(frame: CGRect(x: 0, y: 20, width: 300, height: 50), window: CGRect(x: 0, y: 0, width: 1000, height: 800), clips: [viewport])
+        require(partial == CGRect(x: 0, y: 40, width: 300, height: 30), "Partially clipped row uses visible portion, still requires live hit test")
+        require(ChatGPTSidebarNavigation.visibleRect(frame: CGRect(x: 0, y: 0, width: 300, height: 20), window: viewport, clips: []) == nil, "Offscreen rows never supply click coordinates")
         let root = N(id: 0, role: kAXGroupRole, children: [
             chat(1, "Pinned", current: true),
             N(id: 2, role: kAXButtonRole, classes: ["sidebar-item"], label: "Project", children: [chat(3, "Project chat")]),
