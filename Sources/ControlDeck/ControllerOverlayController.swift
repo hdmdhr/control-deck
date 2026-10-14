@@ -15,8 +15,14 @@ struct ProfileWheelEntry: Identifiable {
 
 @MainActor
 final class ControllerOverlayController {
+    private enum OverlayKind {
+        case profileWheel, reasoning, context
+    }
+
     private var panel: NSPanel?
     private var hideWorkItem: DispatchWorkItem?
+    private var activeOverlay: OverlayKind?
+    private var presentationGeneration: UInt64 = 0
 
     func showProfileWheel(
         profiles: [ControllerProfile],
@@ -37,6 +43,7 @@ final class ControllerOverlayController {
         )
         show(
             AnyView(view),
+            kind: .profileWheel,
             size: NSSize(width: 760, height: 760)
         )
     }
@@ -54,6 +61,7 @@ final class ControllerOverlayController {
         )
         show(
             AnyView(view),
+            kind: .reasoning,
             size: NSSize(width: 460, height: 250)
         )
     }
@@ -64,6 +72,10 @@ final class ControllerOverlayController {
         profiles: [ControllerProfile],
         slots: [ProfileWheelSlot]
     ) {
+        if activeOverlay == .context {
+            hide()
+            return
+        }
         hideWorkItem?.cancel()
         let view = ContextControllerOverlay(
             profile: profile,
@@ -73,6 +85,7 @@ final class ControllerOverlayController {
         )
         show(
             AnyView(view),
+            kind: .context,
             size: NSSize(width: 1_060, height: 880),
             acceptsMouseEvents: true
         )
@@ -82,20 +95,29 @@ final class ControllerOverlayController {
     func hide() {
         hideWorkItem?.cancel()
         hideWorkItem = nil
+        activeOverlay = nil
+        presentationGeneration &+= 1
+        let generation = presentationGeneration
         guard let panel else { return }
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.12
             panel.animator().alphaValue = 0
-        }, completionHandler: {
-            panel.orderOut(nil)
+        }, completionHandler: { [weak self] in
+            Task { @MainActor in
+                guard let self, self.presentationGeneration == generation else { return }
+                panel.orderOut(nil)
+            }
         })
     }
 
     private func show(
         _ view: AnyView,
+        kind: OverlayKind,
         size: NSSize,
         acceptsMouseEvents: Bool = false
     ) {
+        presentationGeneration &+= 1
+        activeOverlay = kind
         let panel = panel ?? makePanel()
         self.panel = panel
         let animateEntrance = !panel.isVisible || panel.alphaValue < 0.05
@@ -156,7 +178,11 @@ final class ControllerOverlayController {
     }
 
     private func scheduleHide(after delay: TimeInterval) {
-        let item = DispatchWorkItem { [weak self] in self?.hide() }
+        let generation = presentationGeneration
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, self.presentationGeneration == generation else { return }
+            self.hide()
+        }
         hideWorkItem = item
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
     }
