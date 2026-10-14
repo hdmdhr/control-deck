@@ -349,6 +349,10 @@ final class CodexAutomation: ObservableObject {
                 bundleIdentifier: "com.anthropic.claudefordesktop",
                 fallbackPath: "/Applications/Claude.app"
             )
+        case .grokPreviousBot, .grokNextBot:
+            let result = GrokBotNavigation.navigate(offset: action == .grokPreviousBot ? -1 : 1)
+            lastResult = result.message
+            return result.succeeded
         case .cursorDictation, .grokDictation:
             lastResult = String(localized: "Hold the assigned controller button to dictate", bundle: AppResources.localizationBundle)
             return false

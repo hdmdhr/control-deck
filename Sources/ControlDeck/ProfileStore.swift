@@ -23,6 +23,7 @@ final class ProfileStore: ObservableObject {
     private let stickClickCopyPasteKey = "stickClickCopyPaste.v1"
     private let universalL2DictationKey = "universalL2Dictation.v1"
     private let assistantNativeDictationKey = "assistantNativeL2Dictation.v1"
+    private let grokBotNavigationKey = "grokBotNavigation.v1"
     private let cursorProfileMigrationKey = "cursorProfile.v1"
     private let allAppsSnapshotKey = "allAppsR2Snapshot.v1"
     private let codexUniversalDictationKey = "codexUniversalDictation.v1"
@@ -198,6 +199,22 @@ final class ProfileStore: ObservableObject {
         if !UserDefaults.standard.bool(forKey: codexUniversalDictationKey) {
             for index in profiles.indices { profiles[index].migrateCodexUniversalDictation() }
             UserDefaults.standard.set(true, forKey: codexUniversalDictationKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: grokBotNavigationKey) {
+            for index in profiles.indices where profiles[index].kind == .grokBot {
+                let replacements: [(ControllerInput, MappedAction, MappedAction)] = [
+                    (.dpadUp, .arrowUp, .grokPreviousBot),
+                    (.dpadLeft, .arrowLeft, .grokPreviousBot),
+                    (.dpadDown, .arrowDown, .grokNextBot),
+                    (.dpadRight, .arrowRight, .grokNextBot)
+                ]
+                for (input, previous, next) in replacements
+                where profiles[index].action(for: input) == previous {
+                    profiles[index].setAction(next, for: input)
+                }
+            }
+            UserDefaults.standard.set(true, forKey: grokBotNavigationKey)
         }
 
         if let data = try? JSONEncoder().encode(profiles) {

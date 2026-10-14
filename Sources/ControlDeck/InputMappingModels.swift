@@ -435,6 +435,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case systemDictation
     case cursorDictation
     case grokDictation
+    case grokPreviousBot
+    case grokNextBot
     case showControllerOverlay
     case deleteTextWithConfirmation
 
@@ -563,6 +565,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .openSpotify: String(localized: "Open Spotify", bundle: AppResources.localizationBundle)
         case .openClaude: String(localized: "Open Claude", bundle: AppResources.localizationBundle)
         case .cursorDictation: String(localized: "Cursor · Hold to dictate", bundle: AppResources.localizationBundle)
+        case .grokPreviousBot: String(localized: "Grok Bot · Previous bot", bundle: AppResources.localizationBundle)
+        case .grokNextBot: String(localized: "Grok Bot · Next bot", bundle: AppResources.localizationBundle)
         case .grokDictation: String(localized: "Grok Bot · Hold to dictate", bundle: AppResources.localizationBundle)
         case .systemDictation: String(localized: "Universal dictation", bundle: AppResources.localizationBundle)
         case .showControllerOverlay: String(localized: "Show controller overlay", bundle: AppResources.localizationBundle)
@@ -590,7 +594,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
              .presentationPointer, .presentationNotesUp,
              .presentationNotesDown, .presentationExit:
             .presentation
-        case .slackJumpConversation, .slackPreviousUnread,
+        case .grokPreviousBot, .grokNextBot, .slackJumpConversation, .slackPreviousUnread,
              .slackNextUnread, .slackThreads, .slackActivity,
              .slackHuddle, .mailArchive, .mailReply, .mailUnread:
             .communication
@@ -1205,10 +1209,17 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         bundleIdentifier: "com.todesktop.230313mzl4w4u92", dictation: .cursorDictation
     )
 
-    static let grokBot = desktopAssistant(
-        kind: .grokBot, name: "Grok Bot",
-        bundleIdentifier: "com.anysphere.sand", dictation: .grokDictation
-    )
+    static let grokBot: ControllerProfile = {
+        var profile = desktopAssistant(
+            kind: .grokBot, name: "Grok Bot",
+            bundleIdentifier: "com.anysphere.sand", dictation: .grokDictation
+        )
+        profile.setAction(.grokPreviousBot, for: .dpadUp)
+        profile.setAction(.grokPreviousBot, for: .dpadLeft)
+        profile.setAction(.grokNextBot, for: .dpadDown)
+        profile.setAction(.grokNextBot, for: .dpadRight)
+        return profile
+    }()
 
     /// Shared, application-neutral controls avoid invoking Codex-only commands.
     private static func desktopAssistant(

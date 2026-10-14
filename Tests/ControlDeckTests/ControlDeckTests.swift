@@ -101,6 +101,21 @@ struct ControlDeckLogicTestRunner {
         previousCodex.migrateCodexUniversalDictation()
         expect(previousCodex.action(for: .l2) == .copy,
                "Codex dictation migration preserves a custom L2 action")
+        expect(ControllerProfile.grokBot.action(for: .dpadUp) == .grokPreviousBot &&
+               ControllerProfile.grokBot.action(for: .dpadLeft) == .grokPreviousBot &&
+               ControllerProfile.grokBot.action(for: .dpadDown) == .grokNextBot &&
+               ControllerProfile.grokBot.action(for: .dpadRight) == .grokNextBot,
+               "Grok directional controls follow previous and next bot convention")
+        expect((try? GrokBotNavigation.adjacentIndex(names: ["A", "B", "C"], currentNames: ["B"], offset: 1)) == 2 &&
+               (try? GrokBotNavigation.adjacentIndex(names: ["A", "B", "C"], currentNames: ["B"], offset: -1)) == 0,
+               "bot navigation follows sidebar order in both directions")
+        expect((try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["A"], offset: -1)) == nil &&
+               (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["B"], offset: 1)) == nil,
+               "bot navigation stops at list boundaries")
+        expect((try? GrokBotNavigation.adjacentIndex(names: ["A", "A"], currentNames: ["A"], offset: 1)) == nil &&
+               (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["A", "B"], offset: 1)) == nil &&
+               (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["C"], offset: 1)) == nil,
+               "bot navigation rejects duplicates, ambiguous selection and unknown current bot")
         let snapshotEvents = AppSnapshotShortcut.events() ?? []
         expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
                "app snapshot uses four modifier transitions")
