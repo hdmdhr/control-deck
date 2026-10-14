@@ -11,6 +11,18 @@ import ApplicationServices
         if !value() { fatalError(message) }
     }
     static func main() throws {
+        let activeTitle = N(id: 30, role: kAXGroupRole,
+            classes: ["flex", "text-base", "leading-5", "text-[var(--color-text)]"])
+        let inactiveTitle = N(id: 31, role: kAXGroupRole,
+            classes: ["flex", "text-base", "leading-5", "text-default"])
+        require(ChatGPTSidebarNavigation.isCurrent(ariaCurrent: "", descendants: [activeTitle]), "Missing AXARIA current uses source-backed active title")
+        require(!ChatGPTSidebarNavigation.isCurrent(ariaCurrent: "", descendants: [inactiveTitle]), "Inactive title stays inactive")
+        require(ChatGPTSidebarNavigation.isCurrent(ariaCurrent: "false", descendants: [activeTitle]), "Active title also works with a false AX default")
+        let menuOpenRow = N(id: 32, role: kAXButtonRole, classes: ["sidebar-item", "bg-primary-ghost-hover", "hover:bg-primary-ghost-hover"], children: [inactiveTitle])
+        require(!ChatGPTSidebarNavigation.isCurrent(ariaCurrent: "", descendants: [menuOpenRow]), "Menu-open background is not selection")
+        require(ChatGPTSidebarNavigation.isCurrent(ariaCurrent: "page", descendants: []), "ARIA current continues working")
+        let nestedConversation = N(id: 33, role: kAXButtonRole, classes: ["sidebar-item", marker], label: "nested", children: [activeTitle])
+        require(!ChatGPTSidebarNavigation.isCurrent(ariaCurrent: "", descendants: [nestedConversation]), "Do not borrow another conversation selection")
         let root = N(id: 0, role: kAXGroupRole, children: [
             chat(1, "Pinned", current: true),
             N(id: 2, role: kAXButtonRole, classes: ["sidebar-item"], label: "Project", children: [chat(3, "Project chat")]),

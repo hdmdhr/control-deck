@@ -57,6 +57,20 @@ enum ChatGPTSidebarNavigation {
             && node.classes.contains("data-[app-action-sidebar-thread-selected=true]:bg-primary-ghost-hover") && !node.label.isEmpty
     }
 
+    /// ChatGPT 26.1007's _zo title uses this exact class only for isActive.
+    /// The row's background class is deliberately NOT sufficient: opening its
+    /// menu applies that same background to an inactive conversation.
+    static func isCurrent(ariaCurrent: String, descendants: [Node]) -> Bool {
+        if ariaCurrent == "page" || ariaCurrent == "true" { return true }
+        func activeTitle(_ node: Node) -> Bool {
+            if isConversation(node) { return false }
+            let title = node.classes.contains("text-base") && node.classes.contains("leading-5")
+            if title && node.classes.contains("text-[var(--color-text)]") { return true }
+            return node.children.contains(where: activeTitle)
+        }
+        return descendants.contains(where: activeTitle)
+    }
+
     private struct Snapshot {
         let rows: [Row]
         let elements: [Int: AXUIElement]
@@ -91,7 +105,8 @@ enum ChatGPTSidebarNavigation {
             index = try adjacentIndex(rows: initial.rows, remembered: previous, offset: offset)
         } catch SelectionError.boundary { return result(false, "ChatGPT has no adjacent sidebar conversation") }
         catch {
-            logger.error("Current sidebar row missing, rows=\(initial.rows.count, privacy: .public)")
+            let backgroundRows = initial.rows.filter { $0.node.classes.contains("bg-primary-ghost-hover") }.count
+            logger.error("Current sidebar row missing, rows=\(initial.rows.count, privacy: .public), backgroundRows=\(backgroundRows, privacy: .public)")
             return result(false, "ChatGPT current sidebar conversation is unavailable")
         }
         let target = initial.rows[index]
@@ -160,9 +175,10 @@ enum ChatGPTSidebarNavigation {
             let names = attributeNames(node)
             let expanded = names.contains(kAXExpandedAttribute) ? attribute(node, kAXExpandedAttribute) as? Bool : nil
             let current = string(node, "AXARIACurrent")
+            let childNodes = expanded == false ? [] : children(node).map { read($0, depth + 1) }
             return Node(id: id, role: string(node, kAXRoleAttribute), classes: classes(node),
-                        label: label(node), current: current == "page" || current == "true",
-                        expanded: expanded, children: expanded == false ? [] : children(node).map { read($0, depth + 1) })
+                        label: label(node), current: isCurrent(ariaCurrent: current, descendants: childNodes),
+                        expanded: expanded, children: childNodes)
         }
         let root = read(sidebar, 0)
         let parsed = rows(in: root)
