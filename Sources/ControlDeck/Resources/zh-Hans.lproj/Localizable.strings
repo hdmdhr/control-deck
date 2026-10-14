@@ -1071,3 +1071,45 @@
 "Hold the assigned controller button to dictate" = "按住所分配的手柄按键进行听写";
 
 "Bring the dictation app to the foreground first" = "请先将听写应用切到台前";
+
+"Buttons" = "按键";
+
+"Touch surface" = "触摸板手势";
+
+"System layers" = "组合操作";
+
+"Two-finger movement" = "双指移动";
+
+"Scroll for all controls · closes after 20 seconds" = "滚动查看全部操作 · 20 秒后关闭";
+
+"Swipes are available only when movement uses Gestures mode." = "仅在对应移动模式设为「手势」时，滑动手势才会触发。";
+
+"Move the left stick to choose a profile; release Options to switch." = "移动左摇杆选择配置，松开 Options 切换应用。";
+
+"Hold Create + right stick" = "按住 Create + 右摇杆";
+
+"Up: smarter · down: faster reasoning in Codex." = "向上：更深入 · 向下：更快速（Codex 推理强度）。";
+
+"Right stick or D-pad left/right: switch apps · release: select · Circle: cancel." = "右摇杆或方向键左右：切换应用 · 松开：选定 · ○：取消。";
+
+"Button mappings follow the current profile. Hold L2 for dictation; use the combinations above for system layers." = "按键作用随当前配置变化。按住 L2 听写；组合操作见上方。";
+
+"Grok Bot · Previous bot" = "Grok Bot · 上一个 Bot";
+
+"Grok Bot · Next bot" = "Grok Bot · 下一个 Bot";
+
+"Bring Grok Bot to the foreground to switch bots" = "请先将 Grok Bot 切到台前，再切换 Bot";
+
+"Grok Bot focused window is unavailable" = "无法读取 Grok Bot 当前窗口";
+
+"Grok Bot sidebar is unavailable or ambiguous" = "无法唯一确定 Grok Bot 的侧栏列表";
+
+"Grok Bot focus changed; try again" = "Grok Bot 焦点已改变，请重试";
+
+"Grok Bot could not switch bots" = "Grok Bot 无法切换 Bot";
+
+"Grok Bot switched bots" = "已请求切换 Bot";
+
+"Grok Bot has no adjacent bot in this direction" = "已到 Bot 列表的边界";
+
+"Grok Bot current bot is unavailable or ambiguous" = "无法确定 Grok Bot 当前选中的 Bot";

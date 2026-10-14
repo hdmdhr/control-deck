@@ -73,9 +73,10 @@ final class ControllerOverlayController {
         )
         show(
             AnyView(view),
-            size: NSSize(width: 590, height: 495)
+            size: NSSize(width: 1_060, height: 880),
+            acceptsMouseEvents: true
         )
-        scheduleHide(after: 4)
+        scheduleHide(after: 20)
     }
 
     func hide() {
@@ -90,11 +91,24 @@ final class ControllerOverlayController {
         })
     }
 
-    private func show(_ view: AnyView, size: NSSize) {
+    private func show(
+        _ view: AnyView,
+        size: NSSize,
+        acceptsMouseEvents: Bool = false
+    ) {
         let panel = panel ?? makePanel()
         self.panel = panel
         let animateEntrance = !panel.isVisible || panel.alphaValue < 0.05
-        panel.setContentSize(size)
+        let mouse = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first(where: {
+            NSMouseInRect(mouse, $0.frame, false)
+        }) ?? NSScreen.main
+        let available = screen?.visibleFrame.size ?? size
+        panel.ignoresMouseEvents = !acceptsMouseEvents
+        panel.setContentSize(NSSize(
+            width: min(size.width, available.width - 24),
+            height: min(size.height, available.height - 24)
+        ))
         panel.contentView = NSHostingView(rootView: view)
         if animateEntrance { position(panel) }
         guard animateEntrance else {
@@ -410,7 +424,7 @@ private struct ReasoningControllerOverlay: View {
     }
 }
 
-private struct ContextControllerOverlay: View {
+struct ContextControllerOverlay: View {
     let profile: ControllerProfile
     let task: ControllerOverlayTask?
     let profiles: [ControllerProfile]
@@ -418,102 +432,149 @@ private struct ContextControllerOverlay: View {
 
     var body: some View {
         OverlaySurface {
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(spacing: 13) {
-                    ProfileLogoView(profile: profile, size: 36)
-                        .frame(width: 44, height: 44)
-                        .background(
-                            Color.accentColor.opacity(0.16),
-                            in: RoundedRectangle(
-                                cornerRadius: 12,
-                                style: .continuous
-                            )
-                        )
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(profile.displayName)
-                            .font(.title3.weight(.semibold))
-                        Text("Current controller profile")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    if let task {
-                        VStack(alignment: .trailing, spacing: 3) {
-                            Text(task.title).lineLimit(1)
-                            Label(
-                                task.state.label,
-                                systemImage: "circle.fill"
-                            )
-                            .foregroundStyle(Color(nsColor: task.state.color))
-                        }
-                        .font(.caption)
-                        .frame(maxWidth: 190, alignment: .trailing)
-                    }
-                }
-
+            VStack(alignment: .leading, spacing: 14) {
+                header
                 Divider()
-                Text("PRIMARY CONTROLS")
-                    .font(.caption2.weight(.bold))
-                    .tracking(1.2)
+                ScrollView {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(alignment: .top, spacing: 28) {
+                            buttonControls.frame(minWidth: 400)
+                            touchControls.frame(minWidth: 400)
+                        }
+                        VStack(alignment: .leading, spacing: 20) {
+                            buttonControls
+                            touchControls
+                        }
+                    }
+                    .padding(.trailing, 6)
+                }
+                .scrollIndicators(.visible)
+                Divider()
+                Text("Scroll for all controls · closes after 20 seconds")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-                LazyVGrid(
-                    columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ],
-                    spacing: 8
-                ) {
-                    mapping(.cross)
-                    mapping(.circle)
-                    mapping(.l1)
-                    mapping(.r1)
-                    mapping(.l2)
-                    mapping(.r2)
-                }
-                Divider()
-                HStack {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Hold Options")
-                            .font(.headline)
-                        Text("Choose one of eight profiles with the left stick")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    HStack(spacing: 6) {
-                        ForEach(slots) { slot in
-                            if let wheelProfile = profiles.first(where: {
-                                $0.kind == slot.profileKind
-                            }) {
-                                ProfileLogoView(
-                                    profile: wheelProfile,
-                                    size: 28
-                                )
-                            }
-                        }
-                    }
-                }
-                Text("Hold Create + move the right stick to adjust reasoning")
-                    .font(.caption.weight(.medium))
-                Text("Hold touchpad · right stick or D-pad to move · release to select")
-                    .font(.caption.weight(.medium))
             }
         }
     }
 
-    private func mapping(_ input: ControllerInput) -> some View {
-        HStack(spacing: 9) {
-            Text(input.shortLabel)
-                .font(.caption.weight(.bold))
-                .frame(width: 36, height: 28)
-                .background(
-                    .white.opacity(0.68),
-                    in: RoundedRectangle(cornerRadius: 8)
-                )
-            Text(profile.action(for: input).label)
-                .font(.caption)
-                .lineLimit(1)
+    private var header: some View {
+        HStack(spacing: 13) {
+            ProfileLogoView(profile: profile, size: 36)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(profile.displayName).font(.title3.weight(.semibold))
+                Text("Current controller profile")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Spacer()
+            if let task {
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(task.title).lineLimit(1)
+                    Label(task.state.label, systemImage: "circle.fill")
+                        .foregroundStyle(Color(nsColor: task.state.color))
+                }
+                .font(.caption)
+                .frame(maxWidth: 240, alignment: .trailing)
+            }
         }
+    }
+
+    private var buttonControls: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            sectionTitle("Buttons", icon: "gamecontroller")
+            ForEach(ControllerInput.allCases) { input in
+                mappingRow(buttonLabel(input), action: profile.action(for: input).label)
+                    .accessibilityLabel(input.label + ": " + profile.action(for: input).label)
+            }
+            Divider().padding(.vertical, 5)
+            sectionTitle("Sticks", icon: "l.joystick")
+            ForEach([ControllerStick.left, .right]) { stick in
+                mappingRow(stick.label, action: stickAction(stick))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var touchControls: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            sectionTitle("Touch surface", icon: "hand.draw")
+            mappingRow(localized("One-finger movement"), action: profile.touchpad.oneFingerMode.label)
+            mappingRow(localized("Two-finger movement"), action: localized(profile.touchpad.twoFingerScroll ? "Scroll" : "Gestures"))
+            ForEach(TouchGesture.allCases) { gesture in
+                mappingRow(gesture.label, action: profile.touchpad.action(for: gesture).label)
+            }
+            Text("Swipes are available only when movement uses Gestures mode.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Divider().padding(.vertical, 5)
+            sectionTitle("System layers", icon: "square.3.layers.3d")
+            layer("Hold Options", detail: "Move the left stick to choose a profile; release Options to switch.")
+            HStack(spacing: 8) {
+                ForEach(slots) { slot in
+                    if let wheelProfile = profiles.first(where: { $0.kind == slot.profileKind }) {
+                        ProfileLogoView(profile: wheelProfile, size: 24)
+                            .accessibilityLabel(wheelProfile.displayName)
+                    }
+                }
+            }
+            .padding(.bottom, 3)
+            layer("Hold Create + right stick", detail: "Up: smarter · down: faster reasoning in Codex.")
+            layer("Hold touchpad click", detail: "Right stick or D-pad left/right: switch apps · release: select · Circle: cancel.")
+            Text("Button mappings follow the current profile. Hold L2 for dictation; use the combinations above for system layers.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func sectionTitle(_ title: LocalizedStringKey, icon: String) -> some View {
+        Label(title, systemImage: icon)
+            .font(.headline)
+            .padding(.bottom, 3)
+    }
+
+    private func layer(_ title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.caption.weight(.semibold))
+            Text(detail).font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 3)
+    }
+
+    private func mappingRow(_ control: String, action: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(control)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 154, alignment: .leading)
+            Text(action)
+                .font(.system(size: 12))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func buttonLabel(_ input: ControllerInput) -> String {
+        switch input {
+        case .cross: "×  " + input.label
+        case .circle: "○  " + input.label
+        case .square: "□  " + input.label
+        case .triangle: "△  " + input.label
+        case .dpadUp, .dpadDown, .dpadLeft, .dpadRight:
+            input.shortLabel + "  " + input.label
+        default: input.label
+        }
+    }
+
+    private func stickAction(_ stick: ControllerStick) -> String {
+        if profile.pointer.source == stick { return localized("Pointer") }
+        if profile.pointer.scrollSource == stick { return localized("Scroll") }
+        return localized("Off")
+    }
+
+    private func localized(_ key: String) -> String {
+        AppResources.localizationBundle.localizedString(forKey: key, value: key, table: nil)
     }
 }

@@ -1071,3 +1071,45 @@
 "Hold the assigned controller button to dictate" = "Hold the assigned controller button to dictate";
 
 "Bring the dictation app to the foreground first" = "Bring the dictation app to the foreground first";
+
+"Buttons" = "Buttons";
+
+"Touch surface" = "Touch surface";
+
+"System layers" = "System layers";
+
+"Two-finger movement" = "Two-finger movement";
+
+"Scroll for all controls · closes after 20 seconds" = "Scroll for all controls · closes after 20 seconds";
+
+"Swipes are available only when movement uses Gestures mode." = "Swipes are available only when movement uses Gestures mode.";
+
+"Move the left stick to choose a profile; release Options to switch." = "Move the left stick to choose a profile; release Options to switch.";
+
+"Hold Create + right stick" = "Hold Create + right stick";
+
+"Up: smarter · down: faster reasoning in Codex." = "Up: smarter · down: faster reasoning in Codex.";
+
+"Right stick or D-pad left/right: switch apps · release: select · Circle: cancel." = "Right stick or D-pad left/right: switch apps · release: select · Circle: cancel.";
+
+"Button mappings follow the current profile. Hold L2 for dictation; use the combinations above for system layers." = "Button mappings follow the current profile. Hold L2 for dictation; use the combinations above for system layers.";
+
+"Grok Bot · Previous bot" = "Grok Bot · Previous bot";
+
+"Grok Bot · Next bot" = "Grok Bot · Next bot";
+
+"Bring Grok Bot to the foreground to switch bots" = "Bring Grok Bot to the foreground to switch bots";
+
+"Grok Bot focused window is unavailable" = "Grok Bot focused window is unavailable";
+
+"Grok Bot sidebar is unavailable or ambiguous" = "Grok Bot sidebar is unavailable or ambiguous";
+
+"Grok Bot focus changed; try again" = "Grok Bot focus changed; try again";
+
+"Grok Bot could not switch bots" = "Grok Bot could not switch bots";
+
+"Grok Bot switched bots" = "Grok Bot switched bots";
+
+"Grok Bot has no adjacent bot in this direction" = "Grok Bot has no adjacent bot in this direction";
+
+"Grok Bot current bot is unavailable or ambiguous" = "Grok Bot current bot is unavailable or ambiguous";

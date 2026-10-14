@@ -1071,3 +1071,45 @@
 "Hold the assigned controller button to dictate" = "割り当てたコントローラのボタンを押して音声入力してください";
 
 "Bring the dictation app to the foreground first" = "先に音声入力するアプリを最前面にしてください";
+
+"Buttons" = "ボタン";
+
+"Touch surface" = "タッチパッドのジェスチャ";
+
+"System layers" = "組み合わせ操作";
+
+"Two-finger movement" = "2 本指の移動";
+
+"Scroll for all controls · closes after 20 seconds" = "スクロールですべての操作を表示 · 20 秒後に閉じます";
+
+"Swipes are available only when movement uses Gestures mode." = "スワイプは対応する移動モードが「ジェスチャ」の場合のみ有効です。";
+
+"Move the left stick to choose a profile; release Options to switch." = "左スティックでプロファイルを選び、Options を離してアプリを切り替えます。";
+
+"Hold Create + right stick" = "Create を押しながら右スティック";
+
+"Up: smarter · down: faster reasoning in Codex." = "上：より深く · 下：より速く（Codex の推論強度）。";
+
+"Right stick or D-pad left/right: switch apps · release: select · Circle: cancel." = "右スティックまたは方向キーの左右：アプリ切替 · 離す：決定 · ○：キャンセル。";
+
+"Button mappings follow the current profile. Hold L2 for dictation; use the combinations above for system layers." = "ボタン操作は現在のプロファイルに従います。L2 を押して音声入力し、組み合わせ操作は上記を参照してください。";
+
+"Grok Bot · Previous bot" = "Grok Bot · 前の Bot";
+
+"Grok Bot · Next bot" = "Grok Bot · 次の Bot";
+
+"Bring Grok Bot to the foreground to switch bots" = "Bot を切り替える前に Grok Bot を最前面にしてください";
+
+"Grok Bot focused window is unavailable" = "Grok Bot の現在のウインドウを読み取れません";
+
+"Grok Bot sidebar is unavailable or ambiguous" = "Grok Bot のサイドバー一覧を一意に特定できません";
+
+"Grok Bot focus changed; try again" = "Grok Bot のフォーカスが変わりました。再試行してください";
+
+"Grok Bot could not switch bots" = "Grok Bot で Bot を切り替えられませんでした";
+
+"Grok Bot switched bots" = "Bot の切り替えを要求しました";
+
+"Grok Bot has no adjacent bot in this direction" = "Bot 一覧の端に達しました";
+
+"Grok Bot current bot is unavailable or ambiguous" = "Grok Bot で現在選択中の Bot を特定できません";
