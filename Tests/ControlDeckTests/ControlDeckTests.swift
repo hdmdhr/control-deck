@@ -64,9 +64,9 @@ struct ControlDeckLogicTestRunner {
         )
         expect(
             ControllerProfile.defaults.allSatisfy {
-                $0.action(for: .r2) == ($0.kind == .codex ? .codexAppSnapshot : .screenshotSelection)
+                $0.action(for: .r2) == .codexAppSnapshot
             },
-            "Codex R2 captures the app while other profiles capture a selected area"
+            "Every profile uses the global app snapshot shortcut on R2"
         )
         var legacyCodexCapture = ControllerProfile.codex
         legacyCodexCapture.setAction(.screenshotSelection, for: .r2)
@@ -400,7 +400,7 @@ struct ControlDeckLogicTestRunner {
         expect(
             ControllerProfile.videoEditing.action(for: .l2) == .systemDictation &&
                 ControllerProfile.videoEditing.action(for: .r2) ==
-                    .screenshotSelection,
+                    .codexAppSnapshot,
             "Video editors keep universal dictation and reliable R2 capture"
         )
         expect(
