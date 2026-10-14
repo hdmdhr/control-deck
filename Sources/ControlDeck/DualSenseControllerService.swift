@@ -1,3 +1,4 @@
+import AppKit
 import CoreHaptics
 import Foundation
 import GameController
@@ -129,6 +130,31 @@ final class DualSenseControllerService: ObservableObject {
             }
         )
 
+        // Controller mappings can change while the app is backgrounded.
+        // Reapply our preference when returning and after user customization.
+        notificationTokens.append(
+            NotificationCenter.default.addObserver(
+                forName: NSApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in self?.reinforceSystemGestureSuppression() }
+            }
+        )
+        notificationTokens.append(
+            NotificationCenter.default.addObserver(
+                forName: .GCControllerUserCustomizationsDidChange,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                guard let customized = notification.object as? GCController else { return }
+                Task { @MainActor in
+                    guard self?.controller === customized else { return }
+                    self?.reinforceSystemGestureSuppression()
+                }
+            }
+        )
+
         hidService.start()
         GCController.startWirelessControllerDiscovery {
             // Paired DualSense controllers connect through the same
@@ -253,9 +279,9 @@ final class DualSenseControllerService: ObservableObject {
         return closed
     }
 
-    /// Reassert ownership immediately before Bluetooth audio changes the HID
-    /// report shape. Some macOS releases reset a controller element's preferred
-    /// gesture handling after profile or transport activity.
+    /// Request direct input delivery again after lifecycle or profile changes.
+    /// Apple's API documents this as a preference, not guaranteed suppression;
+    /// background event monitoring does not grant exclusive controller access.
     func reinforceSystemGestureSuppression() {
         guard let controller else { return }
         for element in controller.physicalInputProfile.allElements {
@@ -393,9 +419,8 @@ final class DualSenseControllerService: ObservableObject {
     }
 
     private func configure(_ gamepad: GCExtendedGamepad) {
-        // ControlDeck is the active input owner, not a game. Disable every
-        // system gesture exposed by the physical profile, including analogue
-        // triggers such as L2/R2, so macOS Games cannot act on the same input.
+        // Request suppression for all mapped elements, including L2/R2.
+        // macOS can still override this preference for system shortcuts.
         for element in gamepad.allElements {
             element.preferredSystemGestureState = .disabled
         }
