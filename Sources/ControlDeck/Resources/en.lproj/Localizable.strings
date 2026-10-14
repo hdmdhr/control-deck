@@ -1047,3 +1047,7 @@
 "Native Codex control activated" = "Native Codex control activated";
 
 "Could not activate native Codex control" = "Could not activate native Codex control";
+
+"Release keyboard modifiers before taking an app snapshot" = "Release keyboard modifiers before taking an app snapshot";
+
+"Sent app snapshot shortcut" = "Sent app snapshot shortcut";

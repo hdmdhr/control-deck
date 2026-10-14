@@ -77,6 +77,13 @@ struct ControlDeckLogicTestRunner {
         legacyCodexCapture.migrateLegacyCodexSnapshot()
         expect(legacyCodexCapture.action(for: .r2) == .copy,
                "Codex R2 migration preserves custom actions")
+        let snapshotEvents = AppSnapshotShortcut.events() ?? []
+        expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
+               "app snapshot uses four modifier transitions")
+        expect(snapshotEvents.map { $0.getIntegerValueField(.keyboardEventKeycode) } == [55, 54, 54, 55],
+               "app snapshot presses left then right Command and releases in reverse order")
+        expect(snapshotEvents.map { $0.flags.rawValue } == [0x100008, 0x100018, 0x100008, 0],
+               "app snapshot overlaps both Command sides and leaves no synthetic modifier held")
         var appSwitcherHold = AppSwitcherHoldGate()
         let deferredTouchpad = appSwitcherHold.handle(
             .touchpadClick,

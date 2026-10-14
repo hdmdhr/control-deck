@@ -1047,3 +1047,7 @@
 "Native Codex control activated" = "Codex の標準コントロールを操作しました";
 
 "Could not activate native Codex control" = "Codex の標準コントロールを操作できませんでした";
+
+"Release keyboard modifiers before taking an app snapshot" = "アプリのスナップショットを撮る前に修飾キーを放してください";
+
+"Sent app snapshot shortcut" = "アプリのスナップショットのショートカットを送信しました";

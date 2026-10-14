@@ -19,6 +19,7 @@ swiftc \
   "$ROOT/Sources/ControlDeck/ShiftLayerModels.swift" \
   "$ROOT/Sources/ControlDeck/QuickTutorial.swift" \
   "$ROOT/Sources/ControlDeck/CodexDictationIntent.swift" \
+  "$ROOT/Sources/ControlDeck/AppSnapshotShortcut.swift" \
   "$ROOT/Sources/ControlDeck/TouchpadGestureEngine.swift" \
   "$ROOT/Sources/ControlDeck/PointerService.swift" \
   "$ROOT/Sources/ControlDeck/ScreenshotEditorModels.swift" \

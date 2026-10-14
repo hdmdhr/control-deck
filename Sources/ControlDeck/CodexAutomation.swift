@@ -109,9 +109,7 @@ final class CodexAutomation: ObservableObject {
         case .codexDecline: return run(.decline)
         case .codexDictation: return toggleDictation()
         case .codexAppSnapshot:
-            return performNativeCodexButton(
-                exact: ["应用快照", "應用程式快照", "App snapshot", "アプリのスナップショット"]
-            )
+            return appSnapshotShortcut()
         case .codexFastMode: return run(.toggleFastMode)
         case .codexContinueInNewTask: return run(.continueInNewTask)
 
@@ -653,6 +651,27 @@ final class CodexAutomation: ObservableObject {
         let result = app.activate(options: [.activateAllWindows])
         lastResult = result ? String(localized: "Application focused", bundle: AppResources.localizationBundle) : String(localized: "Could not focus application", bundle: AppResources.localizationBundle)
         return result
+    }
+
+    private func appSnapshotShortcut() -> Bool {
+        guard accessibilityTrusted || AXIsProcessTrusted() else {
+            requestAccessibility()
+            return false
+        }
+        let modifiers: CGEventFlags = [.maskCommand, .maskShift, .maskControl, .maskAlternate, .maskSecondaryFn]
+        guard CGEventSource.flagsState(.combinedSessionState).intersection(modifiers).isEmpty else {
+            lastResult = String(localized: "Release keyboard modifiers before taking an app snapshot", bundle: AppResources.localizationBundle)
+            return false
+        }
+        guard let events = AppSnapshotShortcut.events() else {
+            lastResult = String(localized: "Unable to create keyboard event", bundle: AppResources.localizationBundle)
+            return false
+        }
+        // Do not activate Codex: its global shortcut captures the foreground app.
+        // Post the whole balanced chord together; no delayed release can be cancelled.
+        for event in events { event.post(tap: .cghidEventTap) }
+        lastResult = String(localized: "Sent app snapshot shortcut", bundle: AppResources.localizationBundle)
+        return true
     }
 
     private func key(

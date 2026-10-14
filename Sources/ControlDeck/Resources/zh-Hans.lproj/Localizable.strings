@@ -1047,3 +1047,7 @@
 "Native Codex control activated" = "已触发 Codex 原生控件";
 
 "Could not activate native Codex control" = "无法触发 Codex 原生控件";
+
+"Release keyboard modifiers before taking an app snapshot" = "请先松开键盘修饰键，再拍摄应用快照";
+
+"Sent app snapshot shortcut" = "已发送应用快照快捷键";
