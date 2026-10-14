@@ -349,7 +349,8 @@ enum CursorConversationNavigation {
             return workspace.expanded == expanded
         }
         guard focused() else { return result(false, "Cursor focus changed; try again") }
-        _ = AXUIElementPerformAction(target, kAXPressAction as CFString)
+        let pressResult = AXUIElementPerformAction(target, kAXPressAction as CFString)
+        logger.debug("Cursor AXPress result=\(pressResult.rawValue, privacy: .public)")
         for attempt in 0..<2 {
             for _ in 0..<3 {
                 try? await Task.sleep(nanoseconds: 100_000_000)
@@ -383,33 +384,48 @@ enum CursorConversationNavigation {
         return CGRect(origin: point, size: dimensions)
     }
 
+    private enum ClickRejection: String {
+        case enabledUnavailable, disabled, hidden, minimized, missingFrame
+        case outsideWindow, offDisplay, hitTestUnavailable, hitMismatch, focusChanged, eventUnavailable
+    }
+
     @MainActor
     private static func clickVisibleButton(_ button: AXUIElement, window: AXUIElement, pid: pid_t) -> Bool {
-        guard (attribute(button, kAXEnabledAttribute) as? Bool) == true,
-              (attribute(button, "AXHidden") as? Bool) != true,
-              (attribute(window, kAXMinimizedAttribute) as? Bool) != true,
-              let frame = rect(button), let windowFrame = rect(window), windowFrame.contains(frame) else { return false }
+        func reject(_ reason: ClickRejection) -> Bool {
+            logger.error("Cursor click rejected: \(reason.rawValue, privacy: .public)")
+            return false
+        }
+        guard let enabled = attribute(button, kAXEnabledAttribute) as? Bool else { return reject(.enabledUnavailable) }
+        guard enabled else { return reject(.disabled) }
+        guard (attribute(button, "AXHidden") as? Bool) != true else { return reject(.hidden) }
+        guard (attribute(window, kAXMinimizedAttribute) as? Bool) != true else { return reject(.minimized) }
+        guard let frame = rect(button), let windowFrame = rect(window) else { return reject(.missingFrame) }
+        guard windowFrame.contains(frame) else { return reject(.outsideWindow) }
         let point = CGPoint(x: frame.midX, y: frame.midY)
         var displayCount: UInt32 = 0
-        guard CGGetDisplaysWithPoint(point, 0, nil, &displayCount) == .success, displayCount > 0 else { return false }
+        guard CGGetDisplaysWithPoint(point, 0, nil, &displayCount) == .success, displayCount > 0 else { return reject(.offDisplay) }
         // AX hit testing also rejects clipped and covered elements.
         var hit: AXUIElement?
         let system = AXUIElementCreateSystemWide()
         guard AXUIElementCopyElementAtPosition(system, Float(point.x), Float(point.y), &hit) == .success,
-              var node = hit else { return false }
+              var node = hit else { return reject(.hitTestUnavailable) }
         var matched = false
         for _ in 0..<20 {
             if CFEqual(node, button) { matched = true; break }
             guard let parent = element(node, kAXParentAttribute) else { break }
             node = parent
         }
-        guard matched, NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
-              let focused = element(AXUIElementCreateApplication(pid), kAXFocusedWindowAttribute), CFEqual(focused, window),
-              let down = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown, mouseCursorPosition: point, mouseButton: .left),
-              let up = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: point, mouseButton: .left) else { return false }
+        guard matched else { return reject(.hitMismatch) }
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
+              let focused = element(AXUIElementCreateApplication(pid), kAXFocusedWindowAttribute), CFEqual(focused, window) else {
+            return reject(.focusChanged)
+        }
+        guard let down = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown, mouseCursorPosition: point, mouseButton: .left),
+              let up = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: point, mouseButton: .left) else { return reject(.eventUnavailable) }
         // No mouse-move or cursor warp; deliver only the validated button click.
         down.post(tap: .cghidEventTap)
         up.post(tap: .cghidEventTap)
+        logger.debug("Cursor validated click posted")
         return true
     }
 
