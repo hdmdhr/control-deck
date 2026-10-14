@@ -22,6 +22,7 @@ final class AppModel: ObservableObject {
     let touchpad = TouchpadGestureEngine()
     let codexExtension = CodexExtensionService()
     let gyroTelemetry = GyroTelemetry()
+    private var chatGPTNavigationInFlight = false
 
     @Published private(set) var currentState: CodexTaskState = .disconnected
     @Published private(set) var recentTasks: [RecentCodexTask] = []
@@ -1770,7 +1771,13 @@ final class AppModel: ObservableObject {
         case .codexNextTask:
             selectAdjacentTask(offset: 1)
         case .chatGPTPreviousConversation, .chatGPTNextConversation:
+            // Ignore held-button repeats while one navigation is awaiting readback.
+            // A repeat must not display an error HUD over the target row.
+            guard !chatGPTNavigationInFlight else { return }
+            chatGPTNavigationInFlight = true
+            hud.dismiss()
             Task { @MainActor in
+                defer { chatGPTNavigationInFlight = false }
                 let succeeded = await automation.navigateChatGPTSidebar(action)
                 finish(action.label, succeeded: succeeded)
             }
