@@ -1063,3 +1063,11 @@
 "No accessible dictation button was found in this window" = "No accessible dictation button was found in this window";
 
 "Multiple or conflicting dictation controls were found" = "Multiple or conflicting dictation controls were found";
+
+"Cursor · Hold to dictate" = "Cursor · Hold to dictate";
+
+"Grok Bot · Hold to dictate" = "Grok Bot · Hold to dictate";
+
+"Hold the assigned controller button to dictate" = "Hold the assigned controller button to dictate";
+
+"Bring the dictation app to the foreground first" = "Bring the dictation app to the foreground first";

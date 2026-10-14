@@ -66,7 +66,7 @@ VALID_ACTIONS = {
     "mediaPlayPause", "mediaNext", "mediaPrevious",
     "volumeUp", "volumeDown", "volumeMute",
     "openCodex", "openChrome", "openSpotify", "openClaude",
-    "systemDictation", "showControllerOverlay", "deleteTextWithConfirmation",
+    "systemDictation", "cursorDictation", "grokDictation", "showControllerOverlay", "deleteTextWithConfirmation",
 }
 
 

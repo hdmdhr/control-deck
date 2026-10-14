@@ -49,9 +49,9 @@ struct ControlDeckLogicTestRunner {
         )
         expect(
             ControllerProfile.defaults
-                .filter { $0.kind != .codex }
+                .filter { ![.codex, .cursor, .grokBot].contains($0.kind) }
                 .allSatisfy { $0.action(for: .l2) == .systemDictation },
-            "L2 provides universal dictation in every non-Codex profile"
+            "L2 provides universal dictation outside native assistant profiles"
         )
         expect(
             ControllerProfile.codex.action(for: .l3) == .copy &&
@@ -80,6 +80,18 @@ struct ControlDeckLogicTestRunner {
         expect(CodexDictationIntent.start.matches([" dictation "]) &&
                !CodexDictationIntent.start.matches(["Start voice mode", "Send", "Dictation settings"]),
                "dictation tolerates exact-label casing and whitespace without matching unrelated controls")
+        expect(ControllerProfile.cursor.action(for: .l2) == .cursorDictation &&
+               ControllerProfile.grokBot.action(for: .l2) == .grokDictation,
+               "Cursor and Grok use their native hold-to-dictate actions")
+        let cursorShortcut = AssistantDictationShortcut.shortcut(for: .cursorDictation)
+        let grokShortcut = AssistantDictationShortcut.shortcut(for: .grokDictation)
+        expect(cursorShortcut?.bundleIdentifier == "com.todesktop.230313mzl4w4u92" &&
+               cursorShortcut?.keyCode == 46 && cursorShortcut?.flags == .maskControl,
+               "Cursor native dictation is Control M for the Cursor process")
+        expect(grokShortcut?.bundleIdentifier == "com.anysphere.sand" &&
+               grokShortcut?.keyCode == 2 && grokShortcut?.flags == .maskCommand &&
+               AssistantDictationShortcut.shortcut(for: .codexSend) == nil,
+               "Grok native dictation is Command D and unrelated actions have no shortcut")
         let snapshotEvents = AppSnapshotShortcut.events() ?? []
         expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
                "app snapshot uses four modifier transitions")

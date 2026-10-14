@@ -433,6 +433,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case openSpotify
     case openClaude
     case systemDictation
+    case cursorDictation
+    case grokDictation
     case showControllerOverlay
     case deleteTextWithConfirmation
 
@@ -560,6 +562,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .openChrome: String(localized: "Open Chrome", bundle: AppResources.localizationBundle)
         case .openSpotify: String(localized: "Open Spotify", bundle: AppResources.localizationBundle)
         case .openClaude: String(localized: "Open Claude", bundle: AppResources.localizationBundle)
+        case .cursorDictation: String(localized: "Cursor · Hold to dictate", bundle: AppResources.localizationBundle)
+        case .grokDictation: String(localized: "Grok Bot · Hold to dictate", bundle: AppResources.localizationBundle)
         case .systemDictation: String(localized: "Universal dictation", bundle: AppResources.localizationBundle)
         case .showControllerOverlay: String(localized: "Show controller overlay", bundle: AppResources.localizationBundle)
         case .deleteTextWithConfirmation: String(localized: "Text · Delete with confirmation", bundle: AppResources.localizationBundle)
@@ -619,7 +623,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
             .media
         case .openCodex, .openChrome, .openSpotify, .openClaude:
             .apps
-        case .none, .systemDictation, .screenshotSelection,
+        case .none, .systemDictation, .cursorDictation, .grokDictation, .screenshotSelection,
              .showControllerOverlay, .deleteTextWithConfirmation:
             .other
         }
@@ -1193,17 +1197,17 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
 
     static let cursor = desktopAssistant(
         kind: .cursor, name: "Cursor",
-        bundleIdentifier: "com.todesktop.230313mzl4w4u92"
+        bundleIdentifier: "com.todesktop.230313mzl4w4u92", dictation: .cursorDictation
     )
 
     static let grokBot = desktopAssistant(
         kind: .grokBot, name: "Grok Bot",
-        bundleIdentifier: "com.anysphere.sand"
+        bundleIdentifier: "com.anysphere.sand", dictation: .grokDictation
     )
 
     /// Shared, application-neutral controls avoid invoking Codex-only commands.
     private static func desktopAssistant(
-        kind: ProfileKind, name: String, bundleIdentifier: String
+        kind: ProfileKind, name: String, bundleIdentifier: String, dictation: MappedAction
     ) -> ControllerProfile {
         ControllerProfile(
             kind: kind, name: name,
@@ -1212,7 +1216,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
                 .cross: .mouseLeftClick, .circle: .escapeKey,
                 .square: .copy, .triangle: .paste,
                 .l1: .back, .r1: .forward,
-                .l2: .systemDictation, .r2: .codexAppSnapshot,
+                .l2: dictation, .r2: .codexAppSnapshot,
                 .l3: .copy, .r3: .paste,
                 .create: .appSwitcher, .options: .returnKey,
                 .ps: .openCodex,

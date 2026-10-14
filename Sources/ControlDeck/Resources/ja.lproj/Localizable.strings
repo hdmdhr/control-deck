@@ -1063,3 +1063,11 @@
 "No accessible dictation button was found in this window" = "現在のウインドウに操作可能な音声入力ボタンが見つかりません";
 
 "Multiple or conflicting dictation controls were found" = "複数または状態が競合する音声入力コントロールが見つかりました";
+
+"Cursor · Hold to dictate" = "Cursor · 押している間に音声入力";
+
+"Grok Bot · Hold to dictate" = "Grok Bot · 押している間に音声入力";
+
+"Hold the assigned controller button to dictate" = "割り当てたコントローラのボタンを押して音声入力してください";
+
+"Bring the dictation app to the foreground first" = "先に音声入力するアプリを最前面にしてください";

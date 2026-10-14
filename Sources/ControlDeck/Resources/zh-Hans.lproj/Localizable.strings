@@ -1063,3 +1063,11 @@
 "No accessible dictation button was found in this window" = "当前窗口没有可操作的听写按钮";
 
 "Multiple or conflicting dictation controls were found" = "检测到多个或状态冲突的听写控件";
+
+"Cursor · Hold to dictate" = "Cursor · 按住听写";
+
+"Grok Bot · Hold to dictate" = "Grok Bot · 按住听写";
+
+"Hold the assigned controller button to dictate" = "按住所分配的手柄按键进行听写";
+
+"Bring the dictation app to the foreground first" = "请先将听写应用切到台前";

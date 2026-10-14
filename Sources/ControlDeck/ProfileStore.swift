@@ -22,6 +22,7 @@ final class ProfileStore: ObservableObject {
     private let expandedProfileCatalogKey = "expandedProfileCatalog.v1"
     private let stickClickCopyPasteKey = "stickClickCopyPaste.v1"
     private let universalL2DictationKey = "universalL2Dictation.v1"
+    private let assistantNativeDictationKey = "assistantNativeL2Dictation.v1"
     private let cursorProfileMigrationKey = "cursorProfile.v1"
     private let allAppsSnapshotKey = "allAppsR2Snapshot.v1"
     private let codexSnapshotKey = "codexAppSnapshot.v1"
@@ -152,6 +153,16 @@ final class ProfileStore: ObservableObject {
                 }
             }
             UserDefaults.standard.set(true, forKey: universalL2DictationKey)
+        }
+        if !UserDefaults.standard.bool(forKey: assistantNativeDictationKey) {
+            for index in profiles.indices where profiles[index].action(for: .l2) == .systemDictation {
+                if profiles[index].kind == .cursor {
+                    profiles[index].setAction(.cursorDictation, for: .l2)
+                } else if profiles[index].kind == .grokBot {
+                    profiles[index].setAction(.grokDictation, for: .l2)
+                }
+            }
+            UserDefaults.standard.set(true, forKey: assistantNativeDictationKey)
         }
         if !UserDefaults.standard.bool(forKey: universalR2CaptureKey) {
             let replacedDefaults: [MappedAction] = [

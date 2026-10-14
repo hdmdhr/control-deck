@@ -5,7 +5,7 @@ ChatGPT.app 与 Codex 在当前安装中使用相同的应用标识 `com.openai.
 - L2：通过辅助功能触发原生「听写」按钮，不再发送旧版快捷键。
 - R2：模拟左右 Command 同时按下，触发用户确认的全局应用快照快捷键；不切换应用，以便截图当前台前应用。ChatGPT/Codex 需运行并启用该快捷键。
 - 轮盘默认八格：Codex、网页浏览器、Cursor、Grok Bot、通用 macOS、Finder、终端、Slack。
-- Cursor 和 Grok Bot 自动匹配各自应用；两者的 L2 使用 ControlDeck 通用听写，所有配置的 R2 均为全局应用快照。
+- Cursor 和 Grok Bot 自动匹配各自应用；Cursor 的 L2 按住发送 Control+M，Grok Bot 的 L2 按住发送 Command+D，松开结束原生听写（快捷键来自用户提供的应用提示截图）。所有配置的 R2 均为全局应用快照。
 
 升级首次启动会迁移未改动的 Claude/音乐默认轮盘槽，并按用户要求一次性将所有配置的 R2 统一迁移为应用快照。其他按键及自定义轮盘槽保持原样；迁移后仍可手动修改 R2。原有 Claude、音乐配置仍可在设置中选择。
 

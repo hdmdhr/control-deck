@@ -12,6 +12,10 @@ final class CodexAutomation: ObservableObject {
     private var nativeDictationStarted = false
     private var nativeDictationWindow: AXUIElement?
     private var lastActivatedNativeWindow: AXUIElement?
+    private var assistantDictationRelease: CGEvent?
+    private var assistantDictationPID: pid_t?
+    private var assistantDictationAction: MappedAction?
+    private var assistantDictationObserver: NSObjectProtocol?
     private var meetingPushToTalkHeld = false
     private var appSwitcherModifierHeld = false
 
@@ -345,6 +349,9 @@ final class CodexAutomation: ObservableObject {
                 bundleIdentifier: "com.anthropic.claudefordesktop",
                 fallbackPath: "/Applications/Claude.app"
             )
+        case .cursorDictation, .grokDictation:
+            lastResult = String(localized: "Hold the assigned controller button to dictate", bundle: AppResources.localizationBundle)
+            return false
         case .systemDictation:
             return toggleSystemDictation()
         case .showControllerOverlay:
@@ -474,6 +481,60 @@ final class CodexAutomation: ObservableObject {
 
     func finishReasoningAdjustment() {
         _ = key(kVK_Return, focusCodex: false)
+    }
+
+    /// Uses only the screenshot-verified native hold shortcuts, and never activates an app.
+    @discardableResult
+    func beginAssistantDictation(_ action: MappedAction) -> Bool {
+        if assistantDictationAction == action { return true }
+        endAssistantDictation()
+        guard let shortcut = AssistantDictationShortcut.shortcut(for: action) else { return false }
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              app.bundleIdentifier == shortcut.bundleIdentifier else {
+            lastResult = String(localized: "Bring the dictation app to the foreground first", bundle: AppResources.localizationBundle)
+            return false
+        }
+        guard accessibilityTrusted || AXIsProcessTrusted() else {
+            requestAccessibility()
+            return false
+        }
+        // Allocate the matching release before posting the press. Send both to the
+        // captured process so a later focus change cannot type into another app.
+        guard let down = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(shortcut.keyCode), keyDown: true),
+              let up = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(shortcut.keyCode), keyDown: false) else {
+            lastResult = String(localized: "Unable to create keyboard event", bundle: AppResources.localizationBundle)
+            return false
+        }
+        down.flags = shortcut.flags
+        up.flags = shortcut.flags
+        assistantDictationRelease = up
+        assistantDictationPID = app.processIdentifier
+        assistantDictationAction = action
+        down.postToPid(app.processIdentifier)
+        assistantDictationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self,
+                      NSWorkspace.shared.frontmostApplication?.processIdentifier != self.assistantDictationPID else { return }
+                self.endAssistantDictation()
+            }
+        }
+        lastResult = action.label
+        return true
+    }
+
+    func endAssistantDictation() {
+        if let up = assistantDictationRelease, let pid = assistantDictationPID {
+            up.postToPid(pid)
+        }
+        assistantDictationRelease = nil
+        assistantDictationPID = nil
+        assistantDictationAction = nil
+        if let observer = assistantDictationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            assistantDictationObserver = nil
+        }
     }
 
     @discardableResult

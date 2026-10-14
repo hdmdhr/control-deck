@@ -111,6 +111,7 @@ final class AppModel: ObservableObject {
     private var telemetryRateLimiter = TelemetryRateLimiter(
         minimumInterval: 1.0 / 30.0
     )
+    private var assistantDictationInput: ControllerInput?
     private var cancellables: Set<AnyCancellable> = []
     private let logger = Logger(
         subsystem: "com.ianhansel.controldeck",
@@ -203,10 +204,19 @@ final class AppModel: ObservableObject {
         taskMonitor.onTasksChanged = { [weak self] tasks in
             self?.tasksChanged(tasks)
         }
+        controller.$isConnected
+            .removeDuplicates()
+            .sink { [weak self] connected in
+                if !connected { self?.endAssistantDictationHold() }
+            }
+            .store(in: &cancellables)
         profiles.$activeKind
             .combineLatest(profiles.$profiles)
             .sink { [weak self] kind, profiles in
                 guard let self else { return }
+                if self.assistantDictationInput != nil {
+                    self.endAssistantDictationHold()
+                }
                 let enabled = profiles.first(where: { $0.kind == kind })?
                     .gyro.enabled ?? true
                 self.controller.setMotionSensorsActive(
@@ -667,6 +677,16 @@ final class AppModel: ObservableObject {
         pressed: Bool,
         allowAppSwitcherHold: Bool = true
     ) {
+        // Release the initiating input before overlays, layers, and remapped profiles
+        // can consume its key-up event.
+        if !pressed, assistantDictationInput == input {
+            endAssistantDictationHold()
+            return
+        }
+        if pressed, input == .circle, assistantDictationInput != nil {
+            endAssistantDictationHold()
+            return
+        }
         if !pressed, screenshotEditorCapturedInputs.remove(input) != nil {
             if input == .cross {
                 pointer.setButton(.left, pressed: false)
@@ -742,6 +762,16 @@ final class AppModel: ObservableObject {
             controller.playHaptic(.selection)
             return
         }
+        if action == .cursorDictation || action == .grokDictation {
+            if pressed {
+                if assistantDictationInput == input { return }
+                endAssistantDictationHold()
+                let succeeded = automation.beginAssistantDictation(action)
+                if succeeded { assistantDictationInput = input }
+                finish(action.label, succeeded: succeeded)
+            }
+            return
+        }
         if action == .meetingPushToTalk {
             let succeeded = automation.setMeetingPushToTalk(pressed)
             lastAction = succeeded
@@ -794,6 +824,11 @@ final class AppModel: ObservableObject {
         }
         guard pressed else { return }
         execute(action, source: input.label)
+    }
+
+    private func endAssistantDictationHold() {
+        automation.endAssistantDictation()
+        assistantDictationInput = nil
     }
 
     private func handleAppSwitcherHold(
@@ -2056,6 +2091,7 @@ final class AppModel: ObservableObject {
     }
 
     private func controllerTransportChanged(_ transport: ControllerTransport) {
+        endAssistantDictationHold()
         appSwitcherSafetyGeneration += 1
         appSwitcherStick.reset()
         if appSwitcherHold.cancel() {
@@ -2247,6 +2283,7 @@ final class AppModel: ObservableObject {
         if appSwitcherHold.cancel() {
             _ = automation.cancelAppSwitcher()
         }
+        endAssistantDictationHold()
         controller.stop()
         dictationFocusGuard.end()
         bluetoothMicrophone.teardown()
