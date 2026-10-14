@@ -11,3 +11,7 @@ swiftc \
   "$ROOT/Tests/ControlDeckTests/TiltRunWebKitSmoke.swift"
 
 "$OUTPUT" "$ROOT/Sources/ControlDeck/Resources/GyroGame"
+
+for locale in zh-Hans ja; do
+  "$OUTPUT" "$ROOT/Sources/ControlDeck/Resources/GyroGame" "$locale"
+done

@@ -9,6 +9,13 @@ const statusElement = document.querySelector('#status');
 const startButton = document.querySelector('#start-button');
 const toastElement = document.querySelector('#toast');
 
+const messages = window.controlDeckGameStrings || {};
+const text = (key, fallback) => messages[key] || fallback;
+document.querySelector('.course-panel .hud-label').textContent = text('course', 'COURSE');
+document.querySelector('.best-panel .hud-label').textContent = text('best', 'BEST');
+document.querySelector('#game').setAttribute('aria-label', text('title', 'Tilt Run'));
+document.title = text('title', 'Tilt Run');
+
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
@@ -281,7 +288,7 @@ function buildCourse(seed) {
   }
 
   courseElement.textContent = String((currentSeed % 99) + 1).padStart(2, '0');
-  seedElement.textContent = `SEED ${String(currentSeed).padStart(4, '0')}`;
+  seedElement.textContent = `${text('seed', 'SEED')} ${String(currentSeed).padStart(4, '0')}`;
   resetBall();
 }
 
@@ -349,11 +356,11 @@ function stopRun() {
   if (playing) elapsedBeforeStart += performance.now() - startTime;
   playing = false;
   statusElement.classList.remove('hidden');
-  statusElement.querySelector('strong').textContent = finished ? 'COURSE CLEAR' : 'TILT RUN';
+  statusElement.querySelector('strong').textContent = finished ? text('clear', 'COURSE CLEAR') : text('title', 'TILT RUN');
   statusElement.querySelector('span').textContent = finished
     ? formatTime(elapsedMilliseconds())
-    : 'Tilt the controller to roll';
-  startButton.textContent = finished ? 'RUN AGAIN' : 'START RUN';
+    : text('hint', 'Tilt the controller to roll');
+  startButton.textContent = finished ? text('again', 'RUN AGAIN') : text('start', 'START RUN');
 }
 
 function resetRun() {
@@ -381,7 +388,7 @@ function finishRun() {
     bestMilliseconds = result;
     bestElement.textContent = formatTime(result);
   }
-  showToast('COURSE CLEAR!');
+  showToast(text('clear', 'COURSE CLEAR!'));
   postToNative({ type: 'finish', elapsedMilliseconds: result, seed: currentSeed });
   window.setTimeout(stopRun, 550);
 }
@@ -452,7 +459,7 @@ function updatePhysics(delta, now) {
     if (ball.position.y < -6) {
       penaltyMilliseconds += 2000;
       resetBall();
-      showToast('+2 SEC · BALL SAVED');
+      showToast(text('saved', '+2 SEC · BALL SAVED'));
       postToNative({ type: 'fall' });
     }
   }
@@ -469,7 +476,7 @@ function updatePhysics(delta, now) {
       token.collected = true;
       token.mesh.visible = false;
       penaltyMilliseconds = Math.max(0, penaltyMilliseconds - 1000);
-      showToast('-1 SEC');
+      showToast(text('token', '-1 SEC'));
       postToNative({ type: 'token' });
     }
   }
@@ -592,5 +599,6 @@ window.controlDeckGame = {
 };
 
 buildCourse(currentSeed);
+stopRun();
 renderer.setAnimationLoop(animate);
 postToNative({ type: 'ready' });
