@@ -437,6 +437,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case grokDictation
     case grokPreviousBot
     case grokNextBot
+    case assistantRightPanel
     case showControllerOverlay
     case deleteTextWithConfirmation
 
@@ -566,6 +567,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .openClaude: String(localized: "Open Claude", bundle: AppResources.localizationBundle)
         case .cursorDictation: String(localized: "Cursor · Hold to dictate", bundle: AppResources.localizationBundle)
         case .grokPreviousBot: String(localized: "Grok Bot · Previous bot", bundle: AppResources.localizationBundle)
+        case .assistantRightPanel: String(localized: "Assistant · Right panel", bundle: AppResources.localizationBundle)
         case .grokNextBot: String(localized: "Grok Bot · Next bot", bundle: AppResources.localizationBundle)
         case .grokDictation: String(localized: "Grok Bot · Hold to dictate", bundle: AppResources.localizationBundle)
         case .systemDictation: String(localized: "Universal dictation", bundle: AppResources.localizationBundle)
@@ -627,7 +629,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
             .media
         case .openCodex, .openChrome, .openSpotify, .openClaude:
             .apps
-        case .none, .systemDictation, .cursorDictation, .grokDictation, .screenshotSelection,
+        case .none, .systemDictation, .cursorDictation, .grokDictation, .assistantRightPanel, .screenshotSelection,
              .showControllerOverlay, .deleteTextWithConfirmation:
             .other
         }
@@ -1230,7 +1232,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
             bundleIdentifiers: [bundleIdentifier],
             bindings: mapping([
                 .cross: .mouseLeftClick, .circle: .escapeKey,
-                .square: .copy, .triangle: .paste,
+                .square: .assistantRightPanel, .triangle: .paste,
                 .l1: .back, .r1: .forward,
                 .l2: dictation, .r2: .codexAppSnapshot,
                 .l3: .copy, .r3: .paste,

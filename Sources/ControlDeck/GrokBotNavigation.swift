@@ -19,19 +19,77 @@ enum GrokBotNavigation {
         return target
     }
 
+    enum Verification: Equatable { case confirmed, unchanged, unexpected }
+    static func verification(current: String, initial: String, target: String) -> Verification {
+        if current == target { return .confirmed }
+        return current == initial ? .unchanged : .unexpected
+    }
+
+    @MainActor private static var navigating = false
+
+    private struct Snapshot {
+        let names: [String]
+        let buttons: [AXUIElement]
+        let current: String
+    }
+
     @MainActor
-    static func navigate(offset: Int) -> (succeeded: Bool, message: String) {
-        guard AXIsProcessTrusted() else {
-            return (false, String(localized: "Accessibility permission is required for controller actions", bundle: AppResources.localizationBundle))
+    static func navigate(offset: Int) async -> (succeeded: Bool, message: String) {
+        func result(_ success: Bool, _ message: String.LocalizationValue) -> (Bool, String) {
+            (success, String(localized: message, bundle: AppResources.localizationBundle))
         }
-        guard let app = NSWorkspace.shared.frontmostApplication,
-              app.bundleIdentifier == "com.anysphere.sand" else {
-            return (false, String(localized: "Bring Grok Bot to the foreground to switch bots", bundle: AppResources.localizationBundle))
+        guard !navigating else { return result(false, "Grok Bot is already switching bots") }
+        navigating = true
+        defer { navigating = false }
+        guard AXIsProcessTrusted() else { return result(false, "Accessibility permission is required for controller actions") }
+        guard let app = NSWorkspace.shared.frontmostApplication, app.bundleIdentifier == "com.anysphere.sand" else {
+            return result(false, "Bring Grok Bot to the foreground to switch bots")
         }
         let root = AXUIElementCreateApplication(app.processIdentifier)
-        guard let window = element(root, kAXFocusedWindowAttribute) else {
-            return (false, String(localized: "Grok Bot focused window is unavailable", bundle: AppResources.localizationBundle))
+        guard let window = element(root, kAXFocusedWindowAttribute), let initial = snapshot(window) else {
+            return result(false, "Grok Bot current bot is unavailable or ambiguous")
         }
+        func focused() -> Bool {
+            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier,
+                  let current = element(root, kAXFocusedWindowAttribute) else { return false }
+            return CFEqual(current, window)
+        }
+        let index: Int
+        do { index = try adjacentIndex(names: initial.names, currentNames: [initial.current], offset: offset) }
+        catch SelectionError.boundary { return result(false, "Grok Bot has no adjacent bot in this direction") }
+        catch { return result(false, "Grok Bot current bot is unavailable or ambiguous") }
+        let target = initial.names[index]
+        guard focused() else { return result(false, "Grok Bot focus changed; try again") }
+        _ = AXUIElementPerformAction(initial.buttons[index], kAXPressAction as CFString)
+        // AXPress acceptance does not establish that the web UI actually handled it.
+        for _ in 0..<3 {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            guard focused(), let state = snapshot(window) else { return result(false, "Grok Bot switch could not be verified") }
+            switch verification(current: state.current, initial: initial.current, target: target) {
+            case .confirmed: return result(true, "Grok Bot switched bots")
+            case .unchanged: break
+            case .unexpected: return result(false, "Grok Bot selection changed; try again")
+            }
+        }
+        // Resolve the button again after waiting; stale AX elements must not supply coordinates.
+        guard focused(), let state = snapshot(window), state.current == initial.current,
+              state.names == initial.names, let targetIndex = state.names.firstIndex(of: target),
+              clickVisibleButton(state.buttons[targetIndex], window: window, pid: app.processIdentifier) else {
+            return result(false, "Grok Bot could not switch bots")
+        }
+        for _ in 0..<3 {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            guard focused(), let state = snapshot(window) else { return result(false, "Grok Bot switch could not be verified") }
+            switch verification(current: state.current, initial: initial.current, target: target) {
+            case .confirmed: return result(true, "Grok Bot switched bots")
+            case .unchanged: break
+            case .unexpected: return result(false, "Grok Bot selection changed; try again")
+            }
+        }
+        return result(false, "Grok Bot switch could not be verified")
+    }
+
+    private static func snapshot(_ window: AXUIElement) -> Snapshot? {
         var lists: [AXUIElement] = []
         var headings: [String] = []
         var complete = true
@@ -44,7 +102,7 @@ enum GrokBotNavigation {
             return true
         }
         guard complete, lists.count == 1 else {
-            return (false, String(localized: "Grok Bot sidebar is unavailable or ambiguous", bundle: AppResources.localizationBundle))
+            return nil
         }
         var buttons: [AXUIElement] = []
         walk(lists[0], budget: 2_000, complete: &complete) { node in
@@ -71,27 +129,57 @@ enum GrokBotNavigation {
             return name.isEmpty ? direct : name
         }
         guard complete, !names.contains(where: { $0.isEmpty }) else {
-            return (false, String(localized: "Grok Bot sidebar is unavailable or ambiguous", bundle: AppResources.localizationBundle))
+            return nil
         }
         let selectedNames = zip(buttons, names).compactMap { button, name in
             (attribute(button, kAXSelectedAttribute) as? Bool) == true ? name : nil
         }
-        do {
-            let index = try adjacentIndex(names: names, currentNames: headings + selectedNames, offset: offset)
-            // Recheck focus immediately before pressing; never activate another application/window.
-            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier,
-                  let focused = element(root, kAXFocusedWindowAttribute), CFEqual(window, focused) else {
-                return (false, String(localized: "Grok Bot focus changed; try again", bundle: AppResources.localizationBundle))
-            }
-            guard AXUIElementPerformAction(buttons[index], kAXPressAction as CFString) == .success else {
-                return (false, String(localized: "Grok Bot could not switch bots", bundle: AppResources.localizationBundle))
-            }
-            return (true, String(localized: "Grok Bot switched bots", bundle: AppResources.localizationBundle))
-        } catch SelectionError.boundary {
-            return (false, String(localized: "Grok Bot has no adjacent bot in this direction", bundle: AppResources.localizationBundle))
-        } catch {
-            return (false, String(localized: "Grok Bot current bot is unavailable or ambiguous", bundle: AppResources.localizationBundle))
+        guard complete, Set(names).count == names.count else { return nil }
+        let matches = Set((headings + selectedNames).filter { names.contains($0) })
+        guard matches.count == 1, let current = matches.first else { return nil }
+        return Snapshot(names: names, buttons: buttons, current: current)
+    }
+
+    private static func rect(_ node: AXUIElement) -> CGRect? {
+        guard let position = attribute(node, kAXPositionAttribute), CFGetTypeID(position) == AXValueGetTypeID(),
+              let size = attribute(node, kAXSizeAttribute), CFGetTypeID(size) == AXValueGetTypeID() else { return nil }
+        var point = CGPoint.zero
+        var dimensions = CGSize.zero
+        guard AXValueGetValue(position as! AXValue, .cgPoint, &point),
+              AXValueGetValue(size as! AXValue, .cgSize, &dimensions),
+              point.x.isFinite, point.y.isFinite, dimensions.width.isFinite, dimensions.height.isFinite,
+              dimensions.width > 0, dimensions.height > 0 else { return nil }
+        return CGRect(origin: point, size: dimensions)
+    }
+
+    @MainActor
+    private static func clickVisibleButton(_ button: AXUIElement, window: AXUIElement, pid: pid_t) -> Bool {
+        guard (attribute(button, kAXEnabledAttribute) as? Bool) == true,
+              (attribute(button, "AXHidden") as? Bool) != true,
+              (attribute(window, kAXMinimizedAttribute) as? Bool) != true,
+              let frame = rect(button), let windowFrame = rect(window), windowFrame.contains(frame) else { return false }
+        let point = CGPoint(x: frame.midX, y: frame.midY)
+        var displayCount: UInt32 = 0
+        guard CGGetDisplaysWithPoint(point, 0, nil, &displayCount) == .success, displayCount > 0 else { return false }
+        // AX hit testing also rejects clipped and covered elements.
+        var hit: AXUIElement?
+        let system = AXUIElementCreateSystemWide()
+        guard AXUIElementCopyElementAtPosition(system, Float(point.x), Float(point.y), &hit) == .success,
+              var node = hit else { return false }
+        var matched = false
+        for _ in 0..<20 {
+            if CFEqual(node, button) { matched = true; break }
+            guard let parent = element(node, kAXParentAttribute) else { break }
+            node = parent
         }
+        guard matched, NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
+              let focused = element(AXUIElementCreateApplication(pid), kAXFocusedWindowAttribute), CFEqual(focused, window),
+              let down = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown, mouseCursorPosition: point, mouseButton: .left),
+              let up = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: point, mouseButton: .left) else { return false }
+        // No mouse-move or cursor warp; deliver only the validated button click.
+        down.post(tap: .cghidEventTap)
+        up.post(tap: .cghidEventTap)
+        return true
     }
 
     private static func attribute(_ node: AXUIElement, _ name: String) -> CFTypeRef? {

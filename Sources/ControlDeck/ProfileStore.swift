@@ -23,6 +23,7 @@ final class ProfileStore: ObservableObject {
     private let stickClickCopyPasteKey = "stickClickCopyPaste.v1"
     private let universalL2DictationKey = "universalL2Dictation.v1"
     private let assistantNativeDictationKey = "assistantNativeL2Dictation.v1"
+    private let assistantRightPanelKey = "assistantSquareRightPanel.v1"
     private let grokBotNavigationKey = "grokBotNavigation.v1"
     private let cursorProfileMigrationKey = "cursorProfile.v1"
     private let allAppsSnapshotKey = "allAppsR2Snapshot.v1"
@@ -201,6 +202,14 @@ final class ProfileStore: ObservableObject {
             UserDefaults.standard.set(true, forKey: codexUniversalDictationKey)
         }
 
+        if !UserDefaults.standard.bool(forKey: assistantRightPanelKey) {
+            for index in profiles.indices where [.cursor, .grokBot].contains(profiles[index].kind) {
+                if profiles[index].action(for: .square) == .copy {
+                    profiles[index].setAction(.assistantRightPanel, for: .square)
+                }
+            }
+            UserDefaults.standard.set(true, forKey: assistantRightPanelKey)
+        }
         if !UserDefaults.standard.bool(forKey: grokBotNavigationKey) {
             for index in profiles.indices where profiles[index].kind == .grokBot {
                 let replacements: [(ControllerInput, MappedAction, MappedAction)] = [

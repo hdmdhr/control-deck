@@ -90,6 +90,12 @@ final class CodexAutomation: ObservableObject {
     }
 
     @discardableResult
+    func navigateGrokBot(_ action: MappedAction) async -> Bool {
+        let result = await GrokBotNavigation.navigate(offset: action == .grokPreviousBot ? -1 : 1)
+        lastResult = result.message
+        return result.succeeded
+    }
+
     func run(_ action: MappedAction) -> Bool {
         switch action {
         case .none:
@@ -350,9 +356,14 @@ final class CodexAutomation: ObservableObject {
                 fallbackPath: "/Applications/Claude.app"
             )
         case .grokPreviousBot, .grokNextBot:
-            let result = GrokBotNavigation.navigate(offset: action == .grokPreviousBot ? -1 : 1)
-            lastResult = result.message
-            return result.succeeded
+            lastResult = "Grok Bot navigation requires asynchronous dispatch"
+            return false
+        case .assistantRightPanel:
+            guard ["com.anysphere.sand", "com.todesktop.230313mzl4w4u92"].contains(frontmostBundleIdentifier ?? "") else {
+                lastResult = String(localized: "Bring Cursor or Grok Bot to the foreground first", bundle: AppResources.localizationBundle)
+                return false
+            }
+            return key(kVK_ANSI_B, flags: [.maskCommand, .maskAlternate], focusCodex: false)
         case .cursorDictation, .grokDictation:
             lastResult = String(localized: "Hold the assigned controller button to dictate", bundle: AppResources.localizationBundle)
             return false

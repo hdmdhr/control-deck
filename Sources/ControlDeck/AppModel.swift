@@ -1769,6 +1769,11 @@ final class AppModel: ObservableObject {
             selectAdjacentTask(offset: -1)
         case .codexNextTask:
             selectAdjacentTask(offset: 1)
+        case .grokPreviousBot, .grokNextBot:
+            Task { @MainActor in
+                let succeeded = await automation.navigateGrokBot(action)
+                finish(action.label, succeeded: succeeded)
+            }
         case .showControllerOverlay:
             showControllerContext()
         case .deleteTextWithConfirmation:
