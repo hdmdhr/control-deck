@@ -126,6 +126,30 @@ enum CursorConversationNavigation {
         }
         throw SelectionError.boundary
     }
+    /// A targeted discovery search may prune unrelated deep branches. Success
+    /// depends on finding the exact requested roots, unlike strict subtree reads.
+    static func discoverStructure<Element>(
+        _ root: Element, budget: Int, maxDepth: Int,
+        isComplete: () -> Bool,
+        visit: (Element) -> Bool,
+        children: (Element) -> [Element]
+    ) -> Bool {
+        var stack: [(Element, Int)] = [(root, 0)]
+        var visited = 0
+        while let (node, depth) = stack.popLast() {
+            if isComplete() { return true }
+            // Reaching an unrelated depth boundary does not invalidate roots
+            // found later in a sibling branch.
+            guard depth <= maxDepth else { continue }
+            guard visited < budget else { return false }
+            visited += 1
+            guard visit(node) else { continue }
+            if isComplete() { return true }
+            stack.append(contentsOf: children(node).reversed().map { ($0, depth + 1) })
+        }
+        return isComplete()
+    }
+
     private struct Live {
         let parsed: Parsed
         let elements: [Int: AXUIElement]
@@ -170,17 +194,14 @@ enum CursorConversationNavigation {
         // and editable text never participate in sidebar/tab selection.
         var sidebarRoot: AXUIElement?
         var tabRoots: [AXUIElement] = []
-        var discoveryBudget = 1200
-        func discover(_ node: AXUIElement, depth: Int) {
-            if sidebarRoot != nil && !tabRoots.isEmpty { return }
-            discoveryBudget -= 1
-            guard discoveryBudget > 0, depth <= 18 else { complete = false; return }
+        let discoveryComplete = discoverStructure(window, budget: 1200, maxDepth: 18,
+            isComplete: { sidebarRoot != nil && !tabRoots.isEmpty }, visit: { node in
             let role = string(node, kAXRoleAttribute)
             if role == kAXTabGroupRole {
                 if label(node) == "Tabs" { tabRoots.append(node) }
-                return
+                return false
             }
-            if [kAXTextAreaRole, kAXTextFieldRole, kAXScrollAreaRole, kAXStaticTextRole].contains(role) { return }
+            if [kAXTextAreaRole, kAXTextFieldRole, kAXScrollAreaRole, kAXStaticTextRole].contains(role) { return false }
             if sidebarRoot == nil, role == kAXButtonRole, label(node) == "Hide Sidebar" {
                 // The marker's nearest enclosing branch also needs Workspaces.
                 var candidate: AXUIElement? = element(node, kAXParentAttribute)
@@ -195,16 +216,19 @@ enum CursorConversationNavigation {
                     if found && localComplete { sidebarRoot = branch; break }
                     candidate = element(branch, kAXParentAttribute)
                 }
-                if let sidebarRoot, CFEqual(sidebarRoot, node) { return }
+                if let sidebarRoot, CFEqual(sidebarRoot, node) { return false }
             }
-            for child in attribute(node, kAXChildrenAttribute) as? [AXUIElement] ?? [] {
-                if let sidebarRoot, CFEqual(child, sidebarRoot) { continue }
-                discover(child, depth: depth + 1)
+            return true
+        }, children: { node in
+            // Once its marker resolves the sidebar ancestor, no further sidebar
+            // discovery is needed; its selected subtree is read strictly below.
+            if let sidebarRoot, CFEqual(node, sidebarRoot) { return [] }
+            return (attribute(node, kAXChildrenAttribute) as? [AXUIElement] ?? []).filter { child in
+                sidebarRoot.map { !CFEqual(child, $0) } ?? true
             }
-        }
-        discover(window, depth: 0)
-        guard complete, let sidebarRoot, !tabRoots.isEmpty else {
-            diagnose("discovery complete=\(complete) sidebar=\(sidebarRoot != nil) tabs=\(tabRoots.count) remainingBudget=\(discoveryBudget)")
+        })
+        guard discoveryComplete, let sidebarRoot, !tabRoots.isEmpty else {
+            diagnose("discovery complete=\(discoveryComplete) sidebar=\(sidebarRoot != nil) tabs=\(tabRoots.count)")
             return nil
         }
         let tree = Node(id: -1, role: kAXWindowRole, children:

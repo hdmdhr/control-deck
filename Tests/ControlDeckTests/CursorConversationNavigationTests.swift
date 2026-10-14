@@ -34,6 +34,33 @@ import ApplicationServices
         if !condition() { fatalError(message) }
     }
     static func main() throws {
+        // Exercise the production discovery traversal, including the observed
+        // depth-pruned unrelated branch before both exact roots are found.
+        var deep = node(kAXGroupRole, "irrelevant leaf")
+        for _ in 0..<24 { deep = node(kAXGroupRole, children: [deep]) }
+        let discoveryTree = node(kAXWindowRole, children: [deep, node(kAXGroupRole, "sidebar root"),
+            node(kAXTabGroupRole, "Tabs"), node(kAXGroupRole, "must not visit")])
+        var foundSidebar = false
+        var foundTabs = false
+        var visitedTail = false
+        let discovered = CursorConversationNavigation.discoverStructure(discoveryTree, budget: 1200, maxDepth: 18,
+            isComplete: { foundSidebar && foundTabs }, visit: { item in
+                if item.label == "sidebar root" { foundSidebar = true }
+                if item.role == kAXTabGroupRole && item.label == "Tabs" { foundTabs = true }
+                if item.label == "must not visit" { visitedTail = true }
+                return true
+            }, children: { $0.children })
+        require(discovered, "Pruned unrelated depth must not poison subsequently discovered exact roots")
+        require(!visitedTail, "Discovery stops immediately once both roots are found")
+        require(!CursorConversationNavigation.discoverStructure(discoveryTree, budget: 1, maxDepth: 18,
+            isComplete: { false }, visit: { _ in true }, children: { $0.children }), "Exhausted discovery budget without roots must fail")
+        var foundDeepMarker = false
+        let onlyDeep = node(kAXWindowRole, children: [deep])
+        require(!CursorConversationNavigation.discoverStructure(onlyDeep, budget: 1200, maxDepth: 18,
+            isComplete: { foundDeepMarker }, visit: { item in
+                foundDeepMarker = item.label == "irrelevant leaf"
+                return true
+            }, children: { $0.children }), "A desired root beyond depth limit remains unavailable")
         let expanded = workspace("Current Workspace", names: ["First", "Current"], expanded: true, retained: [])
         let collapsed = workspace("Folded", names: ["Hidden"], expanded: false)
         let last = workspace("Last", names: ["Next"], expanded: true)
