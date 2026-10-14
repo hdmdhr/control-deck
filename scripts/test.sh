@@ -29,6 +29,7 @@ swiftc \
 
 "$OUTPUT"
 "$ROOT/scripts/test-resource-bundle.sh"
+"$ROOT/scripts/test-localization.sh"
 
 GYRO_GAME="$ROOT/Sources/ControlDeck/Resources/GyroGame"
 node --check "$GYRO_GAME/game.js"

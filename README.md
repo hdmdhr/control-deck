@@ -418,3 +418,10 @@ resources and in `Drivers/DualSenseMicrophone`.
 
 Built by [@ihansel](https://x.com/ihansel) with Codex and a real controller on
 the desk.
+
+### Interface languages
+
+English, 简体中文, and 日本語 are supported. ControlDeck follows the system or
+per-app language set in macOS; restart the app after changing it. UI language does
+not change the languages supported by a speech recognition model. See
+[localization and validation](Docs/Localization.md) for details.
