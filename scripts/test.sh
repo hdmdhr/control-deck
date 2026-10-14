@@ -30,6 +30,18 @@ swiftc \
   "$ROOT/Tests/ControlDeckTests/ControlDeckTests.swift"
 
 "$OUTPUT"
+ACTIVATION_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-activation.XXXXXX")"
+trap 'rm -f "$ACTIVATION_OUTPUT"' EXIT
+swiftc -parse-as-library -framework AppKit \
+  "$ROOT/Sources/ControlDeck/AppResources.swift" \
+  "$ROOT/Sources/ControlDeck/Models.swift" \
+  "$ROOT/Sources/ControlDeck/GyroModels.swift" \
+  "$ROOT/Sources/ControlDeck/InputMappingModels.swift" \
+  "$ROOT/Sources/ControlDeck/ExpandedProfileCatalog.swift" \
+  "$ROOT/Sources/ControlDeck/ProfileApplicationActivator.swift" \
+  "$ROOT/Tests/ControlDeckTests/ProfileApplicationActivationTests.swift" \
+  -o "$ACTIVATION_OUTPUT"
+"$ACTIVATION_OUTPUT"
 "$ROOT/scripts/test-resource-bundle.sh"
 "$ROOT/scripts/test-localization.sh"
 
