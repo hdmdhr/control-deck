@@ -48,7 +48,7 @@ final class ControllerOverlayController {
     ) {
         hideWorkItem?.cancel()
         let view = ReasoningControllerOverlay(
-            profileName: profile.name,
+            profileName: profile.displayName,
             task: task,
             step: step
         )
@@ -259,14 +259,14 @@ private struct ProfileWheelOverlay: View {
 
     private var selectedTitle: some View {
         VStack(spacing: 5) {
-            Text(selectedEntry?.profile.name ?? "Choose a profile")
+            Text(selectedEntry?.profile.displayName ?? String(localized: "Choose a profile", bundle: AppResources.localizationBundle))
                 .font(.system(size: 25, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .shadow(color: .black.opacity(0.5), radius: 5, y: 2)
             Text(
                 selectedEntry == nil
-                    ? "Move the left stick"
-                    : "Release Options to switch"
+                    ? String(localized: "Move the left stick", bundle: AppResources.localizationBundle)
+                    : String(localized: "Release Options to switch", bundle: AppResources.localizationBundle)
             )
             .font(.callout.weight(.medium))
             .foregroundStyle(.white.opacity(0.76))
@@ -282,7 +282,7 @@ private struct ProfileWheelOverlay: View {
             ProfileLogoView(profile: entry.profile, size: selected ? 56 : 49)
                 .shadow(color: .black.opacity(0.45), radius: 5, y: 2)
             HStack(spacing: 4) {
-                Text(entry.profile.name)
+                Text(entry.profile.displayName)
                 if entry.profile.kind == activeKind {
                     Circle()
                         .fill(Color.green)
@@ -378,8 +378,8 @@ private struct ReasoningControllerOverlay: View {
                         .foregroundStyle(.secondary)
                 }
                 HStack(spacing: 16) {
-                    choice("Faster", icon: "chevron.down", active: step == .faster)
-                    choice("Smarter", icon: "chevron.up", active: step == .smarter)
+                    choice(String(localized: "Faster", bundle: AppResources.localizationBundle), icon: "chevron.down", active: step == .faster)
+                    choice(String(localized: "Smarter", bundle: AppResources.localizationBundle), icon: "chevron.up", active: step == .smarter)
                 }
                 HStack {
                     Text(profileName)
@@ -430,7 +430,7 @@ private struct ContextControllerOverlay: View {
                             )
                         )
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(profile.name)
+                        Text(profile.displayName)
                             .font(.title3.weight(.semibold))
                         Text("Current controller profile")
                             .font(.caption)

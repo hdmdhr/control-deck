@@ -17,35 +17,35 @@ enum QuickTutorialStep: Int, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .welcome: "Meet ControlDeck"
-        case .pairController: "Connect your controller"
-        case .permissions: "Let the controller control your Mac"
-        case .pointer: "Move naturally around your Mac"
-        case .voiceAndCapture: "Speak and capture without leaving your work"
-        case .profiles: "Let the controls follow the app"
-        case .advanced: "Fine-tune it when you are ready"
-        case .ready: "You are ready"
+        case .welcome: String(localized: "Meet ControlDeck", bundle: AppResources.localizationBundle)
+        case .pairController: String(localized: "Connect your controller", bundle: AppResources.localizationBundle)
+        case .permissions: String(localized: "Let the controller control your Mac", bundle: AppResources.localizationBundle)
+        case .pointer: String(localized: "Move naturally around your Mac", bundle: AppResources.localizationBundle)
+        case .voiceAndCapture: String(localized: "Speak and capture without leaving your work", bundle: AppResources.localizationBundle)
+        case .profiles: String(localized: "Let the controls follow the app", bundle: AppResources.localizationBundle)
+        case .advanced: String(localized: "Fine-tune it when you are ready", bundle: AppResources.localizationBundle)
+        case .ready: String(localized: "You are ready", bundle: AppResources.localizationBundle)
         }
     }
 
     var detail: String {
         switch self {
         case .welcome:
-            "Your controller has a calm everyday layer for pointing, clicking, scrolling and speaking. Hold controls reveal extra power only when you need it."
+            String(localized: "Your controller has a calm everyday layer for pointing, clicking, scrolling and speaking. Hold controls reveal extra power only when you need it.", bundle: AppResources.localizationBundle)
         case .pairController:
-            "Pair wirelessly by holding Create and PS together until the light bar pulses, or plug in a USB cable for an instant wired connection."
+            String(localized: "Pair wirelessly by holding Create and PS together until the light bar pulses, or plug in a USB cable for an instant wired connection.", bundle: AppResources.localizationBundle)
         case .permissions:
-            "Accessibility lets ControlDeck move the pointer, click and send keyboard shortcuts. macOS keeps you in control and you can revoke access at any time."
+            String(localized: "Accessibility lets ControlDeck move the pointer, click and send keyboard shortcuts. macOS keeps you in control and you can revoke access at any time.", bundle: AppResources.localizationBundle)
         case .pointer:
-            "The default layout is designed to replace a mouse for everyday work. Clicking and dragging behave like a real mouse, including text selection and moving windows."
+            String(localized: "The default layout is designed to replace a mouse for everyday work. Clicking and dragging behave like a real mouse, including text selection and moving windows.", bundle: AppResources.localizationBundle)
         case .voiceAndCapture:
-            "Dictate into any focused text field with L2. Codex and Claude keep their native voice experience; other apps use Apple’s local SpeechTranscriber. R2 captures and annotates the screen."
+            String(localized: "Dictate into any focused text field with L2. Codex and Claude keep their native voice experience; other apps use Apple’s local SpeechTranscriber. R2 captures and annotates the screen.", bundle: AppResources.localizationBundle)
         case .profiles:
-            "ControlDeck automatically chooses a layout for Codex, Chrome, Spotify, Claude and other popular apps. You can also switch explicitly with the profile wheel."
+            String(localized: "ControlDeck automatically chooses a layout for Codex, Chrome, Spotify, Claude and other popular apps. You can also switch explicitly with the profile wheel.", bundle: AppResources.localizationBundle)
         case .advanced:
-            "Everything below is optional. The defaults are ready to use, and these areas remain here when you want more control."
+            String(localized: "Everything below is optional. The defaults are ready to use, and these areas remain here when you want more control.", bundle: AppResources.localizationBundle)
         case .ready:
-            "Start with the everyday controls and change only what gets in your way. You can replay this tutorial from Setup whenever you like."
+            String(localized: "Start with the everyday controls and change only what gets in your way. You can replay this tutorial from Setup whenever you like.", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -85,27 +85,27 @@ enum QuickTutorialDestination: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .buttonMapping: "Button Mapping"
-        case .touchpad: "Touchpad"
-        case .pointer: "Pointer"
-        case .screenCapture: "Screen Capture"
-        case .shiftLayer: "Shift Layer"
-        case .profiles: "Profiles"
-        case .gyro: "Gyro"
-        case .customize: "Customize with Codex"
+        case .buttonMapping: String(localized: "Button Mapping", bundle: AppResources.localizationBundle)
+        case .touchpad: String(localized: "Touchpad", bundle: AppResources.localizationBundle)
+        case .pointer: String(localized: "Pointer", bundle: AppResources.localizationBundle)
+        case .screenCapture: String(localized: "Screen Capture", bundle: AppResources.localizationBundle)
+        case .shiftLayer: String(localized: "Shift Layer", bundle: AppResources.localizationBundle)
+        case .profiles: String(localized: "Profiles", bundle: AppResources.localizationBundle)
+        case .gyro: String(localized: "Gyro", bundle: AppResources.localizationBundle)
+        case .customize: String(localized: "Customize with Codex", bundle: AppResources.localizationBundle)
         }
     }
 
     var detail: String {
         switch self {
-        case .buttonMapping: "Change what every button does"
-        case .touchpad: "Tune scrolling and gestures"
-        case .pointer: "Adjust stick speed and acceleration"
-        case .screenCapture: "Choose editor and clipboard defaults"
-        case .shiftLayer: "Edit the eight-profile wheel"
-        case .profiles: "Manage layouts for different apps"
-        case .gyro: "Enable optional motion gestures"
-        case .customize: "Ask Codex to make a change for you"
+        case .buttonMapping: String(localized: "Change what every button does", bundle: AppResources.localizationBundle)
+        case .touchpad: String(localized: "Tune scrolling and gestures", bundle: AppResources.localizationBundle)
+        case .pointer: String(localized: "Adjust stick speed and acceleration", bundle: AppResources.localizationBundle)
+        case .screenCapture: String(localized: "Choose editor and clipboard defaults", bundle: AppResources.localizationBundle)
+        case .shiftLayer: String(localized: "Edit the eight-profile wheel", bundle: AppResources.localizationBundle)
+        case .profiles: String(localized: "Manage layouts for different apps", bundle: AppResources.localizationBundle)
+        case .gyro: String(localized: "Enable optional motion gestures", bundle: AppResources.localizationBundle)
+        case .customize: String(localized: "Ask Codex to make a change for you", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -318,8 +318,7 @@ struct QuickTutorialView: View {
                 Label("USB is even simpler", systemImage: "cable.connector")
                     .font(.headline)
                 Text(
-                    "Connect a data-capable USB-C cable. ControlDeck detects " +
-                        "the controller automatically; no Bluetooth pairing is needed."
+                    "Connect a data-capable USB-C cable. ControlDeck detects the controller automatically; no Bluetooth pairing is needed."
                 )
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -356,8 +355,7 @@ struct QuickTutorialView: View {
                     Button("Open Accessibility Settings", action: requestAccessibility)
                         .buttonStyle(.borderedProminent)
                     Text(
-                        "Turn on ControlDeck in the list, then return here. " +
-                            "The status updates automatically."
+                        "Turn on ControlDeck in the list, then return here. The status updates automatically."
                     )
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -474,7 +472,7 @@ struct QuickTutorialView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()
-            Button(store.isLastStep ? "Finish" : "Next") {
+            Button(store.isLastStep ? String(localized: "Finish", bundle: AppResources.localizationBundle) : String(localized: "Next", bundle: AppResources.localizationBundle)) {
                 _ = store.next()
             }
             .buttonStyle(.borderedProminent)
@@ -489,31 +487,31 @@ struct QuickTutorialView: View {
         switch store.currentStep {
         case .welcome:
             [
-                .init(control: "Everyday", action: "Point and work", detail: "The controls you use constantly stay simple."),
-                .init(control: "Hold controls", action: "Reveal more", detail: "Advanced actions stay out of the way until needed.")
+                .init(control: String(localized: "Everyday", bundle: AppResources.localizationBundle), action: String(localized: "Point and work", bundle: AppResources.localizationBundle), detail: String(localized: "The controls you use constantly stay simple.", bundle: AppResources.localizationBundle)),
+                .init(control: String(localized: "Hold controls", bundle: AppResources.localizationBundle), action: String(localized: "Reveal more", bundle: AppResources.localizationBundle), detail: String(localized: "Advanced actions stay out of the way until needed.", bundle: AppResources.localizationBundle))
             ]
         case .pairController, .permissions:
             []
         case .pointer:
             [
-                .init(control: "Left stick", action: "Move pointer", detail: "Cross clicks; hold Cross and move to drag or highlight."),
-                .init(control: "Right stick / touchpad", action: "Scroll", detail: "Scroll vertically or horizontally with analogue control.")
+                .init(control: String(localized: "Left stick", bundle: AppResources.localizationBundle), action: String(localized: "Move pointer", bundle: AppResources.localizationBundle), detail: String(localized: "Cross clicks; hold Cross and move to drag or highlight.", bundle: AppResources.localizationBundle)),
+                .init(control: String(localized: "Right stick / touchpad", bundle: AppResources.localizationBundle), action: String(localized: "Scroll", bundle: AppResources.localizationBundle), detail: String(localized: "Scroll vertically or horizontally with analogue control.", bundle: AppResources.localizationBundle))
             ]
         case .voiceAndCapture:
             [
-                .init(control: "L2", action: "Dictate anywhere", detail: "Focus a text field, then tap for hands-free dictation or hold for push-to-talk. Apple transcription stays on this Mac."),
-                .init(control: "R2", action: "Capture", detail: "Select an area, copy it, then annotate or dismiss immediately.")
+                .init(control: String(localized: "L2", bundle: AppResources.localizationBundle), action: String(localized: "Dictate anywhere", bundle: AppResources.localizationBundle), detail: String(localized: "Focus a text field, then tap for hands-free dictation or hold for push-to-talk. Apple transcription stays on this Mac.", bundle: AppResources.localizationBundle)),
+                .init(control: String(localized: "R2", bundle: AppResources.localizationBundle), action: String(localized: "Capture", bundle: AppResources.localizationBundle), detail: String(localized: "Select an area, copy it, then annotate or dismiss immediately.", bundle: AppResources.localizationBundle))
             ]
         case .profiles:
             [
-                .init(control: "Automatic", action: "Follow the foreground app", detail: "Curated profiles match popular apps without extra work."),
-                .init(control: "Hold Options + left stick", action: "Choose a profile", detail: "Release Options on one of the eight app-logo slots.")
+                .init(control: String(localized: "Automatic", bundle: AppResources.localizationBundle), action: String(localized: "Follow the foreground app", bundle: AppResources.localizationBundle), detail: String(localized: "Curated profiles match popular apps without extra work.", bundle: AppResources.localizationBundle)),
+                .init(control: String(localized: "Hold Options + left stick", bundle: AppResources.localizationBundle), action: String(localized: "Choose a profile", bundle: AppResources.localizationBundle), detail: String(localized: "Release Options on one of the eight app-logo slots.", bundle: AppResources.localizationBundle))
             ]
         case .ready:
             [
-                .init(control: "Touchpad click", action: "Show context", detail: "See the current profile and important mappings at any time."),
-                .init(control: "Hold touchpad click", action: "Switch apps", detail: "Use the right stick or D-pad Left/Right, release the touchpad to select, or Circle to cancel."),
-                .init(control: "Setup", action: "Replay tutorial", detail: "This walkthrough always remains available here.")
+                .init(control: String(localized: "Touchpad click", bundle: AppResources.localizationBundle), action: String(localized: "Show context", bundle: AppResources.localizationBundle), detail: String(localized: "See the current profile and important mappings at any time.", bundle: AppResources.localizationBundle)),
+                .init(control: String(localized: "Hold touchpad click", bundle: AppResources.localizationBundle), action: String(localized: "Switch apps", bundle: AppResources.localizationBundle), detail: String(localized: "Use the right stick or D-pad Left/Right, release the touchpad to select, or Circle to cancel.", bundle: AppResources.localizationBundle)),
+                .init(control: String(localized: "Setup", bundle: AppResources.localizationBundle), action: String(localized: "Replay tutorial", bundle: AppResources.localizationBundle), detail: String(localized: "This walkthrough always remains available here.", bundle: AppResources.localizationBundle))
             ]
         case .advanced:
             []
@@ -575,12 +573,12 @@ private struct DualSensePairingIllustration: View {
                 }
 
                 pairingMarker(
-                    "CREATE",
+                    String(localized: "CREATE", bundle: AppResources.localizationBundle),
                     at: CGPoint(x: 0.335, y: 0.205),
                     in: proxy.size
                 )
                 pairingMarker(
-                    "PS",
+                    String(localized: "PS", bundle: AppResources.localizationBundle),
                     at: CGPoint(x: 0.46, y: 0.485),
                     in: proxy.size
                 )
@@ -601,7 +599,7 @@ private struct DualSensePairingIllustration: View {
             Circle()
                 .stroke(Color.accentColor, lineWidth: 4)
                 .background(Circle().fill(Color.accentColor.opacity(0.15)))
-                .frame(width: label == "PS" ? 50 : 42, height: label == "PS" ? 50 : 42)
+                .frame(width: label == String(localized: "PS", bundle: AppResources.localizationBundle) ? 50 : 42, height: label == String(localized: "PS", bundle: AppResources.localizationBundle) ? 50 : 42)
             Text(label)
                 .font(.caption2.weight(.black))
                 .foregroundStyle(Color.accentColor)

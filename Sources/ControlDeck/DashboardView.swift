@@ -17,16 +17,16 @@ private enum DashboardSection: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .dashboard: "ControlDeck"
-        case .controller: "Button Mapping"
-        case .touchpad: "Touchpad"
-        case .gyro: "Gyro"
-        case .pointer: "Pointer"
-        case .screenCapture: "Screen Capture"
-        case .shiftLayer: "Shift Layer"
-        case .profiles: "Profiles"
-        case .customize: "Customize with Codex"
-        case .setup: "Setup"
+        case .dashboard: String(localized: "ControlDeck", bundle: AppResources.localizationBundle)
+        case .controller: String(localized: "Button Mapping", bundle: AppResources.localizationBundle)
+        case .touchpad: String(localized: "Touchpad", bundle: AppResources.localizationBundle)
+        case .gyro: String(localized: "Gyro", bundle: AppResources.localizationBundle)
+        case .pointer: String(localized: "Pointer", bundle: AppResources.localizationBundle)
+        case .screenCapture: String(localized: "Screen Capture", bundle: AppResources.localizationBundle)
+        case .shiftLayer: String(localized: "Shift Layer", bundle: AppResources.localizationBundle)
+        case .profiles: String(localized: "Profiles", bundle: AppResources.localizationBundle)
+        case .customize: String(localized: "Customize with Codex", bundle: AppResources.localizationBundle)
+        case .setup: String(localized: "Setup", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -62,7 +62,7 @@ struct DashboardView: View {
     @State private var section: DashboardSection = .dashboard
     @State private var selectedInput: ControllerInput = .cross
     @State private var customizationRequest =
-        "Make the controller feel better for the app I use most."
+        String(localized: "Make the controller feel better for the app I use most.", bundle: AppResources.localizationBundle)
 
     init(model: AppModel) {
         self.model = model
@@ -219,7 +219,7 @@ struct DashboardView: View {
             Image(systemName: "gamecontroller")
                 .font(.system(size: 18, weight: .medium))
 
-            Text(controller.isConnected ? "Connected" : "Offline")
+            Text(controller.isConnected ? String(localized: "Connected", bundle: AppResources.localizationBundle) : String(localized: "Offline", bundle: AppResources.localizationBundle))
                 .font(.system(size: 13, weight: .semibold))
                 .padding(.horizontal, 12)
                 .frame(height: 32)
@@ -237,7 +237,7 @@ struct DashboardView: View {
                 .font(.system(size: 13, weight: .medium))
             Text("·")
                 .foregroundStyle(.secondary)
-            Text(controller.isConnected ? "\(Int(controller.batteryLevel * 100))%" : "—")
+            Text(controller.isConnected ? String(localized: "\(Int(controller.batteryLevel * 100))%", bundle: AppResources.localizationBundle) : String(localized: "—", bundle: AppResources.localizationBundle))
                 .font(.system(size: 13, weight: .medium))
                 .monospacedDigit()
 
@@ -283,16 +283,16 @@ struct DashboardView: View {
 
     private var sectionSupport: String {
         switch section {
-        case .dashboard: "Controller status and shortcuts."
-        case .controller: "Select a control on the photo, then choose exactly what it should do."
-        case .touchpad: "Tune pointer tracking, scrolling and gestures."
-        case .gyro: "Configure motion gestures and test controller tilt."
-        case .pointer: "Adjust analogue stick pointer behaviour."
-        case .screenCapture: "Control clipboard and annotation editor behaviour."
-        case .shiftLayer: "Configure the Options profile wheel and reasoning control."
-        case .profiles: "Switch and customise mappings by application."
-        case .customize: "Ask Codex to change profiles or extend controller behaviour."
-        case .setup: "Connect, grant permissions and test your controller."
+        case .dashboard: String(localized: "Controller status and shortcuts.", bundle: AppResources.localizationBundle)
+        case .controller: String(localized: "Select a control on the photo, then choose exactly what it should do.", bundle: AppResources.localizationBundle)
+        case .touchpad: String(localized: "Tune pointer tracking, scrolling and gestures.", bundle: AppResources.localizationBundle)
+        case .gyro: String(localized: "Configure motion gestures and test controller tilt.", bundle: AppResources.localizationBundle)
+        case .pointer: String(localized: "Adjust analogue stick pointer behaviour.", bundle: AppResources.localizationBundle)
+        case .screenCapture: String(localized: "Control clipboard and annotation editor behaviour.", bundle: AppResources.localizationBundle)
+        case .shiftLayer: String(localized: "Configure the Options profile wheel and reasoning control.", bundle: AppResources.localizationBundle)
+        case .profiles: String(localized: "Switch and customise mappings by application.", bundle: AppResources.localizationBundle)
+        case .customize: String(localized: "Ask Codex to change profiles or extend controller behaviour.", bundle: AppResources.localizationBundle)
+        case .setup: String(localized: "Connect, grant permissions and test your controller.", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -389,7 +389,7 @@ struct DashboardView: View {
                     if profiles.editingProfile.touchpad.oneFingerMode ==
                         .pointer {
                         LabeledSlider(
-                            label: "Pointer sensitivity",
+                            label: String(localized: "Pointer sensitivity", bundle: AppResources.localizationBundle),
                             value: Binding(
                                 get: {
                                     profiles.editingProfile.touchpad.pointerSensitivity
@@ -411,7 +411,7 @@ struct DashboardView: View {
                         )
                     )
                     LabeledSlider(
-                        label: "Scroll sensitivity",
+                        label: String(localized: "Scroll sensitivity", bundle: AppResources.localizationBundle),
                         value: Binding(
                             get: {
                                 profiles.editingProfile.touchpad.scrollSensitivity
@@ -488,16 +488,16 @@ struct DashboardView: View {
                     .pickerStyle(.segmented)
 
                     LabeledSlider(
-                        label: "Speed",
+                        label: String(localized: "Speed", bundle: AppResources.localizationBundle),
                         value: Binding(
                             get: { profiles.editingProfile.pointer.speed },
                             set: { profiles.updatePointerSpeed($0) }
                         ),
                         range: 300...1_600,
-                        valueText: { "\(Int($0)) px/s" }
+                        valueText: { String(localized: "\(Int($0)) px/s", bundle: AppResources.localizationBundle) }
                     )
                     LabeledSlider(
-                        label: "Acceleration",
+                        label: String(localized: "Acceleration", bundle: AppResources.localizationBundle),
                         value: Binding(
                             get: { profiles.editingProfile.pointer.acceleration },
                             set: { profiles.updatePointerAcceleration($0) }
@@ -505,7 +505,7 @@ struct DashboardView: View {
                         range: 1...2.6
                     )
                     LabeledSlider(
-                        label: "Dead zone",
+                        label: String(localized: "Dead zone", bundle: AppResources.localizationBundle),
                         value: Binding(
                             get: { profiles.editingProfile.pointer.deadZone },
                             set: { profiles.updateDeadZone($0) }
@@ -534,14 +534,14 @@ struct DashboardView: View {
                     Text(
                         profiles.editingProfile.pointer.scrollSource ==
                             profiles.editingProfile.pointer.source
-                            ? "Choose different sticks for pointer and scrolling. Pointer takes priority."
-                            : "Push vertically or horizontally to scroll in that direction."
+                            ? String(localized: "Choose different sticks for pointer and scrolling. Pointer takes priority.", bundle: AppResources.localizationBundle)
+                            : String(localized: "Push vertically or horizontally to scroll in that direction.", bundle: AppResources.localizationBundle)
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                     LabeledSlider(
-                        label: "Scroll speed",
+                        label: String(localized: "Scroll speed", bundle: AppResources.localizationBundle),
                         value: Binding(
                             get: {
                                 profiles.editingProfile.pointer.scrollSpeed
@@ -549,10 +549,10 @@ struct DashboardView: View {
                             set: { profiles.updateScrollSpeed($0) }
                         ),
                         range: 300...1_800,
-                        valueText: { "\(Int($0)) px/s" }
+                        valueText: { String(localized: "\(Int($0)) px/s", bundle: AppResources.localizationBundle) }
                     )
                     LabeledSlider(
-                        label: "Scroll acceleration",
+                        label: String(localized: "Scroll acceleration", bundle: AppResources.localizationBundle),
                         value: Binding(
                             get: {
                                 profiles.editingProfile.pointer
@@ -565,7 +565,7 @@ struct DashboardView: View {
                         range: 1...2.6
                     )
                     LabeledSlider(
-                        label: "Scroll dead zone",
+                        label: String(localized: "Scroll dead zone", bundle: AppResources.localizationBundle),
                         value: Binding(
                             get: {
                                 profiles.editingProfile.pointer.scrollDeadZone
@@ -599,15 +599,13 @@ struct DashboardView: View {
                         Text("Motion controls")
                             .font(.title3.weight(.semibold))
                         Text(
-                            "A deliberate hard shake asks before clearing the " +
-                            "focused text field. Every other motion gesture is " +
-                            "available but unassigned by default."
+                            "A deliberate hard shake asks before clearing the focused text field. Every other motion gesture is available but unassigned by default."
                         )
                         .foregroundStyle(.secondary)
                         Label(
                             controller.motionAvailable
-                                ? "Motion sensors connected"
-                                : "This controller is not reporting motion",
+                                ? String(localized: "Motion sensors connected", bundle: AppResources.localizationBundle)
+                                : String(localized: "This controller is not reporting motion", bundle: AppResources.localizationBundle),
                             systemImage: controller.motionAvailable
                                 ? "checkmark.circle.fill"
                                 : "exclamationmark.triangle"
@@ -632,7 +630,7 @@ struct DashboardView: View {
                         )
                     )
                     LabeledSlider(
-                        label: "Shake force",
+                        label: String(localized: "Shake force", bundle: AppResources.localizationBundle),
                         value: Binding(
                             get: {
                                 profiles.editingProfile.gyro.shakeThreshold
@@ -643,7 +641,7 @@ struct DashboardView: View {
                         valueText: { String(format: "%.2f g", $0) }
                     )
                     LabeledSlider(
-                        label: "Tilt angle",
+                        label: String(localized: "Tilt angle", bundle: AppResources.localizationBundle),
                         value: Binding(
                             get: {
                                 profiles.editingProfile.gyro.tiltThreshold
@@ -656,7 +654,7 @@ struct DashboardView: View {
                         }
                     )
                     LabeledSlider(
-                        label: "Twist speed",
+                        label: String(localized: "Twist speed", bundle: AppResources.localizationBundle),
                         value: Binding(
                             get: {
                                 profiles.editingProfile.gyro.rotationThreshold
@@ -676,8 +674,7 @@ struct DashboardView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text(
-                            "Suggested mappings are optional. Reset restores " +
-                            "the single shake-to-delete default."
+                            "Suggested mappings are optional. Reset restores the single shake-to-delete default."
                         )
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -755,9 +752,7 @@ struct DashboardView: View {
                         Text("Capture, copy, then annotate")
                             .font(.title3.weight(.semibold))
                         Text(
-                            "Hold R2 and move the left stick to select an " +
-                            "area. The original is copied immediately, then " +
-                            "the editor opens with controller-friendly tools."
+                            "Hold R2 and move the left stick to select an area. The original is copied immediately, then the editor opens with controller-friendly tools."
                         )
                         .foregroundStyle(.secondary)
                         Label(
@@ -801,8 +796,7 @@ struct DashboardView: View {
                     if !screenCapture.openEditorAfterCapture &&
                         !screenCapture.copyOriginalToClipboard {
                         Label(
-                            "With the editor disabled, ControlDeck still copies " +
-                            "the capture so it is not lost.",
+                            "With the editor disabled, ControlDeck still copies the capture so it is not lost.",
                             systemImage: "info.circle"
                         )
                         .font(.caption)
@@ -862,9 +856,7 @@ struct DashboardView: View {
 
                     HStack {
                         Text(
-                            "Highlight, draw, add arrows, boxes or text, and " +
-                            "redact sensitive areas. Undo, redo, copy and save " +
-                            "are always available."
+                            "Highlight, draw, add arrows, boxes or text, and redact sensitive areas. Undo, redo, copy and save are always available."
                         )
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -887,14 +879,14 @@ struct DashboardView: View {
                     ],
                     spacing: 10
                 ) {
-                    captureShortcut("Left stick", "Move pointer")
-                    captureShortcut("Cross", "Draw or place")
-                    captureShortcut("L1 / R1", "Previous / next tool")
-                    captureShortcut("Square / Triangle", "Undo / redo")
-                    captureShortcut("Touchpad click", "Copy edited image")
-                    captureShortcut("Create", "Save PNG")
-                    captureShortcut("Options", "Done & copy")
-                    captureShortcut("Circle", "Dismiss")
+                    captureShortcut(String(localized: "Left stick", bundle: AppResources.localizationBundle), String(localized: "Move pointer", bundle: AppResources.localizationBundle))
+                    captureShortcut(String(localized: "Cross", bundle: AppResources.localizationBundle), String(localized: "Draw or place", bundle: AppResources.localizationBundle))
+                    captureShortcut(String(localized: "L1 / R1", bundle: AppResources.localizationBundle), String(localized: "Previous / next tool", bundle: AppResources.localizationBundle))
+                    captureShortcut(String(localized: "Square / Triangle", bundle: AppResources.localizationBundle), String(localized: "Undo / redo", bundle: AppResources.localizationBundle))
+                    captureShortcut(String(localized: "Touchpad click", bundle: AppResources.localizationBundle), String(localized: "Copy edited image", bundle: AppResources.localizationBundle))
+                    captureShortcut(String(localized: "Create", bundle: AppResources.localizationBundle), String(localized: "Save PNG", bundle: AppResources.localizationBundle))
+                    captureShortcut(String(localized: "Options", bundle: AppResources.localizationBundle), String(localized: "Done & copy", bundle: AppResources.localizationBundle))
+                    captureShortcut(String(localized: "Circle", bundle: AppResources.localizationBundle), String(localized: "Dismiss", bundle: AppResources.localizationBundle))
                 }
                 .padding(8)
             }
@@ -931,14 +923,11 @@ struct DashboardView: View {
                         Text("Hold Options for the profile wheel")
                             .font(.title3.weight(.semibold))
                         Text(
-                            "Move the left stick toward one of eight app " +
-                            "profiles, then release Options to switch. Each " +
-                            "step has a light haptic so it works by feel."
+                            "Move the left stick toward one of eight app profiles, then release Options to switch. Each step has a light haptic so it works by feel."
                         )
                         .foregroundStyle(.secondary)
                         Text(
-                            "A quick Options tap still performs its normal " +
-                            "mapped action."
+                            "A quick Options tap still performs its normal mapped action."
                         )
                             .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
@@ -972,7 +961,7 @@ struct DashboardView: View {
                                     )
                                 ProfileLogoView(profile: profile, size: 38)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(profile.name)
+                                    Text(profile.displayName)
                                         .font(.headline)
                                     Text(slot.positionLabel)
                                         .font(.caption)
@@ -993,7 +982,7 @@ struct DashboardView: View {
                                 ) {
                                     ForEach(profiles.profiles) { candidate in
                                         Label(
-                                            candidate.name,
+                                            candidate.displayName,
                                             systemImage:
                                                 candidate.kind.systemImage
                                         )
@@ -1015,8 +1004,7 @@ struct DashboardView: View {
                     }
                     HStack {
                         Text(
-                            "Choosing a profile already on the wheel swaps " +
-                            "the two slots. The wheel always stays at eight."
+                            "Choosing a profile already on the wheel swaps the two slots. The wheel always stays at eight."
                         )
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -1036,9 +1024,7 @@ struct DashboardView: View {
                             Text("Capture + right stick")
                                 .font(.headline)
                             Text(
-                                "Hold Create/Capture, then flick the right " +
-                                "stick up for smarter or down for faster. " +
-                                "Each step has a light haptic."
+                                "Hold Create/Capture, then flick the right stick up for smarter or down for faster. Each step has a light haptic."
                             )
                             .foregroundStyle(.secondary)
                         }
@@ -1053,8 +1039,7 @@ struct DashboardView: View {
                             Text("Touchpad click")
                                 .font(.headline)
                             Text(
-                                "Shows the active profile, selected Codex " +
-                                "task, primary mappings, and profile wheel."
+                                "Shows the active profile, selected Codex task, primary mappings, and profile wheel."
                             )
                             .foregroundStyle(.secondary)
                         }
@@ -1103,7 +1088,7 @@ struct DashboardView: View {
                                 .font(.title2)
                                 .frame(width: 36)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(profile.name)
+                                Text(profile.displayName)
                                     .font(.headline)
                                 Text(profileSummary(profile))
                                     .font(.caption)
@@ -1133,7 +1118,7 @@ struct DashboardView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("Reset \(profiles.editingProfile.name)") {
+                Button("Reset \(profiles.editingProfile.displayName)") {
                     profiles.resetEditingProfile()
                 }
             }
@@ -1152,9 +1137,7 @@ struct DashboardView: View {
                         Text("Describe the controller you want")
                             .font(.title3.weight(.semibold))
                         Text(
-                            "Codex can safely remap profiles through local MCP " +
-                                "tools. In a developer checkout it can also add " +
-                                "new actions or controller behaviour and run the tests."
+                            "Codex can safely remap profiles through local MCP tools. In a developer checkout it can also add new actions or controller behaviour and run the tests."
                         )
                         .foregroundStyle(.secondary)
                     }
@@ -1177,8 +1160,8 @@ struct DashboardView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(
                             codexExtension.isInstalled
-                                ? "Controller tools installed"
-                                : "Install controller tools"
+                                ? String(localized: "Controller tools installed", bundle: AppResources.localizationBundle)
+                                : String(localized: "Install controller tools", bundle: AppResources.localizationBundle)
                         )
                         .font(.headline)
                         Text(codexExtension.status)
@@ -1220,25 +1203,25 @@ struct DashboardView: View {
 
                     HStack(spacing: 8) {
                         suggestionButton(
-                            "Tune Chrome",
+                            String(localized: "Tune Chrome", bundle: AppResources.localizationBundle),
                             prompt:
-                                "Make the browser profile ideal for reading, tabs and forms."
+                                String(localized: "Make the browser profile ideal for reading, tabs and forms.", bundle: AppResources.localizationBundle)
                         )
                         suggestionButton(
-                            "Remap a button",
+                            String(localized: "Remap a button", bundle: AppResources.localizationBundle),
                             prompt:
-                                "Inspect my Codex profile and suggest a better mapping for Triangle."
+                                String(localized: "Inspect my Codex profile and suggest a better mapping for Triangle.", bundle: AppResources.localizationBundle)
                         )
                         suggestionButton(
-                            "Add behaviour",
+                            String(localized: "Add behaviour", bundle: AppResources.localizationBundle),
                             prompt:
-                                "Add a useful controller action for my daily Codex workflow."
+                                String(localized: "Add a useful controller action for my daily Codex workflow.", bundle: AppResources.localizationBundle)
                         )
                         Spacer()
                         Button(
                             codexExtension.isRunning
-                                ? "Codex is working…"
-                                : "Open task in Codex"
+                                ? String(localized: "Codex is working…", bundle: AppResources.localizationBundle)
+                                : String(localized: "Open task in Codex", bundle: AppResources.localizationBundle)
                         ) {
                             codexExtension.runCustomization(
                                 customizationRequest
@@ -1278,9 +1261,7 @@ struct DashboardView: View {
             }
 
             Text(
-                "Profile tools can only read and update ControlDeck settings. " +
-                    "They do not expose a shell, personal files, Bluetooth, " +
-                    "microphone permissions or other Mac settings."
+                "Profile tools can only read and update ControlDeck settings. They do not expose a shell, personal files, Bluetooth, microphone permissions or other Mac settings."
             )
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -1326,8 +1307,7 @@ struct DashboardView: View {
                         Text("Ready in a few minutes")
                             .font(.title3.weight(.semibold))
                         Text(
-                            "Install, pair, grant access, choose a profile " +
-                                "and connect Codex. Completed steps update here."
+                            "Install, pair, grant access, choose a profile and connect Codex. Completed steps update here."
                         )
                         .foregroundStyle(.secondary)
                     }
@@ -1343,7 +1323,7 @@ struct DashboardView: View {
 
             SetupStep(
                 number: 1,
-                title: "Install in Applications",
+                title: String(localized: "Install in Applications", bundle: AppResources.localizationBundle),
                 detail: model.installationResult
             ) {
                 Button("Install in Applications") {
@@ -1352,11 +1332,9 @@ struct DashboardView: View {
             }
             SetupStep(
                 number: 2,
-                title: "Connect the controller",
+                title: String(localized: "Connect the controller", bundle: AppResources.localizationBundle),
                 detail:
-                    "DualSense: hold Create + PS until the light bar flashes. " +
-                    "Other controllers use their pairing button. Then select " +
-                    "the controller in Bluetooth Settings, or connect by USB."
+                    String(localized: "DualSense: hold Create + PS until the light bar flashes. Other controllers use their pairing button. Then select the controller in Bluetooth Settings, or connect by USB.", bundle: AppResources.localizationBundle)
             ) {
                 if controller.isConnected {
                     Label(
@@ -1372,8 +1350,8 @@ struct DashboardView: View {
             }
             SetupStep(
                 number: 3,
-                title: "Allow controller actions",
-                detail: "Accessibility lets the app move the pointer and send keyboard shortcuts. The app never requests this repeatedly; use this button if the permission is missing."
+                title: String(localized: "Allow controller actions", bundle: AppResources.localizationBundle),
+                detail: String(localized: "Accessibility lets the app move the pointer and send keyboard shortcuts. The app never requests this repeatedly; use this button if the permission is missing.", bundle: AppResources.localizationBundle)
             ) {
                 if automation.accessibilityTrusted {
                     Label("Enabled", systemImage: "checkmark.circle.fill")
@@ -1387,11 +1365,9 @@ struct DashboardView: View {
             }
             SetupStep(
                 number: 4,
-                title: "Choose a profile",
+                title: String(localized: "Choose a profile", bundle: AppResources.localizationBundle),
                 detail:
-                    "Automatic switching is on for Codex, browsers, music, " +
-                    "Claude and editors. Every button, gesture and pointer " +
-                    "setting remains editable."
+                    String(localized: "Automatic switching is on for Codex, browsers, music, Claude and editors. Every button, gesture and pointer setting remains editable.", bundle: AppResources.localizationBundle)
             ) {
                 Button("View controls") {
                     section = .controller
@@ -1399,10 +1375,9 @@ struct DashboardView: View {
             }
             SetupStep(
                 number: 5,
-                title: "Connect Codex customization",
+                title: String(localized: "Connect Codex customization", bundle: AppResources.localizationBundle),
                 detail:
-                    "Install the local skill and MCP tools so Codex can inspect " +
-                    "and safely change controller profiles."
+                    String(localized: "Install the local skill and MCP tools so Codex can inspect and safely change controller profiles.", bundle: AppResources.localizationBundle)
             ) {
                 if codexExtension.isInstalled {
                     Label("Installed", systemImage: "checkmark.circle.fill")
@@ -1439,14 +1414,12 @@ struct DashboardView: View {
                             }
                         }
                         Text(
-                            "Learn pointer, scrolling, dictation, screen " +
-                            "capture and profile switching, then see where " +
-                            "the optional advanced controls live."
+                            "Learn pointer, scrolling, dictation, screen capture and profile switching, then see where the optional advanced controls live."
                         )
                         .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button(tutorial.hasCompleted ? "Replay tutorial" : "Start tutorial") {
+                    Button(tutorial.hasCompleted ? String(localized: "Replay tutorial", bundle: AppResources.localizationBundle) : String(localized: "Start tutorial", bundle: AppResources.localizationBundle)) {
                         tutorial.start()
                     }
                     .buttonStyle(.borderedProminent)
@@ -1456,12 +1429,12 @@ struct DashboardView: View {
 
             SetupStep(
                 number: 6,
-                title: "Wireless controller microphone",
+                title: String(localized: "Wireless controller microphone", bundle: AppResources.localizationBundle),
                 detail: !controller.controllerFamily.isDualSense
-                    ? "Microphone, speaker, lights and adaptive triggers are DualSense-only. Buttons, sticks and app profiles still work."
+                    ? String(localized: "Microphone, speaker, lights and adaptive triggers are DualSense-only. Buttons, sticks and app profiles still work.", bundle: AppResources.localizationBundle)
                     : controller.transport == .bluetooth
                     ? bluetoothMicrophone.lastResult
-                    : "Connect over Bluetooth to publish “DualSense Microphone.” Select it in Codex; the first recording may ask to allow Codex under Microphone and Screen & System Audio Recording."
+                    : String(localized: "Connect over Bluetooth to publish “DualSense Microphone.” Select it in Codex; the first recording may ask to allow Codex under Microphone and Screen & System Audio Recording.", bundle: AppResources.localizationBundle)
             ) {
                 if bluetoothMicrophone.isPublished {
                     VStack(alignment: .leading, spacing: 10) {
@@ -1481,8 +1454,8 @@ struct DashboardView: View {
                         HStack {
                             Button(
                                 model.microphoneDiagnosticRunning
-                                    ? "Testing microphone…"
-                                    : "Test wireless mic (3 seconds)"
+                                    ? String(localized: "Testing microphone…", bundle: AppResources.localizationBundle)
+                                    : String(localized: "Test wireless mic (3 seconds)", bundle: AppResources.localizationBundle)
                             ) {
                                 model.runWirelessMicrophoneDiagnostic()
                             }
@@ -1505,12 +1478,7 @@ struct DashboardView: View {
                         }
                         .buttonStyle(.link)
                         Text(
-                            "Choose DualSense Microphone in Codex Settings → " +
-                                "General. ControlDeck keeps this input published " +
-                                "while Bluetooth is connected and does not " +
-                                "change the Mac’s system-default microphone. " +
-                                "Outside Codex, ControlDeck uses Apple’s local " +
-                                "SpeechTranscriber and inserts into the focused field."
+                            "Choose DualSense Microphone in Codex Settings → General. ControlDeck keeps this input published while Bluetooth is connected and does not change the Mac’s system-default microphone. Outside Codex, ControlDeck uses Apple’s local SpeechTranscriber and inserts into the focused field."
                         )
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -1526,10 +1494,7 @@ struct DashboardView: View {
             GroupBox("Dictation & speech extensions") {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(
-                        "Apple Speech is ready immediately. Optional local " +
-                        "speech extensions download only when you choose " +
-                        "them, stay outside the ControlDeck app, and can be " +
-                        "removed here at any time."
+                        "Apple Speech is ready immediately. Optional local speech extensions download only when you choose them, stay outside the ControlDeck app, and can be removed here at any time."
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1552,8 +1517,8 @@ struct DashboardView: View {
                     )
                     Text(
                         model.generalDictationUsesControllerMicrophone
-                            ? "Default · L2 uses the DualSense microphone over USB or Bluetooth."
-                            : "Comparison mode · L2 uses the Mac’s selected input while controller buttons still control dictation."
+                            ? String(localized: "Default · L2 uses the DualSense microphone over USB or Bluetooth.", bundle: AppResources.localizationBundle)
+                            : String(localized: "Comparison mode · L2 uses the Mac’s selected input while controller buttons still control dictation.", bundle: AppResources.localizationBundle)
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1632,8 +1597,7 @@ struct DashboardView: View {
                                 }
                             } else {
                                 Text(
-                                    "Uses Apple’s on-device model and requires " +
-                                    "no ControlDeck model storage."
+                                    "Uses Apple’s on-device model and requires no ControlDeck model storage."
                                 )
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -1707,28 +1671,21 @@ struct DashboardView: View {
                     }
 
                     Text(
-                        "L2 still uses Codex’s native dictation in Codex and " +
-                        "Claude’s native dictation in Claude. This setting " +
-                        "applies to Notes, browsers, editors and other apps. " +
-                        "Live uses Parakeet and automatically retries buffered " +
-                        "audio with a ready WhisperKit model when needed. " +
-                        "Balanced keeps the download compact; High Accuracy is " +
-                        "an optional larger Whisper model. " +
-                        "Downloaded models never receive your audio over a network."
+                        "L2 still uses Codex’s native dictation in Codex and Claude’s native dictation in Claude. This setting applies to Notes, browsers, editors and other apps. Live uses Parakeet and automatically retries buffered audio with a ready WhisperKit model when needed. Balanced keeps the download compact; High Accuracy is an optional larger Whisper model. Downloaded models never receive your audio over a network."
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                     HStack(spacing: 16) {
                         Link(
-                            "Parakeet model & license",
+                            String(localized: "Parakeet model & license", bundle: AppResources.localizationBundle),
                             destination: URL(
                                 string:
                                     "https://huggingface.co/FluidInference/parakeet-realtime-eou-120m-coreml"
                             )!
                         )
                         Link(
-                            "WhisperKit model",
+                            String(localized: "WhisperKit model", bundle: AppResources.localizationBundle),
                             destination: URL(
                                 string:
                                     "https://huggingface.co/argmaxinc/whisperkit-coreml"
@@ -1750,34 +1707,34 @@ struct DashboardView: View {
                     spacing: 10
                 ) {
                     ControllerSupportCard(
-                        title: "DualSense",
-                        detail: "All features",
+                        title: String(localized: "DualSense", bundle: AppResources.localizationBundle),
+                        detail: String(localized: "All features", bundle: AppResources.localizationBundle),
                         icon: "gamecontroller.fill",
                         highlighted: true
                     )
                     ControllerSupportCard(
-                        title: "DualShock 4",
-                        detail: "Buttons, sticks, haptics",
+                        title: String(localized: "DualShock 4", bundle: AppResources.localizationBundle),
+                        detail: String(localized: "Buttons, sticks, haptics", bundle: AppResources.localizationBundle),
                         icon: "gamecontroller"
                     )
                     ControllerSupportCard(
-                        title: "Switch Pro / 2",
-                        detail: "Buttons and sticks",
+                        title: String(localized: "Switch Pro / 2", bundle: AppResources.localizationBundle),
+                        detail: String(localized: "Buttons and sticks", bundle: AppResources.localizationBundle),
                         icon: "gamecontroller"
                     )
                     ControllerSupportCard(
-                        title: "8BitDo",
-                        detail: "Buttons and sticks",
+                        title: String(localized: "8BitDo", bundle: AppResources.localizationBundle),
+                        detail: String(localized: "Buttons and sticks", bundle: AppResources.localizationBundle),
                         icon: "gamecontroller"
                     )
                     ControllerSupportCard(
-                        title: "MFi controllers",
-                        detail: "Extended gamepads",
+                        title: String(localized: "MFi controllers", bundle: AppResources.localizationBundle),
+                        detail: String(localized: "Extended gamepads", bundle: AppResources.localizationBundle),
                         icon: "gamecontroller"
                     )
                     ControllerSupportCard(
-                        title: "More devices",
-                        detail: "Automatic fallback",
+                        title: String(localized: "More devices", bundle: AppResources.localizationBundle),
+                        detail: String(localized: "Automatic fallback", bundle: AppResources.localizationBundle),
                         icon: "plus.circle"
                     )
                 }
@@ -1787,22 +1744,22 @@ struct DashboardView: View {
             GroupBox("DualSense feature availability") {
                 VStack(spacing: 0) {
                     FeatureRow(
-                        feature: "Buttons, sticks and touchpad",
+                        feature: String(localized: "Buttons, sticks and touchpad", bundle: AppResources.localizationBundle),
                         usb: true,
                         bluetooth: true
                     )
                     FeatureRow(
-                        feature: "Light bar, haptics and adaptive triggers",
+                        feature: String(localized: "Light bar, haptics and adaptive triggers", bundle: AppResources.localizationBundle),
                         usb: true,
                         bluetooth: true
                     )
                     FeatureRow(
-                        feature: "Controller microphone and mic LED",
+                        feature: String(localized: "Controller microphone and mic LED", bundle: AppResources.localizationBundle),
                         usb: true,
                         bluetooth: true
                     )
                     FeatureRow(
-                        feature: "Controller speaker",
+                        feature: String(localized: "Controller speaker", bundle: AppResources.localizationBundle),
                         usb: true,
                         bluetooth: true
                     )
@@ -1859,7 +1816,7 @@ struct DashboardView: View {
                 )
             ) {
                 ForEach(profiles.profiles) { profile in
-                    Label(profile.name, systemImage: profile.kind.systemImage)
+                    Label(profile.displayName, systemImage: profile.kind.systemImage)
                         .tag(profile.kind)
                 }
             }
@@ -1874,22 +1831,22 @@ struct DashboardView: View {
 
     private func profileSummary(_ profile: ControllerProfile) -> String {
         switch profile.kind {
-        case .codex: "Tasks, review, approvals and dictation"
-        case .general: "Pointer, windows and system navigation"
-        case .chrome: "Tabs, navigation, find and address bar"
-        case .spotify: "Playback, tracks and volume"
-        case .claude: "Chat, navigation, dictation and screenshots"
-        case .xcode: "Pointer, navigation and Codex shortcuts"
-        case .finder: "Files, Quick Look, tabs, copy and paste"
-        case .meetings: "Push to talk, camera, chat, sharing and hand raise"
-        case .presentations: "Start, advance, notes, pointer and blank screen"
-        case .slack: "Conversations, unread messages, threads and huddles"
-        case .mail: "Archive, reply, read state and dictation"
-        case .photos: "Browse, favourite, edit, rotate and zoom"
-        case .figma: "Canvas pointer, tools, undo, redo and zoom"
-        case .videoEditing: "J-K-L playback, marks and edit navigation"
-        case .logic: "Playback, record, transport and volume"
-        case .terminal: "Tabs, history, cursor movement, copy and paste"
+        case .codex: String(localized: "Tasks, review, approvals and dictation", bundle: AppResources.localizationBundle)
+        case .general: String(localized: "Pointer, windows and system navigation", bundle: AppResources.localizationBundle)
+        case .chrome: String(localized: "Tabs, navigation, find and address bar", bundle: AppResources.localizationBundle)
+        case .spotify: String(localized: "Playback, tracks and volume", bundle: AppResources.localizationBundle)
+        case .claude: String(localized: "Chat, navigation, dictation and screenshots", bundle: AppResources.localizationBundle)
+        case .xcode: String(localized: "Pointer, navigation and Codex shortcuts", bundle: AppResources.localizationBundle)
+        case .finder: String(localized: "Files, Quick Look, tabs, copy and paste", bundle: AppResources.localizationBundle)
+        case .meetings: String(localized: "Push to talk, camera, chat, sharing and hand raise", bundle: AppResources.localizationBundle)
+        case .presentations: String(localized: "Start, advance, notes, pointer and blank screen", bundle: AppResources.localizationBundle)
+        case .slack: String(localized: "Conversations, unread messages, threads and huddles", bundle: AppResources.localizationBundle)
+        case .mail: String(localized: "Archive, reply, read state and dictation", bundle: AppResources.localizationBundle)
+        case .photos: String(localized: "Browse, favourite, edit, rotate and zoom", bundle: AppResources.localizationBundle)
+        case .figma: String(localized: "Canvas pointer, tools, undo, redo and zoom", bundle: AppResources.localizationBundle)
+        case .videoEditing: String(localized: "J-K-L playback, marks and edit navigation", bundle: AppResources.localizationBundle)
+        case .logic: String(localized: "Playback, record, transport and volume", bundle: AppResources.localizationBundle)
+        case .terminal: String(localized: "Tabs, history, cursor movement, copy and paste", bundle: AppResources.localizationBundle)
         }
     }
 }
@@ -2089,9 +2046,9 @@ private struct FeatureRow: View {
         HStack {
             Text(feature)
             Spacer()
-            AvailabilityLabel(title: "USB", available: usb)
+            AvailabilityLabel(title: String(localized: "USB", bundle: AppResources.localizationBundle), available: usb)
                 .frame(width: 100)
-            AvailabilityLabel(title: "Bluetooth", available: bluetooth)
+            AvailabilityLabel(title: String(localized: "Bluetooth", bundle: AppResources.localizationBundle), available: bluetooth)
                 .frame(width: 130)
         }
         .padding(.vertical, 8)

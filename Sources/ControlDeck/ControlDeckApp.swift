@@ -43,7 +43,7 @@ private struct MenuContent: View {
                 Circle()
                     .fill(Color(nsColor: model.currentState.color))
                     .frame(width: 9, height: 9)
-                Text(model.controller.isConnected ? "DualSense · \(model.currentState.label)" : "DualSense disconnected")
+                Text(model.controller.isConnected ? String(localized: "DualSense · \(model.currentState.label)", bundle: AppResources.localizationBundle) : String(localized: "DualSense disconnected", bundle: AppResources.localizationBundle))
                     .font(.headline)
             }
             Text(model.lastAction)

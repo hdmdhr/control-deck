@@ -36,23 +36,23 @@ struct FunctionalDashboardContent: View {
             HStack(spacing: 12) {
                 FunctionalStatusCard(
                     icon: controller.isConnected ? controller.transport.systemImage : "gamecontroller",
-                    title: "Controller",
+                    title: String(localized: "Controller", bundle: AppResources.localizationBundle),
                     value: controller.isConnected
                         ? controller.controllerName
-                        : "Offline",
+                        : String(localized: "Offline", bundle: AppResources.localizationBundle),
                     detail: controller.isConnected
-                        ? "\(controller.transport.label) · \(Int(controller.batteryLevel * 100))% battery"
-                        : "Connect with USB or Bluetooth"
+                        ? String(localized: "\(controller.transport.label) · \(Int(controller.batteryLevel * 100))% battery", bundle: AppResources.localizationBundle)
+                        : String(localized: "Connect with USB or Bluetooth", bundle: AppResources.localizationBundle)
                 )
                 FunctionalStatusCard(
                     icon: profiles.activeKind.systemImage,
-                    title: "Active profile",
-                    value: profiles.activeProfile.name,
-                    detail: profiles.autoSwitchEnabled ? "Switches with the foreground app" : "Selected manually"
+                    title: String(localized: "Active profile", bundle: AppResources.localizationBundle),
+                    value: profiles.activeProfile.displayName,
+                    detail: profiles.autoSwitchEnabled ? String(localized: "Switches with the foreground app", bundle: AppResources.localizationBundle) : String(localized: "Selected manually", bundle: AppResources.localizationBundle)
                 )
                 FunctionalStatusCard(
                     icon: "bolt.horizontal.circle",
-                    title: "Last controller action",
+                    title: String(localized: "Last controller action", bundle: AppResources.localizationBundle),
                     value: controller.lastInput,
                     detail: model.lastAction
                 )
@@ -63,23 +63,23 @@ struct FunctionalDashboardContent: View {
                     .font(.system(size: 17, weight: .semibold, design: .rounded))
 
                 HStack(spacing: 10) {
-                    DashboardQuickAction("Send", icon: "paperplane.fill", color: PS5Palette.idle) {
+                    DashboardQuickAction(String(localized: "Send", bundle: AppResources.localizationBundle), icon: "paperplane.fill", color: PS5Palette.idle) {
                         model.perform(.sendMessage)
                     }
-                    DashboardQuickAction("Stop", icon: "stop.fill", color: PS5Palette.thinking) {
+                    DashboardQuickAction(String(localized: "Stop", bundle: AppResources.localizationBundle), icon: "stop.fill", color: PS5Palette.thinking) {
                         model.perform(.interrupt)
                     }
-                    DashboardQuickAction("Review", icon: "text.bubble.fill", color: PS5Palette.complete) {
+                    DashboardQuickAction(String(localized: "Review", bundle: AppResources.localizationBundle), icon: "text.bubble.fill", color: PS5Palette.complete) {
                         model.perform(.toggleReview)
                     }
                     DashboardQuickAction(
-                        model.pushToTalkActive ? "Stop dictation" : "Dictate",
+                        model.pushToTalkActive ? String(localized: "Stop dictation", bundle: AppResources.localizationBundle) : String(localized: "Dictate", bundle: AppResources.localizationBundle),
                         icon: model.pushToTalkActive ? "mic.fill" : "mic",
                         color: PS5Palette.needsInput
                     ) {
                         model.toggleVoiceCapture()
                     }
-                    DashboardQuickAction("New task", icon: "plus.circle.fill", color: PS5Palette.error) {
+                    DashboardQuickAction(String(localized: "New task", bundle: AppResources.localizationBundle), icon: "plus.circle.fill", color: PS5Palette.error) {
                         model.perform(.newTask)
                     }
                 }
@@ -139,7 +139,7 @@ struct FunctionalDashboardContent: View {
                 Text(model.microphoneDiagnosticResult)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(
-                        model.microphoneDiagnosticResult.hasPrefix("Passed")
+                        model.microphoneDiagnosticPassed
                             ? PS5Palette.complete
                             : Color.secondary
                     )
@@ -148,8 +148,8 @@ struct FunctionalDashboardContent: View {
             HStack(spacing: 9) {
                 Button(
                     model.microphoneDiagnosticRunning
-                        ? "Testing…"
-                        : "Test 3 seconds"
+                        ? String(localized: "Testing…", bundle: AppResources.localizationBundle)
+                        : String(localized: "Test 3 seconds", bundle: AppResources.localizationBundle)
                 ) {
                     model.runWirelessMicrophoneDiagnostic()
                 }
@@ -162,8 +162,8 @@ struct FunctionalDashboardContent: View {
 
                 Button(
                     model.pushToTalkActive
-                        ? "Stop dictation"
-                        : "Dictate in Codex"
+                        ? String(localized: "Stop dictation", bundle: AppResources.localizationBundle)
+                        : String(localized: "Dictate in Codex", bundle: AppResources.localizationBundle)
                 ) {
                     model.toggleVoiceCapture()
                 }
@@ -180,8 +180,7 @@ struct FunctionalDashboardContent: View {
             }
 
             Text(
-                "Select DualSense Microphone once in Codex Settings → General. " +
-                    "Your Mac’s system-default microphone is never changed."
+                "Select DualSense Microphone once in Codex Settings → General. Your Mac’s system-default microphone is never changed."
             )
             .font(.caption2)
             .foregroundStyle(.secondary)
@@ -223,25 +222,25 @@ struct FunctionalDashboardContent: View {
         .frame(height: 8)
         .accessibilityLabel("Controller microphone level")
         .accessibilityValue(
-            "\(Int((bluetoothMicrophone.inputLevel * 100).rounded())) percent"
+            String(localized: "\(Int((bluetoothMicrophone.inputLevel * 100).rounded())) percent", bundle: AppResources.localizationBundle)
         )
     }
 
     private var microphoneStatusTitle: String {
         if model.pushToTalkActive {
-            return "Codex is listening"
+            return String(localized: "Codex is listening", bundle: AppResources.localizationBundle)
         }
         if model.microphoneDiagnosticRunning {
-            return "Speak now"
+            return String(localized: "Speak now", bundle: AppResources.localizationBundle)
         }
         if controller.transport == .bluetooth,
            bluetoothMicrophone.isPublished {
-            return "Bluetooth mic ready"
+            return String(localized: "Bluetooth mic ready", bundle: AppResources.localizationBundle)
         }
         if controller.transport == .usb, model.audio.controllerAudioAvailable {
-            return "USB mic ready"
+            return String(localized: "USB mic ready", bundle: AppResources.localizationBundle)
         }
-        return "Microphone offline"
+        return String(localized: "Microphone offline", bundle: AppResources.localizationBundle)
     }
 
     private var microphoneStatusDetail: String {
@@ -251,7 +250,7 @@ struct FunctionalDashboardContent: View {
         if controller.transport == .usb {
             return model.audio.lastAudioResult
         }
-        return "Connect a DualSense by USB or Bluetooth."
+        return String(localized: "Connect a DualSense by USB or Bluetooth.", bundle: AppResources.localizationBundle)
     }
 
     private var microphoneStatusColor: Color {
