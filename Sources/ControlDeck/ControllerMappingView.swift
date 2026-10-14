@@ -484,6 +484,8 @@ struct ControllerMappingView: View {
             return "doc.on.clipboard"
         case .screenshotSelection:
             return "camera.viewfinder"
+        case .codexAppSnapshot:
+            return "macwindow"
         case .openClaude:
             return "sparkles"
         default:

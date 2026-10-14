@@ -315,6 +315,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case codexApprove
     case codexDecline
     case codexDictation
+    case codexAppSnapshot
     case codexFastMode
     case codexContinueInNewTask
 
@@ -457,6 +458,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .codexApprove: String(localized: "Codex · Approve", bundle: AppResources.localizationBundle)
         case .codexDecline: String(localized: "Codex · Decline", bundle: AppResources.localizationBundle)
         case .codexDictation: String(localized: "Codex · Dictation", bundle: AppResources.localizationBundle)
+        case .codexAppSnapshot: String(localized: "Codex · App snapshot", bundle: AppResources.localizationBundle)
         case .codexFastMode: String(localized: "Codex · Fast mode", bundle: AppResources.localizationBundle)
         case .codexContinueInNewTask: String(localized: "Codex · Continue in new task", bundle: AppResources.localizationBundle)
         case .claudeNewChat: String(localized: "Claude · New chat", bundle: AppResources.localizationBundle)
@@ -569,7 +571,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .codexSend, .codexStop, .codexReview, .codexPlan, .codexNewTask,
              .codexCommandMenu, .codexFocus, .codexPreviousTask, .codexNextTask,
              .codexBack, .codexForward, .codexSidebar, .codexQuickChat,
-             .codexTerminal, .codexApprove, .codexDecline, .codexDictation,
+             .codexTerminal, .codexApprove, .codexDecline, .codexDictation, .codexAppSnapshot,
              .codexFastMode, .codexContinueInNewTask:
             .codex
         case .claudeNewChat, .claudeSidebar, .claudeCode,
@@ -824,6 +826,8 @@ struct TouchpadSettings: Codable, Equatable, Sendable {
 
 enum ProfileKind: String, Codable, CaseIterable, Identifiable, Sendable {
     case codex
+    case cursor
+    case grokBot
     case general
     case chrome
     case spotify
@@ -845,6 +849,8 @@ enum ProfileKind: String, Codable, CaseIterable, Identifiable, Sendable {
     var label: String {
         switch self {
         case .codex: String(localized: "Codex", bundle: AppResources.localizationBundle)
+        case .cursor: String(localized: "Cursor", bundle: AppResources.localizationBundle)
+        case .grokBot: String(localized: "Grok Bot", bundle: AppResources.localizationBundle)
         case .general: String(localized: "General", bundle: AppResources.localizationBundle)
         case .chrome: String(localized: "Chrome", bundle: AppResources.localizationBundle)
         case .spotify: String(localized: "Spotify", bundle: AppResources.localizationBundle)
@@ -866,6 +872,8 @@ enum ProfileKind: String, Codable, CaseIterable, Identifiable, Sendable {
     var systemImage: String {
         switch self {
         case .codex: "terminal"
+        case .cursor: "cursorarrow"
+        case .grokBot: "bubble.left.and.bubble.right"
         case .general: "macbook"
         case .chrome: "globe"
         case .spotify: "music.note"
@@ -1009,7 +1017,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
 
     static var defaults: [ControllerProfile] {
         [
-            codex, claude, general, finder, chrome, meetings,
+            codex, cursor, grokBot, claude, general, finder, chrome, meetings,
             presentations, slack, mail, photos, spotify, figma,
             videoEditing, logic, terminal, xcode
         ]
@@ -1031,7 +1039,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
             .l1: .codexPreviousTask,
             .r1: .codexNextTask,
             .l2: .codexDictation,
-            .r2: .screenshotSelection,
+            .r2: .codexAppSnapshot,
             .l3: .copy,
             .r3: .paste,
             .create: .codexNewTask,
@@ -1178,13 +1186,51 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         touchpad: .trackpadDefault
     )
 
+    mutating func migrateLegacyCodexSnapshot() {
+        guard kind == .codex, action(for: .r2) == .screenshotSelection else { return }
+        setAction(.codexAppSnapshot, for: .r2)
+    }
+
+    static let cursor = desktopAssistant(
+        kind: .cursor, name: "Cursor",
+        bundleIdentifier: "com.todesktop.230313mzl4w4u92"
+    )
+
+    static let grokBot = desktopAssistant(
+        kind: .grokBot, name: "Grok Bot",
+        bundleIdentifier: "com.anysphere.sand"
+    )
+
+    /// Shared, application-neutral controls avoid invoking Codex-only commands.
+    private static func desktopAssistant(
+        kind: ProfileKind, name: String, bundleIdentifier: String
+    ) -> ControllerProfile {
+        ControllerProfile(
+            kind: kind, name: name,
+            bundleIdentifiers: [bundleIdentifier],
+            bindings: mapping([
+                .cross: .mouseLeftClick, .circle: .escapeKey,
+                .square: .copy, .triangle: .paste,
+                .l1: .back, .r1: .forward,
+                .l2: .systemDictation, .r2: .screenshotSelection,
+                .l3: .copy, .r3: .paste,
+                .create: .appSwitcher, .options: .returnKey,
+                .ps: .openCodex,
+                .dpadUp: .arrowUp, .dpadDown: .arrowDown,
+                .dpadLeft: .arrowLeft, .dpadRight: .arrowRight,
+                .touchpadClick: .showControllerOverlay,
+                .microphone: .systemDictation
+            ]),
+            pointer: .generalDefault, touchpad: .trackpadDefault
+        )
+    }
+
     static let xcode = ControllerProfile(
         kind: .xcode,
         name: "Xcode & editors",
         bundleIdentifiers: [
             "com.apple.dt.Xcode",
-            "com.microsoft.VSCode",
-            "com.todesktop.230313mzl4w4u92"
+            "com.microsoft.VSCode"
         ],
         bindings: mapping([
             .cross: .mouseLeftClick,

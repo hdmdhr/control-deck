@@ -1846,7 +1846,7 @@ struct DashboardView: View {
         case .general: String(localized: "Pointer, windows and system navigation", bundle: AppResources.localizationBundle)
         case .chrome: String(localized: "Tabs, navigation, find and address bar", bundle: AppResources.localizationBundle)
         case .spotify: String(localized: "Playback, tracks and volume", bundle: AppResources.localizationBundle)
-        case .claude: String(localized: "Chat, navigation, dictation and screenshots", bundle: AppResources.localizationBundle)
+        case .claude, .cursor, .grokBot: String(localized: "Chat, navigation, dictation and screenshots", bundle: AppResources.localizationBundle)
         case .xcode: String(localized: "Pointer, navigation and Codex shortcuts", bundle: AppResources.localizationBundle)
         case .finder: String(localized: "Files, Quick Look, tabs, copy and paste", bundle: AppResources.localizationBundle)
         case .meetings: String(localized: "Push to talk, camera, chat, sharing and hand raise", bundle: AppResources.localizationBundle)

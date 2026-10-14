@@ -24,8 +24,8 @@ struct ProfileWheelSlot: Codable, Equatable, Identifiable, Sendable {
     static let defaults: [ProfileWheelSlot] = [
         .init(position: 0, profileKind: .codex),
         .init(position: 1, profileKind: .chrome),
-        .init(position: 2, profileKind: .claude),
-        .init(position: 3, profileKind: .spotify),
+        .init(position: 2, profileKind: .cursor),
+        .init(position: 3, profileKind: .grokBot),
         .init(position: 4, profileKind: .general),
         .init(position: 5, profileKind: .finder),
         .init(position: 6, profileKind: .terminal),
@@ -38,6 +38,7 @@ final class ShiftLayerStore: ObservableObject {
     @Published private(set) var profileSlots: [ProfileWheelSlot]
 
     static let storageKey = "profileWheelSettings.v1"
+    private static let assistantWheelMigrationKey = "assistantProfileWheel.v1"
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -47,10 +48,13 @@ final class ShiftLayerStore: ObservableObject {
                [ProfileWheelSlot].self,
                from: data
            ) {
-            profileSlots = Self.merged(decoded)
+            let migrated = defaults.bool(forKey: Self.assistantWheelMigrationKey)
+                ? decoded : Self.migrateLegacyDefaults(decoded)
+            profileSlots = Self.merged(migrated)
         } else {
             profileSlots = ProfileWheelSlot.defaults
         }
+        defaults.set(true, forKey: Self.assistantWheelMigrationKey)
         persist()
     }
 
@@ -98,6 +102,18 @@ final class ShiftLayerStore: ObservableObject {
     private func persist() {
         guard let data = try? JSONEncoder().encode(profileSlots) else { return }
         defaults.set(data, forKey: Self.storageKey)
+    }
+
+    /// Upgrade only unchanged legacy slots, leaving reordered or custom slots intact.
+    static func migrateLegacyDefaults(_ saved: [ProfileWheelSlot]) -> [ProfileWheelSlot] {
+        var result = saved
+        for (position, legacy, replacement) in [(2, ProfileKind.claude, ProfileKind.cursor), (3, .spotify, .grokBot)] {
+            guard !result.contains(where: { $0.profileKind == replacement }),
+                  let index = result.firstIndex(where: { $0.position == position && $0.profileKind == legacy })
+            else { continue }
+            result[index].profileKind = replacement
+        }
+        return result
     }
 
     private static func merged(

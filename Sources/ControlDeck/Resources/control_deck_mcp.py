@@ -33,7 +33,7 @@ VALID_ACTIONS = {
     "codexNewTask", "codexCommandMenu", "codexFocus",
     "codexPreviousTask", "codexNextTask", "codexBack", "codexForward",
     "codexSidebar", "codexQuickChat", "codexTerminal", "codexApprove",
-    "codexDecline", "codexDictation",
+    "codexDecline", "codexDictation", "codexAppSnapshot",
     "codexFastMode", "codexContinueInNewTask",
     "claudeNewChat", "claudeSidebar", "claudeCode", "claudeProjects",
     "meetingMute", "meetingPushToTalk", "meetingVideo", "meetingChat",

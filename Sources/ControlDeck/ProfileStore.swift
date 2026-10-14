@@ -22,6 +22,8 @@ final class ProfileStore: ObservableObject {
     private let expandedProfileCatalogKey = "expandedProfileCatalog.v1"
     private let stickClickCopyPasteKey = "stickClickCopyPaste.v1"
     private let universalL2DictationKey = "universalL2Dictation.v1"
+    private let cursorProfileMigrationKey = "cursorProfile.v1"
+    private let codexSnapshotKey = "codexAppSnapshot.v1"
     private let universalR2CaptureKey = "universalR2Capture.v1"
     private var activationObserver: NSObjectProtocol?
     private var contextTimer: Timer?
@@ -48,6 +50,15 @@ final class ProfileStore: ObservableObject {
             autoSwitchEnabled = true
         } else {
             autoSwitchEnabled = UserDefaults.standard.bool(forKey: autoSwitchKey)
+        }
+        if !UserDefaults.standard.bool(forKey: cursorProfileMigrationKey) {
+            // Preserve editor bindings while giving Cursor its dedicated app association.
+            if let editor = profiles.firstIndex(where: { $0.kind == .xcode }) {
+                profiles[editor].bundleIdentifiers.removeAll {
+                    $0 == "com.todesktop.230313mzl4w4u92"
+                }
+            }
+            UserDefaults.standard.set(true, forKey: cursorProfileMigrationKey)
         }
         if !UserDefaults.standard.bool(forKey: mouseRefinementKey) {
             for index in profiles.indices {
@@ -153,6 +164,13 @@ final class ProfileStore: ObservableObject {
             }
             UserDefaults.standard.set(true, forKey: universalR2CaptureKey)
         }
+        if !UserDefaults.standard.bool(forKey: codexSnapshotKey) {
+            for index in profiles.indices {
+                profiles[index].migrateLegacyCodexSnapshot()
+            }
+            UserDefaults.standard.set(true, forKey: codexSnapshotKey)
+        }
+
         if let data = try? JSONEncoder().encode(profiles) {
             UserDefaults.standard.set(data, forKey: storageKey)
         }

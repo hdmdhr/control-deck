@@ -9,7 +9,9 @@ final class CodexAutomation: ObservableObject {
     @Published private(set) var lastResult = String(localized: "Ready", bundle: AppResources.localizationBundle)
 
     private let codexBundleIdentifier = "com.openai.codex"
-    private var dictationShortcutHeld = false
+    private var nativeDictationStarted = false
+    private var nativeDictationWindow: AXUIElement?
+    private var lastActivatedNativeWindow: AXUIElement?
     private var meetingPushToTalkHeld = false
     private var appSwitcherModifierHeld = false
 
@@ -106,6 +108,10 @@ final class CodexAutomation: ObservableObject {
         case .codexApprove: return run(.approve)
         case .codexDecline: return run(.decline)
         case .codexDictation: return toggleDictation()
+        case .codexAppSnapshot:
+            return performNativeCodexButton(
+                exact: ["应用快照", "應用程式快照", "App snapshot", "アプリのスナップショット"]
+            )
         case .codexFastMode: return run(.toggleFastMode)
         case .codexContinueInNewTask: return run(.continueInNewTask)
 
@@ -502,24 +508,32 @@ final class CodexAutomation: ObservableObject {
 
     @discardableResult
     func toggleDictation() -> Bool {
-        dictationShortcutHeld
+        nativeDictationStarted
             ? stopDictationAndInsert()
             : startDictation()
     }
 
     @discardableResult
     func startDictation() -> Bool {
-        guard activate() else { return false }
-        guard postDictationShortcut(.start) else { return false }
-        dictationShortcutHeld = true
+        // Reconcile with the visible native state after manual interaction. A local
+        // flag alone must never report a new capture as successfully started.
+        if nativeDictationStarted,
+           performNativeCodexButton(exact: CodexDictationIntent.stopAndInsert.exactLabels,
+                                    requiredWindow: nativeDictationWindow, press: false) {
+            return true
+        }
+        guard performNativeCodexButton(exact: CodexDictationIntent.start.exactLabels) else { return false }
+        nativeDictationStarted = true
+        nativeDictationWindow = lastActivatedNativeWindow
         return true
     }
 
     @discardableResult
     func stopDictationAndInsert() -> Bool {
-        guard activate() else { return false }
-        guard postDictationShortcut(.stopAndInsert) else { return false }
-        dictationShortcutHeld = false
+        guard nativeDictationStarted else { return true }
+        guard performNativeCodexButton(exact: CodexDictationIntent.stopAndInsert.exactLabels, requiredWindow: nativeDictationWindow) else { return false }
+        nativeDictationStarted = false
+        nativeDictationWindow = nil
         return true
     }
 
@@ -939,24 +953,94 @@ final class CodexAutomation: ObservableObject {
         return false
     }
 
-    private func postDictationShortcut(
-        _ intent: CodexDictationIntent
-    ) -> Bool {
+    /// Only the focused window of the actual Codex bundle is eligible. A unique,
+    /// enabled exact semantic match is required; no root-window or shortcut fallback.
+    private func performNativeCodexButton(exact: [String], requiredWindow: AXUIElement? = nil, press: Bool = true) -> Bool {
         guard accessibilityTrusted || AXIsProcessTrusted() else {
             requestAccessibility()
             return false
         }
-        guard let event = CGEvent(
-            keyboardEventSource: nil,
-            virtualKey: CGKeyCode(kVK_ANSI_D),
-            keyDown: intent.keyDown
-        ) else {
-            lastResult = String(localized: "Unable to create the Codex dictation event", bundle: AppResources.localizationBundle)
+        guard let app = NSRunningApplication.runningApplications(
+            withBundleIdentifier: codexBundleIdentifier
+        ).first, app.activate(options: [.activateAllWindows]) else {
+            lastResult = String(localized: "Application is not running", bundle: AppResources.localizationBundle)
             return false
         }
-        event.flags = [.maskControl, .maskShift]
-        event.post(tap: .cghidEventTap)
-        lastResult = intent.successMessage
+        let root = AXUIElementCreateApplication(app.processIdentifier)
+        var focusedWindowValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(root, kAXFocusedWindowAttribute as CFString, &focusedWindowValue) == .success,
+              let value = focusedWindowValue,
+              CFGetTypeID(value) == AXUIElementGetTypeID()
+        else {
+            lastResult = String(localized: "Native Codex control is unavailable in the focused window", bundle: AppResources.localizationBundle)
+            return false
+        }
+        let focusedWindow = value as! AXUIElement
+        if let requiredWindow, !CFEqual(requiredWindow, focusedWindow) {
+            lastResult = String(localized: "Native Codex control is unavailable in the focused window", bundle: AppResources.localizationBundle)
+            return false
+        }
+        var matches: [AXUIElement] = []
+        var remaining = 4096
+        let complete = collectNativeButtons(in: focusedWindow, exact: exact, depth: 0, remaining: &remaining, matches: &matches)
+        let opposingLabels: [String]
+        if exact == CodexDictationIntent.start.exactLabels {
+            opposingLabels = CodexDictationIntent.stopAndInsert.exactLabels
+        } else if exact == CodexDictationIntent.stopAndInsert.exactLabels {
+            opposingLabels = CodexDictationIntent.start.exactLabels
+        } else {
+            opposingLabels = []
+        }
+        var opposing: [AXUIElement] = []
+        var opposingBudget = 4096
+        let opposingComplete = opposingLabels.isEmpty || collectNativeButtons(
+            in: focusedWindow, exact: opposingLabels, depth: 0,
+            remaining: &opposingBudget, matches: &opposing
+        )
+        guard NativeCodexSemanticMatch.isUnique(desiredCount: matches.count,
+                                               opposingCount: opposing.count,
+                                               traversalComplete: complete && opposingComplete) else {
+            lastResult = String(localized: "Native Codex control was not uniquely identified; no action was taken", bundle: AppResources.localizationBundle)
+            return false
+        }
+        guard press else { return true }
+        let pressed = AXUIElementPerformAction(matches[0], kAXPressAction as CFString) == .success
+        if pressed { lastActivatedNativeWindow = focusedWindow }
+        lastResult = pressed
+            ? String(localized: "Native Codex control activated", bundle: AppResources.localizationBundle)
+            : String(localized: "Could not activate native Codex control", bundle: AppResources.localizationBundle)
+        return pressed
+    }
+
+    private func collectNativeButtons(
+        in element: AXUIElement, exact: [String], depth: Int,
+        remaining: inout Int, matches: inout [AXUIElement]
+    ) -> Bool {
+        guard depth < 32, remaining > 0 else { return false }
+        remaining -= 1
+        if stringAttribute(element, kAXRoleAttribute) == kAXButtonRole {
+            var enabled: CFTypeRef?
+            let enabledResult = AXUIElementCopyAttributeValue(element, kAXEnabledAttribute as CFString, &enabled)
+            let labels = [kAXTitleAttribute, kAXDescriptionAttribute, kAXHelpAttribute]
+                .compactMap { stringAttribute(element, $0)?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            var actions: CFArray?
+            let actionsResult = AXUIElementCopyActionNames(element, &actions)
+            if NativeCodexSemanticMatch.matches(
+                labels: labels, exact: exact, isButton: true,
+                enabled: enabledResult == .success && (enabled as? Bool) == true,
+                pressable: actionsResult == .success && (actions as? [String])?.contains(kAXPressAction) == true
+            ) {
+                matches.append(element)
+            }
+        }
+        var childrenValue: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &childrenValue)
+        if result == .noValue || result == .attributeUnsupported { return true }
+        guard result == .success else { return false }
+        guard let children = childrenValue as? [AXUIElement] else { return false }
+        for child in children {
+            guard collectNativeButtons(in: child, exact: exact, depth: depth + 1, remaining: &remaining, matches: &matches) else { return false }
+        }
         return true
     }
 

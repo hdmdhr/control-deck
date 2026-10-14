@@ -241,6 +241,8 @@ extension ProfileKind {
         case .chrome: return [.browser] + common
         case .spotify: return [.media] + common
         case .general: return common + [.other]
+        case .cursor: return [.terminal] + common
+        case .grokBot: return common + [.other]
         case .xcode: return [.codex, .terminal] + common
         }
     }
