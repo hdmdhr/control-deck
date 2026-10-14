@@ -26,7 +26,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var currentState: CodexTaskState = .disconnected
     @Published private(set) var recentTasks: [RecentCodexTask] = []
     @Published private(set) var selectedTaskID: String?
-    @Published private(set) var lastAction = "Ready"
+    @Published private(set) var lastAction = String(localized: "Ready", bundle: AppResources.localizationBundle)
     @Published private(set) var pushToTalkActive = false
     @Published var soundTheme = ControllerPreferences.soundTheme {
         didSet { ControllerPreferences.soundTheme = soundTheme }
@@ -55,10 +55,11 @@ final class AppModel: ObservableObject {
     }
     @Published private(set) var selfTestRunning = false
     @Published private(set) var microphoneDiagnosticRunning = false
+    @Published private(set) var microphoneDiagnosticPassed = false
     @Published private(set) var microphoneDiagnosticResult =
-        "Controller microphone has not been tested yet"
+        String(localized: "Controller microphone has not been tested yet", bundle: AppResources.localizationBundle)
     @Published private(set) var installationResult =
-        "Run from Applications for the smoothest startup experience."
+        String(localized: "Run from Applications for the smoothest startup experience.", bundle: AppResources.localizationBundle)
     @Published private(set) var lastGyroGesture: GyroGesture?
     @Published private(set) var gyroGameActive = false
 
@@ -166,13 +167,13 @@ final class AppModel: ObservableObject {
         screenshotEditor.onDone = { [weak self] copied in
             guard let self else { return }
             self.lastAction = copied
-                ? "Edited screenshot copied to clipboard"
-                : "Screenshot editor closed"
+                ? String(localized: "Edited screenshot copied to clipboard", bundle: AppResources.localizationBundle)
+                : String(localized: "Screenshot editor closed", bundle: AppResources.localizationBundle)
             self.hud.show(
-                copied ? "Copied to clipboard" : "Screenshot editor closed",
+                copied ? String(localized: "Copied to clipboard", bundle: AppResources.localizationBundle) : String(localized: "Screenshot editor closed", bundle: AppResources.localizationBundle),
                 detail: copied
-                    ? "The current image and markup are ready to paste"
-                    : "The clipboard was not changed",
+                    ? String(localized: "The current image and markup are ready to paste", bundle: AppResources.localizationBundle)
+                    : String(localized: "The clipboard was not changed", bundle: AppResources.localizationBundle),
                 color: copied ? .systemGreen : .systemGray
             )
             self.controller.playHaptic(copied ? .success : .selection)
@@ -180,7 +181,7 @@ final class AppModel: ObservableObject {
         localSpeechTranscriber.onPartialTranscript = { [weak self] text in
             guard let self, !text.isEmpty else { return }
             self.hud.showStreaming(
-                "\(self.generalDictationEngine.label) streaming",
+                String(localized: "\(self.generalDictationEngine.label) streaming", bundle: AppResources.localizationBundle),
                 detail: text,
                 color: CodexTaskState.listening.color
             )
@@ -191,7 +192,7 @@ final class AppModel: ObservableObject {
         appleSpeechTranscriber.onPartialTranscript = { [weak self] text in
             guard let self, !text.isEmpty else { return }
             self.hud.showStreaming(
-                "System dictation · live",
+                String(localized: "System dictation · live", bundle: AppResources.localizationBundle),
                 detail: text,
                 color: CodexTaskState.listening.color
             )
@@ -303,7 +304,7 @@ final class AppModel: ObservableObject {
             isDirectory: true
         )
         if source.deletingLastPathComponent() == applications {
-            installationResult = "ControlDeck is already installed."
+            installationResult = String(localized: "ControlDeck is already installed.", bundle: AppResources.localizationBundle)
             return
         }
         let destination = applications.appendingPathComponent(
@@ -312,18 +313,18 @@ final class AppModel: ObservableObject {
         )
         guard !fileManager.fileExists(atPath: destination.path) else {
             installationResult =
-                "An existing copy is already in Applications."
+                String(localized: "An existing copy is already in Applications.", bundle: AppResources.localizationBundle)
             NSWorkspace.shared.activateFileViewerSelecting([destination])
             return
         }
         do {
             try fileManager.copyItem(at: source, to: destination)
             installationResult =
-                "Installed in Applications. You can keep this window open."
+                String(localized: "Installed in Applications. You can keep this window open.", bundle: AppResources.localizationBundle)
             NSWorkspace.shared.activateFileViewerSelecting([destination])
         } catch {
             installationResult =
-                "Drag the app into Applications: \(error.localizedDescription)"
+                String(localized: "Drag the app into Applications: \(error.localizedDescription)", bundle: AppResources.localizationBundle)
             NSWorkspace.shared.open(applications)
         }
     }
@@ -369,13 +370,13 @@ final class AppModel: ObservableObject {
         }
         _ = automation.openSettings()
         lastAction =
-            "Choose DualSense Microphone in Codex Settings → General"
+            String(localized: "Choose DualSense Microphone in Codex Settings → General", bundle: AppResources.localizationBundle)
     }
 
     func runSelfTest() {
         guard !selfTestRunning else { return }
         guard controller.isConnected else {
-            feedbackFailure("Connect the DualSense before running the test")
+            feedbackFailure(String(localized: "Connect the DualSense before running the test", bundle: AppResources.localizationBundle))
             return
         }
         guard !pushToTalkActive,
@@ -385,7 +386,7 @@ final class AppModel: ObservableObject {
               !microphoneDiagnosticRunning
         else {
             feedbackFailure(
-                "Finish the microphone session before running the self-test"
+                String(localized: "Finish the microphone session before running the self-test", bundle: AppResources.localizationBundle)
             )
             return
         }
@@ -394,10 +395,10 @@ final class AppModel: ObservableObject {
         selfTestRunning = true
         pointer.stop()
         touchpad.cancel()
-        lastAction = "Testing one haptic, then one speaker tone"
+        lastAction = String(localized: "Testing one haptic, then one speaker tone", bundle: AppResources.localizationBundle)
         hud.show(
-            "Safe DualSense self-test",
-            detail: "One gentle haptic · one short tone",
+            String(localized: "Safe DualSense self-test", bundle: AppResources.localizationBundle),
+            detail: String(localized: "One gentle haptic · one short tone", bundle: AppResources.localizationBundle),
             color: .systemCyan
         )
         controller.runSafeHapticSelfTest { [weak self] in
@@ -408,7 +409,7 @@ final class AppModel: ObservableObject {
                 return
             }
             if self.controller.transport == .bluetooth {
-                self.lastAction = "Playing one Bluetooth speaker tone"
+                self.lastAction = String(localized: "Playing one Bluetooth speaker tone", bundle: AppResources.localizationBundle)
                 let started = self.controller.playBluetoothSpeakerTone(
                     frequency: 660,
                     duration: 0.10,
@@ -416,9 +417,7 @@ final class AppModel: ObservableObject {
                 ) { [weak self] speakerResult in
                     self?.completeSelfTest(
                         generation: generation,
-                        result: speakerResult.localizedCaseInsensitiveContains(
-                            "played"
-                        ) ? nil : speakerResult
+                        result: speakerResult == String(localized: "Controller speaker played over Bluetooth", bundle: AppResources.localizationBundle) ? nil : speakerResult
                     )
                 }
                 guard started else {
@@ -430,7 +429,7 @@ final class AppModel: ObservableObject {
                 }
             } else if self.controller.transport == .usb,
                       self.audio.controllerAudioAvailable {
-                self.lastAction = "Playing one controller speaker tone"
+                self.lastAction = String(localized: "Playing one controller speaker tone", bundle: AppResources.localizationBundle)
                 _ = self.audio.playControllerTone(
                     frequency: 660,
                     duration: 0.10,
@@ -450,7 +449,7 @@ final class AppModel: ObservableObject {
         guard !microphoneDiagnosticRunning else { return }
         guard controller.transport == .bluetooth else {
             feedbackFailure(
-                "Connect the DualSense over Bluetooth before testing its mic"
+                String(localized: "Connect the DualSense over Bluetooth before testing its mic", bundle: AppResources.localizationBundle)
             )
             return
         }
@@ -460,14 +459,15 @@ final class AppModel: ObservableObject {
               !universalTranscriptionStopPending,
               !selfTestRunning
         else {
-            feedbackFailure("Finish the current test or dictation first")
+            feedbackFailure(String(localized: "Finish the current test or dictation first", bundle: AppResources.localizationBundle))
             return
         }
 
         microphoneDiagnosticGeneration += 1
         let generation = microphoneDiagnosticGeneration
         microphoneDiagnosticRunning = true
-        microphoneDiagnosticResult = "Speak into the controller now…"
+        microphoneDiagnosticPassed = false
+        microphoneDiagnosticResult = String(localized: "Speak into the controller now…", bundle: AppResources.localizationBundle)
         pointer.stop()
         touchpad.cancel()
         audio.removeCodexMicrophone()
@@ -483,10 +483,10 @@ final class AppModel: ObservableObject {
             return
         }
 
-        lastAction = "Speak into the controller for three seconds"
+        lastAction = String(localized: "Speak into the controller for three seconds", bundle: AppResources.localizationBundle)
         hud.show(
-            "Testing wireless microphone",
-            detail: "Speak now · no Codex actions will be triggered",
+            String(localized: "Testing wireless microphone", bundle: AppResources.localizationBundle),
+            detail: String(localized: "Speak now · no Codex actions will be triggered", bundle: AppResources.localizationBundle),
             color: .systemCyan
         )
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
@@ -523,7 +523,7 @@ final class AppModel: ObservableObject {
     func prepareBluetoothMicrophone() {
         audio.removeCodexMicrophone()
         if bluetoothMicrophone.prepare() {
-            lastAction = "Wireless DualSense Microphone is ready"
+            lastAction = String(localized: "Wireless DualSense Microphone is ready", bundle: AppResources.localizationBundle)
         } else {
             feedbackFailure(bluetoothMicrophone.lastResult)
         }
@@ -620,23 +620,23 @@ final class AppModel: ObservableObject {
             active || profiles.activeProfile.gyro.enabled
         )
         if active {
-            lastAction = "Gyro mini-game active · normal motion actions paused"
+            lastAction = String(localized: "Gyro mini-game active · normal motion actions paused", bundle: AppResources.localizationBundle)
         }
     }
 
     func gyroGameDidReachGoal() {
         controller.playHaptic(.success)
-        lastAction = "Gyro course complete"
+        lastAction = String(localized: "Gyro course complete", bundle: AppResources.localizationBundle)
     }
 
     func gyroGameDidFall() {
         controller.playHaptic(.warning)
-        lastAction = "Gyro ball recovered · two-second penalty"
+        lastAction = String(localized: "Gyro ball recovered · two-second penalty", bundle: AppResources.localizationBundle)
     }
 
     func gyroGameDidCollectToken() {
         controller.playHaptic(.selection)
-        lastAction = "Gyro time token · one second recovered"
+        lastAction = String(localized: "Gyro time token · one second recovered", bundle: AppResources.localizationBundle)
     }
 
     private func handleMotion(_ sample: ControllerMotionSample) {
@@ -651,7 +651,7 @@ final class AppModel: ObservableObject {
         lastGyroGesture = gesture
         let action = settings.action(for: gesture)
         guard action != .none else {
-            lastAction = "\(gesture.label) detected · no action assigned"
+            lastAction = String(localized: "\(gesture.label) detected · no action assigned", bundle: AppResources.localizationBundle)
             return
         }
         if gesture == .shake {
@@ -695,13 +695,13 @@ final class AppModel: ObservableObject {
             if let result = tutorial.handleControllerButton(input) {
                 switch result {
                 case .changedStep:
-                    lastAction = "Tutorial · \(tutorial.currentStep.title)"
+                    lastAction = String(localized: "Tutorial · \(tutorial.currentStep.title)", bundle: AppResources.localizationBundle)
                     controller.playHaptic(.selection)
                 case .completed:
-                    lastAction = "Quick tutorial complete"
+                    lastAction = String(localized: "Quick tutorial complete", bundle: AppResources.localizationBundle)
                     controller.playHaptic(.success)
                 case .skipped:
-                    lastAction = "Tutorial skipped · replay it from Setup"
+                    lastAction = String(localized: "Tutorial skipped · replay it from Setup", bundle: AppResources.localizationBundle)
                     controller.playHaptic(.selection)
                 }
             }
@@ -732,20 +732,20 @@ final class AppModel: ObservableObject {
         let action = profiles.activeProfile.action(for: input)
         if !pressed, let button = heldMouseInputs.removeValue(forKey: input) {
             pointer.setButton(button, pressed: false)
-            lastAction = "\(action.label) released"
+            lastAction = String(localized: "\(action.label) released", bundle: AppResources.localizationBundle)
             return
         }
         if pressed, let button = mouseButton(for: action) {
             heldMouseInputs[input] = button
             pointer.setButton(button, pressed: true)
-            lastAction = "\(action.label) · hold and move to drag"
+            lastAction = String(localized: "\(action.label) · hold and move to drag", bundle: AppResources.localizationBundle)
             controller.playHaptic(.selection)
             return
         }
         if action == .meetingPushToTalk {
             let succeeded = automation.setMeetingPushToTalk(pressed)
             lastAction = succeeded
-                ? (pressed ? "Meeting push to talk" : "Meeting microphone muted")
+                ? (pressed ? String(localized: "Meeting push to talk", bundle: AppResources.localizationBundle) : String(localized: "Meeting microphone muted", bundle: AppResources.localizationBundle))
                 : automation.lastResult
             if pressed && succeeded {
                 controller.playHaptic(.selection)
@@ -773,21 +773,21 @@ final class AppModel: ObservableObject {
                     !screenCapturePreferences.openEditorAfterCapture
                 if pointer.beginScreenshotSelection() {
                     lastAction =
-                        "Drag with the left stick, then release \(input.label)"
+                        String(localized: "Drag with the left stick, then release \(input.label)", bundle: AppResources.localizationBundle)
                     hud.show(
-                        "Select a screenshot area",
-                        detail: "Move with the left stick · release to capture",
+                        String(localized: "Select a screenshot area", bundle: AppResources.localizationBundle),
+                        detail: String(localized: "Move with the left stick · release to capture", bundle: AppResources.localizationBundle),
                         color: .systemBlue
                     )
                     controller.playHaptic(.selection)
                 } else {
                     feedbackFailure(
-                        "Accessibility is required for screenshot selection"
+                        String(localized: "Accessibility is required for screenshot selection", bundle: AppResources.localizationBundle)
                     )
                 }
             } else if pointer.isSelectingScreenshot {
                 pointer.endScreenshotSelection()
-                lastAction = "Finishing screen capture"
+                lastAction = String(localized: "Finishing screen capture", bundle: AppResources.localizationBundle)
                 controller.playHaptic(.success)
             }
             return
@@ -833,7 +833,7 @@ final class AppModel: ObservableObject {
             appSwitcherStick.reset()
             let succeeded = automation.endAppSwitcher()
             lastAction = succeeded
-                ? "Application selected"
+                ? String(localized: "Application selected", bundle: AppResources.localizationBundle)
                 : automation.lastResult
             if succeeded {
                 controller.playHaptic(.selection)
@@ -845,10 +845,10 @@ final class AppModel: ObservableObject {
             appSwitcherStick.reset()
             let succeeded = automation.cancelAppSwitcher()
             lastAction = succeeded
-                ? "App switcher cancelled"
+                ? String(localized: "App switcher cancelled", bundle: AppResources.localizationBundle)
                 : automation.lastResult
             if succeeded {
-                hud.show("App switcher cancelled", color: .systemGray)
+                hud.show(String(localized: "App switcher cancelled", bundle: AppResources.localizationBundle), color: .systemGray)
                 controller.playHaptic(.selection)
             } else {
                 feedbackFailure(automation.lastResult)
@@ -867,10 +867,10 @@ final class AppModel: ObservableObject {
         appSwitcherSafetyGeneration += 1
         appSwitcherStick.reset()
         let safetyGeneration = appSwitcherSafetyGeneration
-        lastAction = "App switcher · release touchpad to select"
+        lastAction = String(localized: "App switcher · release touchpad to select", bundle: AppResources.localizationBundle)
         hud.show(
-            "App switcher",
-            detail: "Right stick or D-pad to move · Circle cancels",
+            String(localized: "App switcher", bundle: AppResources.localizationBundle),
+            detail: String(localized: "Right stick or D-pad to move · Circle cancels", bundle: AppResources.localizationBundle),
             color: .systemBlue
         )
         controller.playHaptic(.selection)
@@ -886,10 +886,10 @@ final class AppModel: ObservableObject {
             _ = self.appSwitcherHold.cancel()
             _ = self.automation.cancelAppSwitcher()
             self.appSwitcherSafetyGeneration += 1
-            self.lastAction = "App switcher timed out safely"
+            self.lastAction = String(localized: "App switcher timed out safely", bundle: AppResources.localizationBundle)
             self.hud.show(
-                "App switcher closed",
-                detail: "Hold the touchpad click again to reopen it",
+                String(localized: "App switcher closed", bundle: AppResources.localizationBundle),
+                detail: String(localized: "Hold the touchpad click again to reopen it", bundle: AppResources.localizationBundle),
                 color: .systemGray
             )
             self.controller.playHaptic(.warning)
@@ -918,8 +918,8 @@ final class AppModel: ObservableObject {
             return
         }
         lastAction = direction == .forward
-            ? "App switcher · next application"
-            : "App switcher · previous application"
+            ? String(localized: "App switcher · next application", bundle: AppResources.localizationBundle)
+            : String(localized: "App switcher · previous application", bundle: AppResources.localizationBundle)
         controller.playHaptic(.selection)
     }
 
@@ -937,18 +937,18 @@ final class AppModel: ObservableObject {
         if screenCapturePreferences.openEditorAfterCapture {
             screenshotEditor.present(image: image)
             lastAction = screenCapturePreferences.copyOriginalToClipboard
-                ? "Screenshot copied · editor open"
-                : "Screenshot editor open"
+                ? String(localized: "Screenshot copied · editor open", bundle: AppResources.localizationBundle)
+                : String(localized: "Screenshot editor open", bundle: AppResources.localizationBundle)
             hud.show(
-                "Screen capture ready",
-                detail: "Edit with the controller or dismiss with Circle",
+                String(localized: "Screen capture ready", bundle: AppResources.localizationBundle),
+                detail: String(localized: "Edit with the controller or dismiss with Circle", bundle: AppResources.localizationBundle),
                 color: .systemCyan
             )
         } else {
-            lastAction = "Screenshot copied to clipboard"
+            lastAction = String(localized: "Screenshot copied to clipboard", bundle: AppResources.localizationBundle)
             hud.show(
-                "Screenshot copied",
-                detail: "Ready to paste",
+                String(localized: "Screenshot copied", bundle: AppResources.localizationBundle),
+                detail: String(localized: "Ready to paste", bundle: AppResources.localizationBundle),
                 color: .systemGreen
             )
         }
@@ -960,22 +960,22 @@ final class AppModel: ObservableObject {
     ) {
         switch action {
         case let .tool(tool):
-            lastAction = "Screenshot tool · \(tool)"
+            lastAction = String(localized: "Screenshot tool · \(tool)", bundle: AppResources.localizationBundle)
             controller.playHaptic(.selection)
         case .undo:
-            lastAction = "Screenshot edit undone"
+            lastAction = String(localized: "Screenshot edit undone", bundle: AppResources.localizationBundle)
             controller.playHaptic(.selection)
         case .redo:
-            lastAction = "Screenshot edit redone"
+            lastAction = String(localized: "Screenshot edit redone", bundle: AppResources.localizationBundle)
             controller.playHaptic(.selection)
         case .copied:
-            lastAction = "Edited screenshot copied"
+            lastAction = String(localized: "Edited screenshot copied", bundle: AppResources.localizationBundle)
             controller.playHaptic(.success)
         case .saved:
-            lastAction = "Edited screenshot saved"
+            lastAction = String(localized: "Edited screenshot saved", bundle: AppResources.localizationBundle)
             controller.playHaptic(.success)
         case .dismissed:
-            lastAction = "Screenshot editor dismissed · original kept"
+            lastAction = String(localized: "Screenshot editor dismissed · original kept", bundle: AppResources.localizationBundle)
             controller.playHaptic(.selection)
         case .done:
             break
@@ -1030,10 +1030,10 @@ final class AppModel: ObservableObject {
             let slot = shiftLayer.slot(at: selectedIndex)
             let profile = profiles.profile(for: slot.profileKind)
             profiles.setActiveProfileFromWheel(slot.profileKind)
-            lastAction = "Profile switched · \(profile.name)"
+            lastAction = String(localized: "Profile switched · \(profile.displayName)", bundle: AppResources.localizationBundle)
             hud.show(
-                profile.name,
-                detail: "Controller profile selected",
+                profile.displayName,
+                detail: String(localized: "Controller profile selected", bundle: AppResources.localizationBundle),
                 color: .systemCyan
             )
             controller.playHaptic(.success)
@@ -1055,7 +1055,7 @@ final class AppModel: ObservableObject {
             activeKind: profiles.activeKind,
             selectedIndex: profileWheelSelector.selectedIndex
         )
-        lastAction = "Profile wheel · choose with the left stick"
+        lastAction = String(localized: "Profile wheel · choose with the left stick", bundle: AppResources.localizationBundle)
         controller.playHaptic(.selection)
     }
 
@@ -1073,7 +1073,7 @@ final class AppModel: ObservableObject {
             let profile = profiles.profile(
                 for: shiftLayer.slot(at: selected).profileKind
             )
-            lastAction = "Profile wheel · \(profile.name)"
+            lastAction = String(localized: "Profile wheel · \(profile.displayName)", bundle: AppResources.localizationBundle)
             controller.playHaptic(.selection)
         }
     }
@@ -1117,7 +1117,7 @@ final class AppModel: ObservableObject {
             task: overlayTask,
             step: step
         )
-        lastAction = "Reasoning · \(step.title)"
+        lastAction = String(localized: "Reasoning · \(step.title)", bundle: AppResources.localizationBundle)
         controller.playHaptic(.selection)
 
         if reasoningControlOpen {
@@ -1189,7 +1189,7 @@ final class AppModel: ObservableObject {
                     return
                 }
                 self.voiceCaptureMode = .hold(input)
-                self.lastAction = "Release \(input.label) to stop dictation"
+                self.lastAction = String(localized: "Release \(input.label) to stop dictation", bundle: AppResources.localizationBundle)
             }
             return
         }
@@ -1199,10 +1199,10 @@ final class AppModel: ObservableObject {
         switch voiceCaptureMode {
         case .pendingTapOrHold(input):
             voiceCaptureMode = .toggle(input)
-            lastAction = "Hands-free dictation · tap \(input.label) to stop"
+            lastAction = String(localized: "Hands-free dictation · tap \(input.label) to stop", bundle: AppResources.localizationBundle)
             hud.show(
-                "Hands-free Codex dictation",
-                detail: "Tap \(input.label) again to stop and insert",
+                String(localized: "Hands-free Codex dictation", bundle: AppResources.localizationBundle),
+                detail: String(localized: "Tap \(input.label) again to stop and insert", bundle: AppResources.localizationBundle),
                 color: CodexTaskState.listening.color
             )
             controller.playHaptic(.selection)
@@ -1230,7 +1230,7 @@ final class AppModel: ObservableObject {
             guard !universalDictationActive else { return }
             guard !universalTranscriptionStopPending else {
                 feedbackFailure(
-                    "Transcription is finishing the previous message"
+                    String(localized: "Transcription is finishing the previous message", bundle: AppResources.localizationBundle)
                 )
                 return
             }
@@ -1245,10 +1245,10 @@ final class AppModel: ObservableObject {
                 universalDictationActive = true
                 universalDictationMode = .pendingTapOrHold(input)
                 universalTranscriberReady = true
-                lastAction = "Claude dictation is listening"
+                lastAction = String(localized: "Claude dictation is listening", bundle: AppResources.localizationBundle)
                 hud.show(
-                    "Claude dictation",
-                    detail: "Using Claude's native transcription",
+                    String(localized: "Claude dictation", bundle: AppResources.localizationBundle),
+                    detail: String(localized: "Using Claude's native transcription", bundle: AppResources.localizationBundle),
                     color: CodexTaskState.listening.color
                 )
                 controller.playHaptic(.selection)
@@ -1263,7 +1263,7 @@ final class AppModel: ObservableObject {
                 SpeechTextInsertionTarget.capture()
             else {
                 feedbackFailure(
-                    "Focus the app where dictated text should be inserted"
+                    String(localized: "Focus the app where dictated text should be inserted", bundle: AppResources.localizationBundle)
                 )
                 return
             }
@@ -1281,13 +1281,13 @@ final class AppModel: ObservableObject {
                 audio.refresh()
                 inputDeviceID = audio.speechInputDeviceID()
                 lastAction = inputDeviceID == nil
-                    ? "Preparing the Mac microphone for \(requestedEngine.label)"
-                    : "Preparing the DualSense microphone for \(requestedEngine.label)"
+                    ? String(localized: "Preparing the Mac microphone for \(requestedEngine.label)", bundle: AppResources.localizationBundle)
+                    : String(localized: "Preparing the DualSense microphone for \(requestedEngine.label)", bundle: AppResources.localizationBundle)
             } else if requestedTransport == .bluetooth,
                       usesControllerMicrophone {
                 usesExternalPCM = true
                 lastAction =
-                    "Preparing the wireless microphone for \(requestedEngine.label)"
+                    String(localized: "Preparing the wireless microphone for \(requestedEngine.label)", bundle: AppResources.localizationBundle)
                 audio.removeCodexMicrophone()
                 guard bluetoothMicrophone.startCapture() else {
                     dictationFocusGuard.end()
@@ -1306,7 +1306,7 @@ final class AppModel: ObservableObject {
                 // to apps that need a conventional microphone endpoint.
             } else {
                 lastAction =
-                    "Preparing the Mac microphone for \(requestedEngine.label)"
+                    String(localized: "Preparing the Mac microphone for \(requestedEngine.label)", bundle: AppResources.localizationBundle)
             }
 
             universalTranscriptionSessionGeneration += 1
@@ -1336,7 +1336,7 @@ final class AppModel: ObservableObject {
                     case .success:
                         self.universalTranscriberReady = true
                         self.lastAction =
-                            "\(requestedEngine.label) is listening"
+                            String(localized: "\(requestedEngine.label) is listening", bundle: AppResources.localizationBundle)
                     case let .failure(error):
                         self.failUniversalTranscriptionStart(
                             error.localizedDescription
@@ -1366,7 +1366,7 @@ final class AppModel: ObservableObject {
                     case .success:
                         self.universalTranscriberReady = true
                         self.lastAction =
-                            "Apple SpeechTranscriber is listening"
+                            String(localized: "Apple SpeechTranscriber is listening", bundle: AppResources.localizationBundle)
                     case let .failure(error):
                         self.failUniversalTranscriptionStart(
                             error.localizedDescription
@@ -1395,18 +1395,18 @@ final class AppModel: ObservableObject {
             if requestedTransport == .usb, usesControllerMicrophone {
                 controller.setMicrophoneLED(.off)
             }
-            lastAction = "Preparing \(requestedEngine.label)"
+            lastAction = String(localized: "Preparing \(requestedEngine.label)", bundle: AppResources.localizationBundle)
             hud.show(
                 requestedEngine != .appleSpeech
-                    ? "\(requestedEngine.label) dictation"
-                    : "Apple dictation",
+                    ? String(localized: "\(requestedEngine.label) dictation", bundle: AppResources.localizationBundle)
+                    : String(localized: "Apple dictation", bundle: AppResources.localizationBundle),
                 detail: !usesControllerMicrophone
-                    ? "Using the Mac’s selected input · the text field stays focused"
+                    ? String(localized: "Using the Mac’s selected input · the text field stays focused", bundle: AppResources.localizationBundle)
                     : requestedEngine == .parakeetEOU120M
-                    ? "Low-latency local streaming · live text appears here"
+                    ? String(localized: "Low-latency local streaming · live text appears here", bundle: AppResources.localizationBundle)
                     : requestedEngine == .whisperKitBaseEnglish
-                    ? "Local Whisper transcription · finalized when you stop"
-                    : "On-device transcription · the text field stays focused",
+                    ? String(localized: "Local Whisper transcription · finalized when you stop", bundle: AppResources.localizationBundle)
+                    : String(localized: "On-device transcription · the text field stays focused", bundle: AppResources.localizationBundle),
                 color: CodexTaskState.listening.color
             )
             controller.playHaptic(.selection)
@@ -1423,10 +1423,10 @@ final class AppModel: ObservableObject {
         switch universalDictationMode {
         case .pendingTapOrHold(input):
             universalDictationMode = .toggle(input)
-            lastAction = "Hands-free dictation · tap \(input.label) to stop"
+            lastAction = String(localized: "Hands-free dictation · tap \(input.label) to stop", bundle: AppResources.localizationBundle)
             hud.show(
-                "Hands-free dictation",
-                detail: "Tap \(input.label) again to stop",
+                String(localized: "Hands-free dictation", bundle: AppResources.localizationBundle),
+                detail: String(localized: "Tap \(input.label) again to stop", bundle: AppResources.localizationBundle),
                 color: CodexTaskState.listening.color
             )
             controller.playHaptic(.selection)
@@ -1447,7 +1447,7 @@ final class AppModel: ObservableObject {
             "Anthropic",
             "WhisperKit",
             "Parakeet",
-            profiles.activeProfile.name,
+            profiles.activeProfile.displayName,
             profiles.activeProfile.kind.label
         ]
         if let appName =
@@ -1494,10 +1494,10 @@ final class AppModel: ObservableObject {
             universalDictationProvider = nil
             let stopped = automation.stopClaudeDictation()
             if stopped {
-                lastAction = "Claude dictation complete"
+                lastAction = String(localized: "Claude dictation complete", bundle: AppResources.localizationBundle)
                 hud.show(
-                    "Claude dictation complete",
-                    detail: "Claude's native transcript is ready",
+                    String(localized: "Claude dictation complete", bundle: AppResources.localizationBundle),
+                    detail: String(localized: "Claude's native transcript is ready", bundle: AppResources.localizationBundle),
                     color: .systemGreen
                 )
                 controller.playHaptic(.success)
@@ -1543,11 +1543,11 @@ final class AppModel: ObservableObject {
                                 ? "Transcript inserted directly"
                                 : "Transcript inserted using a protected paste"
                         self.lastAction =
-                            "\(transcription.engineUsed.engineName) transcript inserted into the focused text field"
+                            String(localized: "\(transcription.engineUsed.engineName) transcript inserted into the focused text field", bundle: AppResources.localizationBundle)
                         self.hud.show(
                             handsFree
-                                ? "\(transcription.engineUsed.label) dictation complete"
-                                : "Dictation complete",
+                                ? String(localized: "\(transcription.engineUsed.label) dictation complete", bundle: AppResources.localizationBundle)
+                                : String(localized: "Dictation complete", bundle: AppResources.localizationBundle),
                             detail: fallbackDetail,
                             color: .systemGreen
                         )
@@ -1560,11 +1560,11 @@ final class AppModel: ObservableObject {
                 }
                 if stopped {
                     self.universalDictationProvider = nil
-                    self.lastAction = "\(engine.label) is finalizing"
+                    self.lastAction = String(localized: "\(engine.label) is finalizing", bundle: AppResources.localizationBundle)
                     self.hud.show(
-                        "Finalizing \(engine.label)",
+                        String(localized: "Finalizing \(engine.label)", bundle: AppResources.localizationBundle),
                         detail:
-                            "The result will appear in the focused text field",
+                            String(localized: "The result will appear in the focused text field", bundle: AppResources.localizationBundle),
                         color: .white
                     )
                 } else {
@@ -1574,7 +1574,7 @@ final class AppModel: ObservableObject {
                     self.universalDictationTransport = nil
                     self.dictationFocusGuard.end()
                     self.feedbackFailure(
-                        "\(engine.label) could not stop cleanly"
+                        String(localized: "\(engine.label) could not stop cleanly", bundle: AppResources.localizationBundle)
                     )
                 }
                 return
@@ -1603,15 +1603,15 @@ final class AppModel: ObservableObject {
                 case let .success(transcription):
                     self.dictationFocusGuard.end()
                     self.lastAction =
-                        "Apple transcript inserted into the focused text field"
+                        String(localized: "Apple transcript inserted into the focused text field", bundle: AppResources.localizationBundle)
                     self.hud.show(
                         handsFree
-                            ? "Apple dictation complete"
-                            : "Dictation complete",
+                            ? String(localized: "Apple dictation complete", bundle: AppResources.localizationBundle)
+                            : String(localized: "Dictation complete", bundle: AppResources.localizationBundle),
                         detail: transcription.insertionMethod ==
                             .accessibility
-                            ? "Text inserted directly into the focused field"
-                            : "Text inserted using a protected paste",
+                            ? String(localized: "Text inserted directly into the focused field", bundle: AppResources.localizationBundle)
+                            : String(localized: "Text inserted using a protected paste", bundle: AppResources.localizationBundle),
                         color: .systemGreen
                     )
                     self.controller.playHaptic(.success)
@@ -1623,10 +1623,10 @@ final class AppModel: ObservableObject {
             }
             if stopped {
                 self.universalDictationProvider = nil
-                self.lastAction = "Apple SpeechTranscriber is finishing"
+                self.lastAction = String(localized: "Apple SpeechTranscriber is finishing", bundle: AppResources.localizationBundle)
                 self.hud.show(
-                    "Transcribing on this Mac",
-                    detail: "The result will appear in the focused text field",
+                    String(localized: "Transcribing on this Mac", bundle: AppResources.localizationBundle),
+                    detail: String(localized: "The result will appear in the focused text field", bundle: AppResources.localizationBundle),
                     color: .white
                 )
             } else {
@@ -1635,7 +1635,7 @@ final class AppModel: ObservableObject {
                 self.stopVoiceCaptureResources(for: transport)
                 self.universalDictationTransport = nil
                 self.feedbackFailure(
-                    "Apple SpeechTranscriber could not stop cleanly"
+                    String(localized: "Apple SpeechTranscriber could not stop cleanly", bundle: AppResources.localizationBundle)
                 )
                 self.dictationFocusGuard.end()
             }
@@ -1682,13 +1682,13 @@ final class AppModel: ObservableObject {
             }
             self.universalDictationMode = .hold(input)
             self.lastAction =
-                "Release \(input.label) to stop universal dictation"
+                String(localized: "Release \(input.label) to stop universal dictation", bundle: AppResources.localizationBundle)
         }
     }
 
     private func execute(_ action: MappedAction, source: String) {
         guard action != .none else {
-            lastAction = "\(source) has no assigned action"
+            lastAction = String(localized: "\(source) has no assigned action", bundle: AppResources.localizationBundle)
             return
         }
 
@@ -1716,9 +1716,9 @@ final class AppModel: ObservableObject {
             let deleted = automation.confirmDeleteFocusedText()
             lastAction = automation.lastResult
             if deleted {
-                hud.show("Text deleted", color: .systemGreen)
+                hud.show(String(localized: "Text deleted", bundle: AppResources.localizationBundle), color: .systemGreen)
                 controller.playHaptic(.success)
-            } else if automation.lastResult == "Delete cancelled" {
+            } else if automation.lastResult == String(localized: "Delete cancelled", bundle: AppResources.localizationBundle) {
                 controller.playHaptic(.selection)
             } else {
                 feedbackFailure(automation.lastResult)
@@ -1747,11 +1747,11 @@ final class AppModel: ObservableObject {
         updateAggregateState()
         let succeeded = automation.openThread(id)
         lastAction = succeeded
-            ? "Selected · \(task.shortTitle)"
+            ? String(localized: "Selected · \(task.shortTitle)", bundle: AppResources.localizationBundle)
             : automation.lastResult
         if succeeded {
             hud.show(
-                "Selected task",
+                String(localized: "Selected task", bundle: AppResources.localizationBundle),
                 detail: task.shortTitle,
                 color: task.state.color
             )
@@ -1768,7 +1768,7 @@ final class AppModel: ObservableObject {
             offset: offset
         ) else {
             finish(
-                offset < 0 ? "Previous task" : "Next task",
+                offset < 0 ? String(localized: "Previous task", bundle: AppResources.localizationBundle) : String(localized: "Next task", bundle: AppResources.localizationBundle),
                 succeeded: automation.run(
                     offset < 0 ? .codexPreviousTask : .codexNextTask
                 )
@@ -1785,7 +1785,7 @@ final class AppModel: ObservableObject {
             profiles: profiles.profiles,
             slots: shiftLayer.profileSlots
         )
-        lastAction = "Controller overlay"
+        lastAction = String(localized: "Controller overlay", bundle: AppResources.localizationBundle)
         controller.playHaptic(.selection)
     }
 
@@ -1807,7 +1807,7 @@ final class AppModel: ObservableObject {
 
     private func toggleVoiceCapture(initiator: ControllerInput?) {
         guard !voiceStopPending else {
-            lastAction = "Finishing the current dictation"
+            lastAction = String(localized: "Finishing the current dictation", bundle: AppResources.localizationBundle)
             return
         }
         if pushToTalkActive {
@@ -1840,7 +1840,7 @@ final class AppModel: ObservableObject {
                     NSWorkspace.shared.frontmostApplication
             )
             if requestedTransport == .usb, audio.controllerAudioAvailable {
-                lastAction = "Preparing DualSense microphone"
+                lastAction = String(localized: "Preparing DualSense microphone", bundle: AppResources.localizationBundle)
                 guard audio.ensureCodexMicrophone() else {
                     failNativeDictation(
                         audio.lastAudioResult,
@@ -1849,7 +1849,7 @@ final class AppModel: ObservableObject {
                     return
                 }
             } else if requestedTransport == .bluetooth {
-                lastAction = "Preparing Bluetooth DualSense microphone"
+                lastAction = String(localized: "Preparing Bluetooth DualSense microphone", bundle: AppResources.localizationBundle)
                 audio.removeCodexMicrophone()
                 guard bluetoothMicrophone.startCapture() else {
                     failNativeDictation(
@@ -1885,14 +1885,14 @@ final class AppModel: ObservableObject {
             }
             controller.playHaptic(.listeningStart)
             playFeedbackSound(.listeningStart)
-            lastAction = "Codex is listening"
+            lastAction = String(localized: "Codex is listening", bundle: AppResources.localizationBundle)
             hud.show(
-                handsFree ? "Hands-free Codex dictation" : "Codex is listening",
+                handsFree ? String(localized: "Hands-free Codex dictation", bundle: AppResources.localizationBundle) : String(localized: "Codex is listening", bundle: AppResources.localizationBundle),
                 detail: requestedTransport == .bluetooth
-                    ? "Using the wireless DualSense Microphone input"
+                    ? String(localized: "Using the wireless DualSense Microphone input", bundle: AppResources.localizationBundle)
                     : requestedTransport == .usb
-                        ? "Using the selected DualSense Microphone input"
-                        : "Using Codex's selected Mac microphone",
+                        ? String(localized: "Using the selected DualSense Microphone input", bundle: AppResources.localizationBundle)
+                        : String(localized: "Using Codex's selected Mac microphone", bundle: AppResources.localizationBundle),
                 color: CodexTaskState.listening.color
             )
         } else {
@@ -1930,7 +1930,7 @@ final class AppModel: ObservableObject {
         // Stop the HID uplink first, but leave the decoder and AVAudioSourceNode
         // alive long enough to render the 50 ms jitter buffer and final packet.
         _ = controller.setBluetoothMicrophoneCapture(false)
-        lastAction = "Finishing Bluetooth dictation"
+        lastAction = String(localized: "Finishing Bluetooth dictation", bundle: AppResources.localizationBundle)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
             [weak self] in
             guard let self,
@@ -1954,10 +1954,10 @@ final class AppModel: ObservableObject {
 
     private func showTranscribingState() {
         updateState(.processingVoice)
-        lastAction = "Codex is transcribing"
+        lastAction = String(localized: "Codex is transcribing", bundle: AppResources.localizationBundle)
         hud.show(
-            "Codex is transcribing",
-            detail: "Using Codex's native transcription",
+            String(localized: "Codex is transcribing", bundle: AppResources.localizationBundle),
+            detail: String(localized: "Using Codex's native transcription", bundle: AppResources.localizationBundle),
             color: .white
         )
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
@@ -1974,10 +1974,10 @@ final class AppModel: ObservableObject {
             return
         }
         selfTestRunning = false
-        lastAction = result ?? "Safe hardware self-test complete"
+        lastAction = result ?? String(localized: "Safe hardware self-test complete", bundle: AppResources.localizationBundle)
         hud.show(
-            "Self-test complete",
-            detail: result ?? "One haptic and one speaker tone completed",
+            String(localized: "Self-test complete", bundle: AppResources.localizationBundle),
+            detail: result ?? String(localized: "One haptic and one speaker tone completed", bundle: AppResources.localizationBundle),
             color: .systemGreen
         )
         updateAggregateState()
@@ -1995,22 +1995,23 @@ final class AppModel: ObservableObject {
         bluetoothMicrophone.stopCapture()
         microphoneDiagnosticRunning = false
 
-        if packets > 0, frames > 0 {
+        microphoneDiagnosticPassed = packets > 0 && frames > 0
+        if microphoneDiagnosticPassed {
             let percent = Int((peak * 100).rounded())
             microphoneDiagnosticResult =
-                "Passed · \(packets) packets · voice peak \(percent)%"
+                String(localized: "Passed · \(packets) packets · voice peak \(percent)%", bundle: AppResources.localizationBundle)
             lastAction =
-                "Wireless mic passed: \(packets) packets, peak \(percent)%"
+                String(localized: "Wireless mic passed: \(packets) packets, peak \(percent)%", bundle: AppResources.localizationBundle)
             hud.show(
-                "Wireless microphone works",
-                detail: "\(packets) packets decoded · peak \(percent)%",
+                String(localized: "Wireless microphone works", bundle: AppResources.localizationBundle),
+                detail: String(localized: "\(packets) packets decoded · peak \(percent)%", bundle: AppResources.localizationBundle),
                 color: .systemGreen
             )
         } else {
             microphoneDiagnosticResult =
-                "Failed · no usable Bluetooth audio was received"
+                String(localized: "Failed · no usable Bluetooth audio was received", bundle: AppResources.localizationBundle)
             feedbackFailure(
-                "No usable Bluetooth microphone audio was received"
+                String(localized: "No usable Bluetooth microphone audio was received", bundle: AppResources.localizationBundle)
             )
         }
     }
@@ -2041,26 +2042,26 @@ final class AppModel: ObservableObject {
            let capturedTransport = universalDictationTransport,
            capturedTransport != transport {
             cancelUniversalTranscription(
-                reason: "Controller connection changed"
+                reason: String(localized: "Controller connection changed", bundle: AppResources.localizationBundle)
             )
         }
         if selfTestRunning {
             selfTestGeneration += 1
             selfTestRunning = false
-            lastAction = "Hardware self-test cancelled after connection change"
+            lastAction = String(localized: "Hardware self-test cancelled after connection change", bundle: AppResources.localizationBundle)
         }
         if microphoneDiagnosticRunning, transport != .bluetooth {
             microphoneDiagnosticGeneration += 1
             microphoneDiagnosticRunning = false
             bluetoothMicrophone.stopCapture()
-            lastAction = "Wireless microphone test cancelled after disconnect"
+            lastAction = String(localized: "Wireless microphone test cancelled after disconnect", bundle: AppResources.localizationBundle)
         }
         if pushToTalkActive,
            let capturedTransport = voiceCaptureTransport,
            capturedTransport != transport {
             cancelActiveVoiceCapture(
                 capturedTransport: capturedTransport,
-                reason: "Controller connection changed"
+                reason: String(localized: "Controller connection changed", bundle: AppResources.localizationBundle)
             )
         }
 
@@ -2074,7 +2075,7 @@ final class AppModel: ObservableObject {
         case .bluetooth:
             audio.removeCodexMicrophone()
             if bluetoothMicrophone.prepare() {
-                lastAction = "Wireless DualSense Microphone is ready"
+                lastAction = String(localized: "Wireless DualSense Microphone is ready", bundle: AppResources.localizationBundle)
             } else {
                 lastAction = bluetoothMicrophone.lastResult
             }
@@ -2153,7 +2154,7 @@ final class AppModel: ObservableObject {
         dictationFocusGuard.end()
         let stopped = automation.stopDictationAndInsert()
         lastAction = stopped
-            ? "\(reason); dictation stopped"
+            ? String(localized: "\(reason); dictation stopped", bundle: AppResources.localizationBundle)
             : "\(reason); \(automation.lastResult)"
         updateAggregateState()
         logger.error(
@@ -2187,7 +2188,7 @@ final class AppModel: ObservableObject {
         universalDictationProvider = nil
         dictationFocusGuard.end()
         hud.dismiss()
-        lastAction = "\(reason); transcription stopped"
+        lastAction = String(localized: "\(reason); transcription stopped", bundle: AppResources.localizationBundle)
         updateAggregateState()
     }
 
@@ -2210,12 +2211,12 @@ final class AppModel: ObservableObject {
             cancelActiveVoiceCapture(
                 capturedTransport:
                     voiceCaptureTransport ?? controller.transport,
-                reason: "ControlDeck is closing"
+                reason: String(localized: "ControlDeck is closing", bundle: AppResources.localizationBundle)
             )
         }
         if universalDictationActive ||
             universalTranscriptionStopPending {
-            cancelUniversalTranscription(reason: "ControlDeck is closing")
+            cancelUniversalTranscription(reason: String(localized: "ControlDeck is closing", bundle: AppResources.localizationBundle))
         }
         appSwitcherSafetyGeneration += 1
         appSwitcherStick.reset()
@@ -2244,19 +2245,19 @@ final class AppModel: ObservableObject {
                 if statusHaptics {
                     controller.playHaptic(.success)
                 }
-                hud.show("Task complete", detail: task.shortTitle, color: task.state.color)
+                hud.show(String(localized: "Task complete", bundle: AppResources.localizationBundle), detail: task.shortTitle, color: task.state.color)
                 playFeedbackSound(.complete)
             case .needsInput:
                 if statusHaptics {
                     controller.playHaptic(.warning)
                 }
-                hud.show("Task needs input", detail: task.shortTitle, color: task.state.color)
+                hud.show(String(localized: "Task needs input", bundle: AppResources.localizationBundle), detail: task.shortTitle, color: task.state.color)
                 playFeedbackSound(.needsInput)
             case .error:
                 if statusHaptics {
                     controller.playHaptic(.error)
                 }
-                hud.show("Task error", detail: task.shortTitle, color: task.state.color)
+                hud.show(String(localized: "Task error", bundle: AppResources.localizationBundle), detail: task.shortTitle, color: task.state.color)
                 playFeedbackSound(.error)
             default:
                 break
@@ -2283,7 +2284,7 @@ final class AppModel: ObservableObject {
     private func feedbackFailure(_ message: String) {
         lastAction = message
         controller.playHaptic(.error)
-        hud.show("Action unavailable", detail: message, color: .systemRed)
+        hud.show(String(localized: "Action unavailable", bundle: AppResources.localizationBundle), detail: message, color: .systemRed)
     }
 
     func previewSoundTheme() {

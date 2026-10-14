@@ -226,7 +226,7 @@ final class PointerService: ObservableObject {
             guard remainingAttempts > 1 else {
                 self.priorPasteboardItems.removeAll()
                 self.onScreenshotCaptureFailed?(
-                    "The screen capture did not reach the clipboard"
+                    String(localized: "The screen capture did not reach the clipboard", bundle: AppResources.localizationBundle)
                 )
                 return
             }

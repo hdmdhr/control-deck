@@ -20,21 +20,21 @@ enum LocalSpeechTranscriptionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .accessibilityRequired:
-            "Accessibility is required to insert dictated text"
+            String(localized: "Accessibility is required to insert dictated text", bundle: AppResources.localizationBundle)
         case .microphonePermissionDenied:
-            "Enable ControlDeck in Privacy & Security → Microphone"
+            String(localized: "Enable ControlDeck in Privacy & Security → Microphone", bundle: AppResources.localizationBundle)
         case .noTextField:
-            "Focus the app where dictated text should be inserted"
+            String(localized: "Focus the app where dictated text should be inserted", bundle: AppResources.localizationBundle)
         case let .modelNotReady(name):
-            "\(name) is not ready yet"
+            String(localized: "\(name) is not ready yet", bundle: AppResources.localizationBundle)
         case .microphoneUnavailable:
-            "The selected microphone is unavailable"
+            String(localized: "The selected microphone is unavailable", bundle: AppResources.localizationBundle)
         case let .recordingUnavailable(message):
-            "Local transcription could not start: \(message)"
+            String(localized: "Local transcription could not start: \(message)", bundle: AppResources.localizationBundle)
         case .noSpeechDetected:
-            "No speech was detected"
+            String(localized: "No speech was detected", bundle: AppResources.localizationBundle)
         case .targetUnavailable:
-            "The original text field is no longer available"
+            String(localized: "The original text field is no longer available", bundle: AppResources.localizationBundle)
         }
     }
 }
@@ -66,11 +66,11 @@ final class LocalSpeechTranscriptionService: ObservableObject {
     @Published private(set) var whisperKitSmallState: ModelState =
         .notInstalled
     @Published private(set) var parakeetStatus =
-        "Parakeet EOU 120M is not downloaded"
+        String(localized: "Parakeet EOU 120M is not downloaded", bundle: AppResources.localizationBundle)
     @Published private(set) var whisperKitStatus =
-        "WhisperKit Base English is not downloaded"
+        String(localized: "WhisperKit Base English is not downloaded", bundle: AppResources.localizationBundle)
     @Published private(set) var whisperKitSmallStatus =
-        "WhisperKit Small English is not downloaded"
+        String(localized: "WhisperKit Small English is not downloaded", bundle: AppResources.localizationBundle)
     @Published private(set) var whisperKitProgress: Double = 0
     @Published private(set) var whisperKitSmallProgress: Double = 0
     @Published private(set) var parakeetBytes: Int64 = 0
@@ -80,7 +80,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
     @Published private(set) var isActive = false
     @Published private(set) var inputLevel: Float = 0
     @Published private(set) var audioDuration: TimeInterval = 0
-    @Published private(set) var activeStatus = "Ready"
+    @Published private(set) var activeStatus = String(localized: "Ready", bundle: AppResources.localizationBundle)
 
     var onPartialTranscript: ((String) -> Void)?
     var onInputLevel: ((Float) -> Void)?
@@ -145,7 +145,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
         case .whisperKitSmallEnglish:
             whisperKitSmallStatus
         case .appleSpeech:
-            "Built into macOS"
+            String(localized: "Built into macOS", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -179,8 +179,8 @@ final class LocalSpeechTranscriptionService: ObservableObject {
         setState(isInstalled ? .loading : .downloading, for: engine)
         setStatus(
             isInstalled
-                ? "Loading \(engine.engineName)"
-                : "Checking \(engine.engineName) download",
+                ? String(localized: "Loading \(engine.engineName)", bundle: AppResources.localizationBundle)
+                : String(localized: "Checking \(engine.engineName) download", bundle: AppResources.localizationBundle),
             for: engine
         )
         logger.notice(
@@ -201,12 +201,12 @@ final class LocalSpeechTranscriptionService: ObservableObject {
                 switch engine {
                 case .parakeetEOU120M:
                     self.parakeetStatus =
-                        "Downloading Parakeet EOU 120M (320 ms)"
+                        String(localized: "Downloading Parakeet EOU 120M (320 ms)", bundle: AppResources.localizationBundle)
                     try await self.worker.prepareParakeet(modelsRoot: root)
                 case .whisperKitBaseEnglish,
                      .whisperKitSmallEnglish:
                     self.setStatus(
-                        "Downloading \(engine.engineName)",
+                        String(localized: "Downloading \(engine.engineName)", bundle: AppResources.localizationBundle),
                         for: engine
                     )
                     try await self.worker.prepareWhisperKit(
@@ -226,7 +226,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
                 guard !Task.isCancelled else { return }
                 self.refreshInstalledSizes()
                 self.setState(.ready, for: engine)
-                self.setStatus("\(engine.engineName) is ready", for: engine)
+                self.setStatus(String(localized: "\(engine.engineName) is ready", bundle: AppResources.localizationBundle), for: engine)
                 self.logger.notice(
                     "\(engine.engineName, privacy: .public) model is ready; installedBytes=\(self.installedBytes(for: engine), privacy: .public)"
                 )
@@ -236,14 +236,14 @@ final class LocalSpeechTranscriptionService: ObservableObject {
             } catch is CancellationError {
                 self.setState(.notInstalled, for: engine)
                 self.setStatus(
-                    "\(engine.engineName) preparation cancelled",
+                    String(localized: "\(engine.engineName) preparation cancelled", bundle: AppResources.localizationBundle),
                     for: engine
                 )
             } catch {
                 let message = error.localizedDescription
                 self.setState(.failed(message), for: engine)
                 self.setStatus(
-                    "\(engine.engineName) could not load: \(message)",
+                    String(localized: "\(engine.engineName) could not load: \(message)", bundle: AppResources.localizationBundle),
                     for: engine
                 )
                 self.logger.error(
@@ -266,7 +266,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
     ) -> Bool {
         guard engine != .appleSpeech else {
             completion(
-                .failure(.recordingUnavailable("invalid local engine"))
+                .failure(.recordingUnavailable(String(localized: "invalid local engine", bundle: AppResources.localizationBundle)))
             )
             return false
         }
@@ -276,7 +276,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
             return false
         }
         guard !isActive else {
-            completion(.failure(.recordingUnavailable("already active")))
+            completion(.failure(.recordingUnavailable(String(localized: "already active", bundle: AppResources.localizationBundle))))
             return false
         }
         guard AXIsProcessTrusted() else {
@@ -293,7 +293,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
         partialTranscript = ""
         inputLevel = 0
         audioDuration = 0
-        activeStatus = "Preparing \(engine.engineName)"
+        activeStatus = String(localized: "Preparing \(engine.engineName)", bundle: AppResources.localizationBundle)
         configureAudioStream()
         isActive = true
         Task { @MainActor [weak self] in
@@ -323,7 +323,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
                 if !usesExternalPCM {
                     try self.startAudioInput(deviceID: inputDeviceID)
                 }
-                self.activeStatus = "Listening"
+                self.activeStatus = String(localized: "Listening", bundle: AppResources.localizationBundle)
                 completion(.success(()))
             } catch {
                 await self.worker.cancel()
@@ -349,7 +349,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
         ) -> Void
     ) -> Bool {
         guard isActive, let target else {
-            completion(.failure(.recordingUnavailable("not active")))
+            completion(.failure(.recordingUnavailable(String(localized: "not active", bundle: AppResources.localizationBundle))))
             return false
         }
         stopAudioInput()
@@ -358,7 +358,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
             guard let self else { return }
             do {
                 await self.drainAudioPump()
-                self.activeStatus = "Transcribing"
+                self.activeStatus = String(localized: "Transcribing", bundle: AppResources.localizationBundle)
                 let workerResult = try await self.worker.stop()
                 let metrics = await self.worker.audioMetrics()
                 let text = workerResult.text
@@ -418,7 +418,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
             self.refreshInstalledSizes()
             self.setState(.notInstalled, for: engine)
             self.setStatus(
-                "\(engine.label) is not downloaded",
+                String(localized: "\(engine.label) is not downloaded", bundle: AppResources.localizationBundle),
                 for: engine
             )
         }
@@ -491,23 +491,23 @@ final class LocalSpeechTranscriptionService: ObservableObject {
         if parakeetBytes > 0,
            modelIsComplete(.parakeetEOU120M),
            parakeetState == .notInstalled {
-            parakeetStatus = "Parakeet model found; loading is required"
+            parakeetStatus = String(localized: "Parakeet model found; loading is required", bundle: AppResources.localizationBundle)
         }
         if whisperKitBytes > 0,
            modelIsComplete(.whisperKitBaseEnglish),
            whisperKitState == .notInstalled {
-            whisperKitStatus = "WhisperKit model found; loading is required"
+            whisperKitStatus = String(localized: "WhisperKit model found; loading is required", bundle: AppResources.localizationBundle)
         }
         if whisperKitSmallBytes > 0,
            modelIsComplete(.whisperKitSmallEnglish),
            whisperKitSmallState == .notInstalled {
             whisperKitSmallStatus =
-                "WhisperKit Small model found; loading is required"
+                String(localized: "WhisperKit Small model found; loading is required", bundle: AppResources.localizationBundle)
         }
         if whisperKitSmallBytes > 0,
            !modelIsComplete(.whisperKitSmallEnglish) {
             whisperKitSmallStatus =
-                "High Accuracy download is incomplete · select it to resume"
+                String(localized: "High Accuracy download is incomplete · select it to resume", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -615,7 +615,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
             countStyle: .file
         )
         setStatus(
-            "Downloading \(engine.engineName) · \(percentage)% of about \(expected)",
+            String(localized: "Downloading \(engine.engineName) · \(percentage)% of about \(expected)", bundle: AppResources.localizationBundle),
             for: engine
         )
         if percentage == 1 || percentage.isMultiple(of: 10),
@@ -776,7 +776,7 @@ final class LocalSpeechTranscriptionService: ObservableObject {
         partialTranscript = ""
         inputLevel = 0
         audioDuration = 0
-        activeStatus = "Ready"
+        activeStatus = String(localized: "Ready", bundle: AppResources.localizationBundle)
     }
 
     private func configureAudioStream() {

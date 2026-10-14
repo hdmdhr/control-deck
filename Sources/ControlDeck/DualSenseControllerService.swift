@@ -8,7 +8,7 @@ final class DualSenseControllerService: ObservableObject {
     @Published private(set) var isConnected = false
     @Published private(set) var batteryLevel: Float = 0
     @Published private(set) var batteryState = "Unknown"
-    @Published private(set) var lastInput = "Waiting for controller"
+    @Published private(set) var lastInput = String(localized: "Waiting for controller", bundle: AppResources.localizationBundle)
     @Published private(set) var transport: ControllerTransport = .unknown
     private(set) var activeTouchCount = 0
     @Published private(set) var controllerFamily: ControllerFamily = .dualSense
@@ -215,7 +215,7 @@ final class DualSenseControllerService: ObservableObject {
             let player = try hapticEngine.makePlayer(with: pattern)
             try player.start(atTime: CHHapticTimeImmediate)
         } catch {
-            lastInput = "Haptic error: \(error.localizedDescription)"
+            lastInput = String(localized: "Haptic error: \(error.localizedDescription)", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -288,7 +288,7 @@ final class DualSenseControllerService: ObservableObject {
         completion: ((String) -> Void)? = nil
     ) -> Bool {
         guard !speakerPlaybackActive else {
-            lastInput = "A controller speaker cue is already playing"
+            lastInput = String(localized: "A controller speaker cue is already playing", bundle: AppResources.localizationBundle)
             return false
         }
         speakerPlaybackActive = true
@@ -340,7 +340,7 @@ final class DualSenseControllerService: ObservableObject {
         }
         controllerName = controller.vendorName ?? controllerFamily.label
         isConnected = true
-        lastInput = "\(controllerName) connected"
+        lastInput = String(localized: "\(controllerName) connected", bundle: AppResources.localizationBundle)
         batteryLevel = controller.battery?.batteryLevel ?? 0
         batteryState = describeBattery(controller.battery?.batteryState)
         batteryTimer?.invalidate()
@@ -378,7 +378,7 @@ final class DualSenseControllerService: ObservableObject {
         controller = nil
         isConnected = false
         displayedState = .disconnected
-        lastInput = "DualSense disconnected"
+        lastInput = String(localized: "DualSense disconnected", bundle: AppResources.localizationBundle)
         batteryLevel = 0
         batteryState = "Disconnected"
         leftTriggerActive = false
@@ -421,10 +421,10 @@ final class DualSenseControllerService: ObservableObject {
             bind(home, name: "PS", input: .ps)
         }
 
-        bind(gamepad.dpad.up, name: "D-pad up", input: .dpadUp)
-        bind(gamepad.dpad.right, name: "D-pad right", input: .dpadRight)
-        bind(gamepad.dpad.down, name: "D-pad down", input: .dpadDown)
-        bind(gamepad.dpad.left, name: "D-pad left", input: .dpadLeft)
+        bind(gamepad.dpad.up, name: String(localized: "D-pad up", bundle: AppResources.localizationBundle), input: .dpadUp)
+        bind(gamepad.dpad.right, name: String(localized: "D-pad right", bundle: AppResources.localizationBundle), input: .dpadRight)
+        bind(gamepad.dpad.down, name: String(localized: "D-pad down", bundle: AppResources.localizationBundle), input: .dpadDown)
+        bind(gamepad.dpad.left, name: String(localized: "D-pad left", bundle: AppResources.localizationBundle), input: .dpadLeft)
 
         let inputGate = microphoneInputGate
         gamepad.leftTrigger.valueChangedHandler = { [weak self, inputGate] _, value, _ in
@@ -454,7 +454,7 @@ final class DualSenseControllerService: ObservableObject {
                 [weak self, inputGate] _, _, pressed in
                 guard inputGate.acceptsGameControllerInput else { return }
                 Task { @MainActor in
-                    self?.lastInput = "Touchpad click"
+                    self?.lastInput = String(localized: "Touchpad click", bundle: AppResources.localizationBundle)
                     self?.onEvent?(
                         .button(.touchpadClick, pressed: pressed)
                     )
@@ -588,7 +588,7 @@ final class DualSenseControllerService: ObservableObject {
                 }
 
                 let message =
-                    "Wireless microphone did not close safely; reconnect the controller"
+                    String(localized: "Wireless microphone did not close safely; reconnect the controller", bundle: AppResources.localizationBundle)
                 self.logger.error("\(message, privacy: .public)")
                 self.onBluetoothMicrophoneRecoveryRequired?(message)
                 // Deliberately remain suppressed. Exposing Game Controller
@@ -612,7 +612,7 @@ final class DualSenseControllerService: ObservableObject {
     private func handleLeftTrigger(_ value: Float) {
         if value >= 0.55 && !leftTriggerActive {
             leftTriggerActive = true
-            lastInput = "L2"
+            lastInput = String(localized: "L2", bundle: AppResources.localizationBundle)
             onEvent?(.button(.l2, pressed: true))
         } else if value <= 0.2 && leftTriggerActive {
             leftTriggerActive = false
@@ -625,7 +625,7 @@ final class DualSenseControllerService: ObservableObject {
         // near-bottomed-out pull made screenshot selection feel intermittent.
         if value >= 0.7 && !rightTriggerFired {
             rightTriggerFired = true
-            lastInput = "R2"
+            lastInput = String(localized: "R2", bundle: AppResources.localizationBundle)
             onEvent?(.button(.r2, pressed: true))
         } else if value <= 0.3 {
             if rightTriggerFired {
@@ -658,7 +658,7 @@ final class DualSenseControllerService: ObservableObject {
         do {
             try engine.start()
         } catch {
-            lastInput = "Unable to start haptics"
+            lastInput = String(localized: "Unable to start haptics", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -737,10 +737,10 @@ final class DualSenseControllerService: ObservableObject {
 
     private func describeBattery(_ state: GCDeviceBattery.State?) -> String {
         switch state {
-        case .charging: "Charging"
-        case .discharging: "On battery"
-        case .full: "Full"
-        default: "Unknown"
+        case .charging: String(localized: "Charging", bundle: AppResources.localizationBundle)
+        case .discharging: String(localized: "On battery", bundle: AppResources.localizationBundle)
+        case .full: String(localized: "Full", bundle: AppResources.localizationBundle)
+        default: String(localized: "Unknown", bundle: AppResources.localizationBundle)
         }
     }
 }

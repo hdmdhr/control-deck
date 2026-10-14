@@ -137,7 +137,7 @@ final class CodexTaskMonitor: ObservableObject {
             process.waitUntilExit()
             guard process.terminationStatus == 0 else {
                 let data = errors.fileHandleForReading.readDataToEndOfFile()
-                let message = String(data: data, encoding: .utf8) ?? "sqlite3 failed"
+                let message = String(data: data, encoding: .utf8) ?? String(localized: "sqlite3 failed", bundle: AppResources.localizationBundle)
                 return .failure(MonitorError.queryFailed(message))
             }
         } catch {
@@ -190,7 +190,7 @@ final class CodexTaskMonitor: ObservableObject {
             let milliseconds = Double(fields[3]) ?? 0
             return RecentCodexTask(
                 id: fields[0],
-                title: fields[1].isEmpty ? "Untitled task" : fields[1],
+                title: fields[1].isEmpty ? String(localized: "Untitled task", bundle: AppResources.localizationBundle) : fields[1],
                 latestMessage: latestMessage,
                 rolloutPath: rolloutPath,
                 updatedAt: Date(timeIntervalSince1970: milliseconds / 1000),
@@ -323,9 +323,9 @@ private enum MonitorError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .databaseMissing: "Codex task database was not found"
-        case let .queryFailed(message): "Codex task query failed: \(message)"
-        case .invalidOutput: "Codex task query returned invalid text"
+        case .databaseMissing: String(localized: "Codex task database was not found", bundle: AppResources.localizationBundle)
+        case let .queryFailed(message): String(localized: "Codex task query failed: \(message)", bundle: AppResources.localizationBundle)
+        case .invalidOutput: String(localized: "Codex task query returned invalid text", bundle: AppResources.localizationBundle)
         }
     }
 }
