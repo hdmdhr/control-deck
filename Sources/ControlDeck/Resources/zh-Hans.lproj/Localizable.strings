@@ -1125,3 +1125,14 @@
 "Grok Bot selection changed; try again" = "当前 Bot 已变化，请重试";
 
 "Grok Bot navigation requires asynchronous dispatch" = "Bot 导航需要异步执行";
+
+"Grok Bot · Collapse current section" = "Grok Bot · 收起当前分区";
+"Grok Bot · Expand current section" = "Grok Bot · 展开当前分区";
+
+"Grok Bot current bot has no collapsible section" = "Grok Bot 当前 Bot 没有可收起的分区";
+
+"Grok Bot section is already in the requested state" = "Grok Bot 分区已处于请求的状态";
+
+"Grok Bot section change could not be verified" = "无法确认 Grok Bot 分区状态已更改";
+
+"Grok Bot section updated" = "Grok Bot 分区已更新";

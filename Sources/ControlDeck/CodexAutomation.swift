@@ -91,7 +91,13 @@ final class CodexAutomation: ObservableObject {
 
     @discardableResult
     func navigateGrokBot(_ action: MappedAction) async -> Bool {
-        let result = await GrokBotNavigation.navigate(offset: action == .grokPreviousBot ? -1 : 1)
+        let result: (succeeded: Bool, message: String)
+        switch action {
+        case .grokCollapseSection, .grokExpandSection:
+            result = await GrokBotNavigation.setCurrentSectionExpanded(action == .grokExpandSection)
+        default:
+            result = await GrokBotNavigation.navigate(offset: action == .grokPreviousBot ? -1 : 1)
+        }
         lastResult = result.message
         return result.succeeded
     }
@@ -355,7 +361,7 @@ final class CodexAutomation: ObservableObject {
                 bundleIdentifier: "com.anthropic.claudefordesktop",
                 fallbackPath: "/Applications/Claude.app"
             )
-        case .grokPreviousBot, .grokNextBot:
+        case .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection:
             lastResult = "Grok Bot navigation requires asynchronous dispatch"
             return false
         case .assistantRightPanel:

@@ -437,6 +437,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case grokDictation
     case grokPreviousBot
     case grokNextBot
+    case grokCollapseSection
+    case grokExpandSection
     case assistantRightPanel
     case showControllerOverlay
     case deleteTextWithConfirmation
@@ -569,6 +571,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .grokPreviousBot: String(localized: "Grok Bot · Previous bot", bundle: AppResources.localizationBundle)
         case .assistantRightPanel: String(localized: "Assistant · Right panel", bundle: AppResources.localizationBundle)
         case .grokNextBot: String(localized: "Grok Bot · Next bot", bundle: AppResources.localizationBundle)
+        case .grokCollapseSection: String(localized: "Grok Bot · Collapse current section", bundle: AppResources.localizationBundle)
+        case .grokExpandSection: String(localized: "Grok Bot · Expand current section", bundle: AppResources.localizationBundle)
         case .grokDictation: String(localized: "Grok Bot · Hold to dictate", bundle: AppResources.localizationBundle)
         case .systemDictation: String(localized: "Universal dictation", bundle: AppResources.localizationBundle)
         case .showControllerOverlay: String(localized: "Show controller overlay", bundle: AppResources.localizationBundle)
@@ -596,7 +600,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
              .presentationPointer, .presentationNotesUp,
              .presentationNotesDown, .presentationExit:
             .presentation
-        case .grokPreviousBot, .grokNextBot, .slackJumpConversation, .slackPreviousUnread,
+        case .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection, .slackJumpConversation, .slackPreviousUnread,
              .slackNextUnread, .slackThreads, .slackActivity,
              .slackHuddle, .mailArchive, .mailReply, .mailUnread:
             .communication
@@ -1206,6 +1210,17 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         setAction(.codexAppSnapshot, for: .r2)
     }
 
+    /// Upgrade only the former vertical defaults, preserving customized bindings.
+    mutating func migrateGrokSectionControls() {
+        guard kind == .grokBot else { return }
+        if [.grokPreviousBot, .arrowUp].contains(action(for: .dpadUp)) {
+            setAction(.grokCollapseSection, for: .dpadUp)
+        }
+        if [.grokNextBot, .arrowDown].contains(action(for: .dpadDown)) {
+            setAction(.grokExpandSection, for: .dpadDown)
+        }
+    }
+
     static let cursor = desktopAssistant(
         kind: .cursor, name: "Cursor",
         bundleIdentifier: "com.todesktop.230313mzl4w4u92", dictation: .cursorDictation
@@ -1216,9 +1231,9 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
             kind: .grokBot, name: "Grok Bot",
             bundleIdentifier: "com.anysphere.sand", dictation: .grokDictation
         )
-        profile.setAction(.grokPreviousBot, for: .dpadUp)
+        profile.setAction(.grokCollapseSection, for: .dpadUp)
         profile.setAction(.grokPreviousBot, for: .dpadLeft)
-        profile.setAction(.grokNextBot, for: .dpadDown)
+        profile.setAction(.grokExpandSection, for: .dpadDown)
         profile.setAction(.grokNextBot, for: .dpadRight)
         return profile
     }()

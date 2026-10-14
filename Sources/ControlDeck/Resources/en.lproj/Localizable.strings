@@ -1125,3 +1125,14 @@
 "Grok Bot selection changed; try again" = "Grok Bot selection changed; try again";
 
 "Grok Bot navigation requires asynchronous dispatch" = "Grok Bot navigation requires asynchronous dispatch";
+
+"Grok Bot · Collapse current section" = "Grok Bot · Collapse current section";
+"Grok Bot · Expand current section" = "Grok Bot · Expand current section";
+
+"Grok Bot current bot has no collapsible section" = "Grok Bot current bot has no collapsible section";
+
+"Grok Bot section is already in the requested state" = "Grok Bot section is already in the requested state";
+
+"Grok Bot section change could not be verified" = "Grok Bot section change could not be verified";
+
+"Grok Bot section updated" = "Grok Bot section updated";

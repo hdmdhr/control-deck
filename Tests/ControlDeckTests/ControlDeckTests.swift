@@ -101,11 +101,39 @@ struct ControlDeckLogicTestRunner {
         previousCodex.migrateCodexUniversalDictation()
         expect(previousCodex.action(for: .l2) == .copy,
                "Codex dictation migration preserves a custom L2 action")
-        expect(ControllerProfile.grokBot.action(for: .dpadUp) == .grokPreviousBot &&
+        expect(ControllerProfile.grokBot.action(for: .dpadUp) == .grokCollapseSection &&
                ControllerProfile.grokBot.action(for: .dpadLeft) == .grokPreviousBot &&
-               ControllerProfile.grokBot.action(for: .dpadDown) == .grokNextBot &&
+               ControllerProfile.grokBot.action(for: .dpadDown) == .grokExpandSection &&
                ControllerProfile.grokBot.action(for: .dpadRight) == .grokNextBot,
-               "Grok directional controls follow previous and next bot convention")
+               "Grok horizontal controls select bots and vertical controls collapse or expand sections")
+        var previousGrok = ControllerProfile.grokBot
+        previousGrok.setAction(.grokPreviousBot, for: .dpadUp)
+        previousGrok.setAction(.grokNextBot, for: .dpadDown)
+        previousGrok.migrateGrokSectionControls()
+        expect(previousGrok.action(for: .dpadUp) == .grokCollapseSection &&
+               previousGrok.action(for: .dpadDown) == .grokExpandSection &&
+               previousGrok.action(for: .dpadLeft) == .grokPreviousBot &&
+               previousGrok.action(for: .dpadRight) == .grokNextBot,
+               "legacy Grok bot navigation upgrades only vertical bindings")
+        previousGrok.setAction(.arrowUp, for: .dpadUp)
+        previousGrok.setAction(.arrowDown, for: .dpadDown)
+        previousGrok.migrateGrokSectionControls()
+        previousGrok.migrateGrokSectionControls()
+        expect(previousGrok.action(for: .dpadUp) == .grokCollapseSection &&
+               previousGrok.action(for: .dpadDown) == .grokExpandSection,
+               "legacy Grok arrow defaults migrate idempotently")
+        previousGrok.setAction(.copy, for: .dpadUp)
+        previousGrok.setAction(.paste, for: .dpadDown)
+        previousGrok.migrateGrokSectionControls()
+        expect(previousGrok.action(for: .dpadUp) == .copy && previousGrok.action(for: .dpadDown) == .paste,
+               "Grok section migration preserves custom vertical bindings")
+        var otherProfile = ControllerProfile.cursor
+        otherProfile.migrateGrokSectionControls()
+        expect(otherProfile == ControllerProfile.cursor,
+               "Grok section migration leaves other application profiles unchanged")
+        expect(MappedAction.grokCollapseSection.category == MappedAction.grokPreviousBot.category &&
+               MappedAction.grokExpandSection.category == MappedAction.grokNextBot.category,
+               "Grok section actions share the bot navigation category")
         expect((try? GrokBotNavigation.adjacentIndex(names: ["A", "B", "C"], currentNames: ["B"], offset: 1)) == 2 &&
                (try? GrokBotNavigation.adjacentIndex(names: ["A", "B", "C"], currentNames: ["B"], offset: -1)) == 0,
                "bot navigation follows sidebar order in both directions")
@@ -116,6 +144,29 @@ struct ControlDeckLogicTestRunner {
                (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["A", "B"], offset: 1)) == nil &&
                (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["C"], offset: 1)) == nil,
                "bot navigation rejects duplicates, ambiguous selection and unknown current bot")
+        expect(GrokBotNavigation.isBotButton(role: "AXButton", expanded: nil, roleDescription: "button") &&
+               !GrokBotNavigation.isBotButton(role: "AXButton", expanded: true, roleDescription: "button") &&
+               !GrokBotNavigation.isBotButton(role: "AXButton", expanded: false, roleDescription: "button") &&
+               !GrokBotNavigation.isBotButton(role: "AXButton", expanded: nil, roleDescription: "sortable") &&
+               !GrokBotNavigation.isBotButton(role: "AXGroup", expanded: nil, roleDescription: "group"),
+               "bot rows exclude expanded and collapsed section headers, sortable handles and groups")
+        let rememberedBotOrder = ["Before", "Current", "Hidden sibling", "After", "Last"]
+        let visibleBotOrder = ["Before", "After", "Last"]
+        expect((try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: visibleBotOrder,
+                                                          current: "Current", offset: 1)) == 1 &&
+               (try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: visibleBotOrder,
+                                                          current: "Current", offset: -1)) == 0,
+               "collapsed current section navigates to visible neighbors in either direction and returns visible indices")
+        expect((try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: visibleBotOrder,
+                                                          current: "Before", offset: -1)) == nil &&
+               (try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: visibleBotOrder,
+                                                          current: "Last", offset: 1)) == nil,
+               "visible bot navigation stops at both remembered list boundaries")
+        expect((try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: ["After", "Before"],
+                                                          current: "Current", offset: 1)) == nil &&
+               (try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: ["Before", "Unknown"],
+                                                          current: "Current", offset: 1)) == nil,
+               "visible bot navigation rejects reordered and unknown sidebar rows")
         expect(GrokBotNavigation.verification(current: "A", initial: "A", target: "B") == .unchanged &&
                GrokBotNavigation.verification(current: "B", initial: "A", target: "B") == .confirmed &&
                GrokBotNavigation.verification(current: "C", initial: "A", target: "B") == .unexpected,

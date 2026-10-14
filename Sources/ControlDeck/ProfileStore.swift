@@ -25,6 +25,7 @@ final class ProfileStore: ObservableObject {
     private let assistantNativeDictationKey = "assistantNativeL2Dictation.v1"
     private let assistantRightPanelKey = "assistantSquareRightPanel.v1"
     private let grokBotNavigationKey = "grokBotNavigation.v1"
+    private let grokSectionControlsKey = "grokSectionControls.v1"
     private let cursorProfileMigrationKey = "cursorProfile.v1"
     private let allAppsSnapshotKey = "allAppsR2Snapshot.v1"
     private let codexUniversalDictationKey = "codexUniversalDictation.v1"
@@ -224,6 +225,11 @@ final class ProfileStore: ObservableObject {
                 }
             }
             UserDefaults.standard.set(true, forKey: grokBotNavigationKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: grokSectionControlsKey) {
+            for index in profiles.indices { profiles[index].migrateGrokSectionControls() }
+            UserDefaults.standard.set(true, forKey: grokSectionControlsKey)
         }
 
         if let data = try? JSONEncoder().encode(profiles) {

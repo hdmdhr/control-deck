@@ -1125,3 +1125,14 @@
 "Grok Bot selection changed; try again" = "現在の Bot が変わりました。再試行してください";
 
 "Grok Bot navigation requires asynchronous dispatch" = "Bot ナビゲーションには非同期実行が必要です";
+
+"Grok Bot · Collapse current section" = "Grok Bot · 現在のセクションを折りたたむ";
+"Grok Bot · Expand current section" = "Grok Bot · 現在のセクションを展開";
+
+"Grok Bot current bot has no collapsible section" = "Grok Bot の現在の Bot に折りたたみ可能なセクションがありません";
+
+"Grok Bot section is already in the requested state" = "Grok Bot のセクションは既に指定の状態です";
+
+"Grok Bot section change could not be verified" = "Grok Bot のセクションの変更を確認できませんでした";
+
+"Grok Bot section updated" = "Grok Bot のセクションを更新しました";
