@@ -27,10 +27,30 @@ enum GrokBotNavigation {
 
     @MainActor private static var navigating = false
 
+    // A disclosure button is a section header even when macOS exposes AXButton.
+    static func isBotButton(role: String, expanded: Bool?, roleDescription: String) -> Bool {
+        role == kAXButtonRole && expanded == nil && roleDescription != "sortable"
+    }
+
+    private struct Section {
+        let button: AXUIElement
+        let container: AXUIElement
+        let expanded: Bool
+    }
+    private struct FoldedContext {
+        let window: AXUIElement
+        let current: String
+        let section: AXUIElement
+        let order: [String]
+    }
+    @MainActor private static var foldedContext: FoldedContext?
+
     private struct Snapshot {
         let names: [String]
         let buttons: [AXUIElement]
         let current: String
+        let sections: [Section]
+        let sectionByBot: [String: Int]
     }
 
     @MainActor
@@ -55,7 +75,14 @@ enum GrokBotNavigation {
             return CFEqual(current, window)
         }
         let index: Int
-        do { index = try adjacentIndex(names: initial.names, currentNames: [initial.current], offset: offset) }
+        do {
+            if initial.names.contains(initial.current) {
+                index = try adjacentIndex(names: initial.names, currentNames: [initial.current], offset: offset)
+            } else if let remembered = foldedContext, CFEqual(remembered.window, window) {
+                index = try adjacentVisibleIndex(order: remembered.order, visible: initial.names,
+                                                 current: initial.current, offset: offset)
+            } else { throw SelectionError.unavailable }
+        }
         catch SelectionError.boundary { return result(false, "Grok Bot has no adjacent bot in this direction") }
         catch { return result(false, "Grok Bot current bot is unavailable or ambiguous") }
         let target = initial.names[index]
@@ -89,6 +116,78 @@ enum GrokBotNavigation {
         return result(false, "Grok Bot switch could not be verified")
     }
 
+    /// If the current bot was just folded away, skip hidden rows using the last verified order.
+    static func adjacentVisibleIndex(order: [String], visible: [String], current: String, offset: Int) throws -> Int {
+        guard offset == -1 || offset == 1, Set(order).count == order.count,
+              Set(visible).count == visible.count, let start = order.firstIndex(of: current),
+              order.filter({ visible.contains($0) }) == visible else { throw SelectionError.unavailable }
+        var index = start + offset
+        while order.indices.contains(index) {
+            if let target = visible.firstIndex(of: order[index]) { return target }
+            index += offset
+        }
+        throw SelectionError.boundary
+    }
+
+    @MainActor
+    static func setCurrentSectionExpanded(_ expanded: Bool) async -> (succeeded: Bool, message: String) {
+        func result(_ success: Bool, _ message: String.LocalizationValue) -> (Bool, String) {
+            (success, String(localized: message, bundle: AppResources.localizationBundle))
+        }
+        guard !navigating else { return result(false, "Grok Bot is already switching bots") }
+        navigating = true
+        defer { navigating = false }
+        guard AXIsProcessTrusted() else { return result(false, "Accessibility permission is required for controller actions") }
+        guard let app = NSWorkspace.shared.frontmostApplication, app.bundleIdentifier == "com.anysphere.sand" else {
+            return result(false, "Bring Grok Bot to the foreground to switch bots")
+        }
+        let root = AXUIElementCreateApplication(app.processIdentifier)
+        guard let window = element(root, kAXFocusedWindowAttribute), let state = snapshot(window) else {
+            return result(false, "Grok Bot current bot is unavailable or ambiguous")
+        }
+        let section: Section?
+        if let index = state.sectionByBot[state.current] {
+            section = state.sections[index]
+        } else if let remembered = foldedContext, remembered.current == state.current,
+                  CFEqual(remembered.window, window) {
+            section = state.sections.first { CFEqual($0.button, remembered.section) }
+        } else { section = nil }
+        guard let section else { return result(false, "Grok Bot current bot has no collapsible section") }
+        if section.expanded == expanded { return result(true, "Grok Bot section is already in the requested state") }
+        if !expanded {
+            foldedContext = FoldedContext(window: window, current: state.current,
+                                          section: section.button, order: state.names)
+        }
+        func focused() -> Bool {
+            guard NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier,
+                  let current = element(root, kAXFocusedWindowAttribute) else { return false }
+            return CFEqual(current, window)
+        }
+        func freshSection() -> Section? {
+            guard focused(), let fresh = snapshot(window), fresh.current == state.current else { return nil }
+            return fresh.sections.first { CFEqual($0.button, section.button) }
+        }
+        guard focused() else { return result(false, "Grok Bot focus changed; try again") }
+        _ = AXUIElementPerformAction(section.button, kAXPressAction as CFString)
+        // Re-read the disclosure state before retrying: never toggle an already changed section.
+        for _ in 0..<3 {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            guard let fresh = freshSection() else { return result(false, "Grok Bot section change could not be verified") }
+            if fresh.expanded == expanded { return result(true, "Grok Bot section updated") }
+        }
+        guard let fresh = freshSection(), fresh.expanded != expanded,
+              clickVisibleButton(fresh.button, window: window, pid: app.processIdentifier) else {
+            return result(false, "Grok Bot section change could not be verified")
+        }
+        for _ in 0..<3 {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            guard let fresh = freshSection() else { return result(false, "Grok Bot section change could not be verified") }
+            if fresh.expanded == expanded { return result(true, "Grok Bot section updated") }
+        }
+        return result(false, "Grok Bot section change could not be verified")
+    }
+
+    @MainActor
     private static func snapshot(_ window: AXUIElement) -> Snapshot? {
         var lists: [AXUIElement] = []
         var headings: [String] = []
@@ -101,20 +200,24 @@ enum GrokBotNavigation {
             if string(node, kAXRoleAttribute) == "AXHeading" { headings.append(label(node)) }
             return true
         }
-        guard complete, lists.count == 1 else {
-            return nil
-        }
+        guard complete, lists.count == 1 else { return nil }
         var buttons: [AXUIElement] = []
+        var sections: [Section] = []
         walk(lists[0], budget: 2_000, complete: &complete) { node in
-            if string(node, kAXRoleAttribute) == kAXButtonRole {
+            let role = string(node, kAXRoleAttribute)
+            let expanded = attribute(node, kAXExpandedAttribute) as? Bool
+            if let expanded, let parent = element(node, kAXParentAttribute), role == kAXButtonRole {
+                sections.append(Section(button: node, container: parent, expanded: expanded))
+                return false
+            }
+            if isBotButton(role: role, expanded: expanded, roleDescription: string(node, kAXRoleDescriptionAttribute)) {
                 buttons.append(node)
                 return false
             }
-            return true
+            return role != kAXButtonRole
         }
         let names = buttons.map { button -> String in
-            // The accessible button label may append a badge (e.g. main bot).
-            // The first static text is the bot name, before role/preview text.
+            // A bot label can append badges; the first text is its name.
             let direct = label(button)
             var name = ""
             walk(button, budget: 100, complete: &complete) { node in
@@ -128,16 +231,30 @@ enum GrokBotNavigation {
             }
             return name.isEmpty ? direct : name
         }
-        guard complete, !names.contains(where: { $0.isEmpty }) else {
-            return nil
+        guard complete, !names.contains(where: { $0.isEmpty }), Set(names).count == names.count else { return nil }
+        var sectionByBot: [String: Int] = [:]
+        for (button, name) in zip(buttons, names) {
+            var ancestor = element(button, kAXParentAttribute)
+            for _ in 0..<80 {
+                guard let node = ancestor, !CFEqual(node, lists[0]) else { break }
+                let matches = sections.indices.filter { CFEqual(sections[$0].container, node) }
+                if matches.count == 1 { sectionByBot[name] = matches[0]; break }
+                if matches.count > 1 { return nil }
+                ancestor = element(node, kAXParentAttribute)
+            }
         }
         let selectedNames = zip(buttons, names).compactMap { button, name in
             (attribute(button, kAXSelectedAttribute) as? Bool) == true ? name : nil
         }
-        guard complete, Set(names).count == names.count else { return nil }
-        let matches = Set((headings + selectedNames).filter { names.contains($0) })
+        var knownNames = names
+        if let remembered = foldedContext, CFEqual(remembered.window, window),
+           sections.contains(where: { CFEqual($0.button, remembered.section) && !$0.expanded }) {
+            knownNames.append(remembered.current)
+        }
+        let matches = Set((headings + selectedNames).filter { knownNames.contains($0) })
         guard matches.count == 1, let current = matches.first else { return nil }
-        return Snapshot(names: names, buttons: buttons, current: current)
+        return Snapshot(names: names, buttons: buttons, current: current,
+                        sections: sections, sectionByBot: sectionByBot)
     }
 
     private static func rect(_ node: AXUIElement) -> CGRect? {
