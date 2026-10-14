@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "ControlDeck uses your selected microphone for controller-triggered dictation.";
+"NSAudioCaptureUsageDescription" = "ControlDeck privately routes decoded Bluetooth controller audio into a selectable microphone input.";
+"NSSpeechRecognitionUsageDescription" = "ControlDeck uses Apple SpeechTranscriber to turn controller-triggered speech into text on this Mac.";

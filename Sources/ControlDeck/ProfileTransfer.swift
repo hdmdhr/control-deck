@@ -79,16 +79,16 @@ enum ProfileTransfer {
     }
 
     static func validate(_ profile: ControllerProfile) throws {
-        try validateText(profile.name, label: "Profile name", maximumLength: 80)
+        try validateText(profile.name, label: String(localized: "Profile name", bundle: AppResources.localizationBundle), maximumLength: 80)
         try validateTextList(
             profile.bundleIdentifiers,
-            label: "App identifiers",
+            label: String(localized: "App identifiers", bundle: AppResources.localizationBundle),
             maximumCount: 64,
             maximumLength: 200
         )
         try validateTextList(
             profile.windowTitleKeywords,
-            label: "Window-title keywords",
+            label: String(localized: "Window-title keywords", bundle: AppResources.localizationBundle),
             maximumCount: 64,
             maximumLength: 120
         )
@@ -96,53 +96,53 @@ enum ProfileTransfer {
         try validateBindings(
             profile.bindings,
             validKeys: Set(ControllerInput.allCases.map(\.rawValue)),
-            label: "button"
+            label: String(localized: "button", bundle: AppResources.localizationBundle)
         )
         try validateBindings(
             profile.touchpad.gestureBindings,
             validKeys: Set(TouchGesture.allCases.map(\.rawValue)),
-            label: "touch gesture"
+            label: String(localized: "touch gesture", bundle: AppResources.localizationBundle)
         )
         try validateBindings(
             profile.gyro.gestureBindings,
             validKeys: Set(GyroGesture.allCases.map(\.rawValue)),
-            label: "gyro gesture"
+            label: String(localized: "gyro gesture", bundle: AppResources.localizationBundle)
         )
 
-        try validateNumber(profile.pointer.speed, in: 300...1_600, label: "Pointer speed")
+        try validateNumber(profile.pointer.speed, in: 300...1_600, label: String(localized: "Pointer speed", bundle: AppResources.localizationBundle))
         try validateNumber(
             profile.pointer.acceleration,
             in: 1...2.6,
-            label: "Pointer acceleration"
+            label: String(localized: "Pointer acceleration", bundle: AppResources.localizationBundle)
         )
-        try validateNumber(profile.pointer.deadZone, in: 0.05...0.35, label: "Pointer dead zone")
-        try validateNumber(profile.pointer.scrollSpeed, in: 300...1_800, label: "Scroll speed")
+        try validateNumber(profile.pointer.deadZone, in: 0.05...0.35, label: String(localized: "Pointer dead zone", bundle: AppResources.localizationBundle))
+        try validateNumber(profile.pointer.scrollSpeed, in: 300...1_800, label: String(localized: "Scroll speed", bundle: AppResources.localizationBundle))
         try validateNumber(
             profile.pointer.scrollAcceleration,
             in: 1...2.6,
-            label: "Scroll acceleration"
+            label: String(localized: "Scroll acceleration", bundle: AppResources.localizationBundle)
         )
         try validateNumber(
             profile.pointer.scrollDeadZone,
             in: 0.05...0.35,
-            label: "Scroll dead zone"
+            label: String(localized: "Scroll dead zone", bundle: AppResources.localizationBundle)
         )
         try validateNumber(
             profile.touchpad.pointerSensitivity,
             in: 0.35...2.2,
-            label: "Touchpad pointer sensitivity"
+            label: String(localized: "Touchpad pointer sensitivity", bundle: AppResources.localizationBundle)
         )
         try validateNumber(
             profile.touchpad.scrollSensitivity,
             in: 0.35...2.2,
-            label: "Touchpad scroll sensitivity"
+            label: String(localized: "Touchpad scroll sensitivity", bundle: AppResources.localizationBundle)
         )
-        try validateNumber(profile.gyro.shakeThreshold, in: 1.4...3.6, label: "Shake force")
-        try validateNumber(profile.gyro.tiltThreshold, in: 0.45...0.88, label: "Tilt angle")
+        try validateNumber(profile.gyro.shakeThreshold, in: 1.4...3.6, label: String(localized: "Shake force", bundle: AppResources.localizationBundle))
+        try validateNumber(profile.gyro.tiltThreshold, in: 0.45...0.88, label: String(localized: "Tilt angle", bundle: AppResources.localizationBundle))
         try validateNumber(
             profile.gyro.rotationThreshold,
             in: 1.5...6,
-            label: "Twist speed"
+            label: String(localized: "Twist speed", bundle: AppResources.localizationBundle)
         )
     }
 
@@ -172,7 +172,7 @@ enum ProfileTransfer {
             hasOnlyKeys(
                 touchpad,
                 allowed: [
-                    "oneFingerMode", "twoFingerScroll",
+                    "oneFingerMode", "twoFingerScroll", "naturalScrolling",
                     "pointerSensitivity", "scrollSensitivity",
                     "gestureBindings"
                 ]
@@ -203,14 +203,14 @@ enum ProfileTransfer {
         label: String
     ) throws {
         guard bindings.count <= validKeys.count else {
-            throw ProfileTransferError.invalidValue("Too many \(label) bindings")
+            throw ProfileTransferError.invalidValue(String(localized: "Too many \(label) bindings", bundle: AppResources.localizationBundle))
         }
         for (key, action) in bindings {
             guard validKeys.contains(key) else {
-                throw ProfileTransferError.invalidValue("Unknown \(label): \(key)")
+                throw ProfileTransferError.invalidValue(String(localized: "Unknown \(label): \(key)", bundle: AppResources.localizationBundle))
             }
             guard MappedAction(rawValue: action) != nil else {
-                throw ProfileTransferError.invalidValue("Unknown action: \(action)")
+                throw ProfileTransferError.invalidValue(String(localized: "Unknown action: \(action)", bundle: AppResources.localizationBundle))
             }
         }
     }
@@ -221,7 +221,7 @@ enum ProfileTransfer {
         label: String
     ) throws {
         guard value.isFinite, range.contains(value) else {
-            throw ProfileTransferError.invalidValue("\(label) is outside the supported range")
+            throw ProfileTransferError.invalidValue(String(localized: "\(label) is outside the supported range", bundle: AppResources.localizationBundle))
         }
     }
 
@@ -232,7 +232,7 @@ enum ProfileTransfer {
         maximumLength: Int
     ) throws {
         guard values.count <= maximumCount else {
-            throw ProfileTransferError.invalidValue("Too many \(label.lowercased())")
+            throw ProfileTransferError.invalidValue(String(localized: "Too many \(label.lowercased())", bundle: AppResources.localizationBundle))
         }
         for value in values {
             try validateText(value, label: label, maximumLength: maximumLength)
@@ -246,12 +246,12 @@ enum ProfileTransfer {
     ) throws {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed.count <= maximumLength else {
-            throw ProfileTransferError.invalidValue("\(label) is empty or too long")
+            throw ProfileTransferError.invalidValue(String(localized: "\(label) is empty or too long", bundle: AppResources.localizationBundle))
         }
         guard !trimmed.unicodeScalars.contains(where: {
             CharacterSet.controlCharacters.contains($0)
         }) else {
-            throw ProfileTransferError.invalidValue("\(label) contains control characters")
+            throw ProfileTransferError.invalidValue(String(localized: "\(label) contains control characters", bundle: AppResources.localizationBundle))
         }
     }
 }
@@ -267,15 +267,15 @@ enum ProfileTransferError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .fileTooLarge:
-            "The profile is larger than the 256 KB safety limit."
+            String(localized: "The profile is larger than the 256 KB safety limit.", bundle: AppResources.localizationBundle)
         case .invalidJSON:
-            "The selected file is not a valid ControlDeck JSON profile."
+            String(localized: "The selected file is not a valid ControlDeck JSON profile.", bundle: AppResources.localizationBundle)
         case .invalidSchema:
-            "The profile contains missing or unrecognised fields."
+            String(localized: "The profile contains missing or unrecognised fields.", bundle: AppResources.localizationBundle)
         case .invalidFormat:
-            "The selected JSON file is not a ControlDeck profile."
+            String(localized: "The selected JSON file is not a ControlDeck profile.", bundle: AppResources.localizationBundle)
         case let .unsupportedVersion(version):
-            "Profile version \(version) is not supported by this version of ControlDeck."
+            String(localized: "Profile version \(version) is not supported by this version of ControlDeck.", bundle: AppResources.localizationBundle)
         case let .invalidValue(message):
             message
         }

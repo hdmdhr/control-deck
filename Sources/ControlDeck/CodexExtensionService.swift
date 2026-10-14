@@ -6,7 +6,7 @@ final class CodexExtensionService: ObservableObject {
     @Published private(set) var isInstalled = false
     @Published private(set) var isRunning = false
     @Published private(set) var status =
-        "Install the readable local controller workspace to customize profiles from Codex."
+        String(localized: "Install the readable local controller workspace to customize profiles from Codex.", bundle: AppResources.localizationBundle)
     @Published private(set) var lastOutput = ""
 
     init() {
@@ -18,27 +18,27 @@ final class CodexExtensionService: ObservableObject {
         isInstalled = hasControllerTools(in: workspace)
         if isInstalled {
             status =
-                "Controller skill and local profile tools are ready for Codex."
+                String(localized: "Controller skill and local profile tools are ready for Codex.", bundle: AppResources.localizationBundle)
         }
     }
 
     func install() {
         guard !isRunning else { return }
         isRunning = true
-        status = "Installing the local controller workspace…"
+        status = String(localized: "Installing the local controller workspace…", bundle: AppResources.localizationBundle)
         do {
             let paths = try installBundledFiles()
             isInstalled = true
             status =
-                "Installed locally. No command-line programs were launched."
-            lastOutput = """
+                String(localized: "Installed locally. No command-line programs were launched.", bundle: AppResources.localizationBundle)
+            lastOutput = String(localized: """
             Workspace: \(paths.workspace.path)
             Skill: \(paths.skill.path)
             MCP server: \(paths.server.path)
 
             These are readable local files. Codex will only open them after you
             explicitly choose “Open task in Codex”.
-            """
+            """, bundle: AppResources.localizationBundle)
         } catch {
             status = error.localizedDescription
             lastOutput = error.localizedDescription
@@ -54,7 +54,7 @@ final class CodexExtensionService: ObservableObject {
 
         let workspace = customizationWorkspace()
         guard hasControllerTools(in: workspace) else {
-            status = "Install the controller workspace first."
+            status = String(localized: "Install the controller workspace first.", bundle: AppResources.localizationBundle)
             return
         }
 
@@ -77,18 +77,18 @@ final class CodexExtensionService: ObservableObject {
             URLQueryItem(name: "path", value: workspace.path)
         ]
         guard let url = components.url, NSWorkspace.shared.open(url) else {
-            status = "Could not open the Codex desktop app."
+            status = String(localized: "Could not open the Codex desktop app.", bundle: AppResources.localizationBundle)
             lastOutput =
-                "Open Codex manually and use this workspace:\n\(workspace.path)"
+                String(localized: "Open Codex manually and use this workspace:\n\(workspace.path)", bundle: AppResources.localizationBundle)
             return
         }
-        status = "Opened a controller customization task in Codex."
-        lastOutput = """
+        status = String(localized: "Opened a controller customization task in Codex.", bundle: AppResources.localizationBundle)
+        lastOutput = String(localized: """
         Codex workspace: \(workspace.path)
 
         The request was placed in a new Codex task for you to review and send.
         The controller app did not launch a command-line executable.
-        """
+        """, bundle: AppResources.localizationBundle)
     }
 
     func openCodexSkills() {
@@ -118,7 +118,7 @@ final class CodexExtensionService: ObservableObject {
             withIntermediateDirectories: true
         )
 
-        guard let bundledServer = Bundle.module.url(
+        guard let bundledServer = AppResources.bundle?.url(
             forResource: "control_deck_mcp",
             withExtension: "py"
         ) else {
@@ -141,10 +141,10 @@ final class CodexExtensionService: ObservableObject {
             at: agents,
             withIntermediateDirectories: true
         )
-        guard let bundledSkill = Bundle.module.url(
+        guard let bundledSkill = AppResources.bundle?.url(
             forResource: "SKILL",
             withExtension: "md"
-        ), let bundledMetadata = Bundle.module.url(
+        ), let bundledMetadata = AppResources.bundle?.url(
             forResource: "openai",
             withExtension: "yaml"
         ) else {
@@ -253,7 +253,7 @@ private enum ExtensionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .missingResource(name):
-            "\(name) is missing from this build."
+            String(localized: "\(name) is missing from this build.", bundle: AppResources.localizationBundle)
         }
     }
 }

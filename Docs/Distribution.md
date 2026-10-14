@@ -1,5 +1,24 @@
 # Safe macOS distribution
 
+## Resource bundle lookup
+
+Packaged apps keep `ControlDeck_ControlDeck.bundle` in `Contents/Resources`.
+All app resource consumers use `AppResources.bundle`, which resolves that
+location explicitly. SwiftPM 6.2's generated `Bundle.module` accessor searches the
+`.app` root and then the original build directory; calling it from a distributed
+app can trap before the first window appears. Only unbundled development runs
+use that accessor. Missing packaged resources use the existing image, game and
+customization error fallbacks instead of trapping.
+
+Run `./scripts/test-resource-bundle.sh` to exercise the production image/resource
+loaders in a small SwiftPM fixture. It verifies direct development execution,
+then relocates a macOS app and removes the build directory before loading its
+images, game and customization files. Both the current toolchain's accessor and
+the SwiftPM 6.2 accessor used by v1.1.1 are tested, including missing bundles.
+The test is included in `./scripts/test.sh` and needs no controller or permissions.
+
+## Signing
+
 Local builds fall back to ad-hoc signing so they can run during development on
 the Mac that built them. Features protected by TCC, including Accessibility,
 need a stable signing identity to preserve permission across rebuilt binaries.

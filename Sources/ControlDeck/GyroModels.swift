@@ -191,13 +191,13 @@ enum GyroGesture: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .shake: "Hard shake"
-        case .tiltLeft: "Hold tilt left"
-        case .tiltRight: "Hold tilt right"
-        case .tiltUp: "Hold tilt up"
-        case .tiltDown: "Hold tilt down"
-        case .twistCounterclockwise: "Twist counter-clockwise"
-        case .twistClockwise: "Twist clockwise"
+        case .shake: String(localized: "Hard shake", bundle: AppResources.localizationBundle)
+        case .tiltLeft: String(localized: "Hold tilt left", bundle: AppResources.localizationBundle)
+        case .tiltRight: String(localized: "Hold tilt right", bundle: AppResources.localizationBundle)
+        case .tiltUp: String(localized: "Hold tilt up", bundle: AppResources.localizationBundle)
+        case .tiltDown: String(localized: "Hold tilt down", bundle: AppResources.localizationBundle)
+        case .twistCounterclockwise: String(localized: "Twist counter-clockwise", bundle: AppResources.localizationBundle)
+        case .twistClockwise: String(localized: "Twist clockwise", bundle: AppResources.localizationBundle)
         }
     }
 

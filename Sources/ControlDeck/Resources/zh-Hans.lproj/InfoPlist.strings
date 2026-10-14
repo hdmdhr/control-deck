@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "ControlDeck 使用所选麦克风进行由手柄触发的听写。";
+"NSAudioCaptureUsageDescription" = "ControlDeck 在本机将解码后的蓝牙手柄音频路由到可选择的麦克风输入。";
+"NSSpeechRecognitionUsageDescription" = "ControlDeck 使用 Apple SpeechTranscriber 在此 Mac 上将手柄触发的语音转换为文字。";

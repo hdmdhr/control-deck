@@ -14,7 +14,7 @@ final class BluetoothMicrophoneService: ObservableObject {
     @Published private(set) var concealedFrameCount = 0
     @Published private(set) var timelineGapCount = 0
     @Published private(set) var duplicatePacketCount = 0
-    @Published private(set) var lastResult = "Wireless microphone is offline"
+    @Published private(set) var lastResult = String(localized: "Wireless microphone is offline", bundle: AppResources.localizationBundle)
 
     private let publisher = ProcessTapMicrophoneService()
     private let pipeline = BluetoothOpusPipeline()
@@ -42,7 +42,7 @@ final class BluetoothMicrophoneService: ObservableObject {
     @discardableResult
     func prepare() -> Bool {
         guard #available(macOS 14.2, *) else {
-            lastResult = "Bluetooth microphone requires macOS 14.2 or later"
+            lastResult = String(localized: "Bluetooth microphone requires macOS 14.2 or later", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -71,7 +71,7 @@ final class BluetoothMicrophoneService: ObservableObject {
             isCapturing = false
             inputLevel = 0
             lastResult =
-                "Could not create Opus decoder (\(session.decoderResult))"
+                String(localized: "Could not create Opus decoder (\(session.decoderResult))", bundle: AppResources.localizationBundle)
             return false
         }
         captureGeneration = session.generation
@@ -85,7 +85,7 @@ final class BluetoothMicrophoneService: ObservableObject {
         loggedFirstDecodedFrame = false
         captureStartedAt = ContinuousClock.now
         isCapturing = true
-        lastResult = "Waiting for DualSense Bluetooth audio"
+        lastResult = String(localized: "Waiting for DualSense Bluetooth audio", bundle: AppResources.localizationBundle)
         logger.notice("Bluetooth microphone diagnostic capture started")
 
         let generation = session.generation
@@ -98,7 +98,7 @@ final class BluetoothMicrophoneService: ObservableObject {
                 return
             }
             self.lastResult =
-                "No microphone packets yet — check the Bluetooth connection"
+                String(localized: "No microphone packets yet — check the Bluetooth connection", bundle: AppResources.localizationBundle)
         }
         return true
     }
@@ -125,8 +125,8 @@ final class BluetoothMicrophoneService: ObservableObject {
         pipeline.clear()
         inputLevel = 0
         lastResult = isPublished
-            ? "\(ProcessTapMicrophoneService.deviceName) is ready"
-            : "Wireless microphone is offline"
+            ? String(localized: "\(ProcessTapMicrophoneService.deviceName) is ready", bundle: AppResources.localizationBundle)
+            : String(localized: "Wireless microphone is offline", bundle: AppResources.localizationBundle)
     }
 
     func teardown() {
@@ -139,7 +139,7 @@ final class BluetoothMicrophoneService: ObservableObject {
     func runAudioBridgeSelfTest() {
         guard prepare() else { return }
         pipeline.playTestTone(duration: 15)
-        lastResult = "Playing a private test signal into DualSense Microphone"
+        lastResult = String(localized: "Playing a private test signal into DualSense Microphone", bundle: AppResources.localizationBundle)
     }
 
     /// Adds a direct consumer for each decoded mono 48 kHz frame. This avoids
@@ -188,10 +188,10 @@ final class BluetoothMicrophoneService: ObservableObject {
 
                 if let decodeError = result.decodeError {
                     self.lastResult =
-                        "Opus decode failed (\(decodeError))"
+                        String(localized: "Opus decode failed (\(decodeError))", bundle: AppResources.localizationBundle)
                 } else if result.decodedFrames > 0 {
                     self.lastResult =
-                        "Receiving DualSense Bluetooth microphone"
+                        String(localized: "Receiving DualSense Bluetooth microphone", bundle: AppResources.localizationBundle)
                     if !self.loggedFirstDecodedFrame {
                         self.loggedFirstDecodedFrame = true
                         self.logger.notice(
@@ -210,7 +210,7 @@ final class BluetoothMicrophoneService: ObservableObject {
             ),
             channels: 2
         ) else {
-            lastResult = "Could not create the wireless microphone format"
+            lastResult = String(localized: "Could not create the wireless microphone format", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -229,7 +229,7 @@ final class BluetoothMicrophoneService: ObservableObject {
         do {
             try engine.start()
         } catch {
-            lastResult = "Could not start the audio bridge: \(error.localizedDescription)"
+            lastResult = String(localized: "Could not start the audio bridge: \(error.localizedDescription)", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -265,7 +265,7 @@ final class BluetoothMicrophoneService: ObservableObject {
             stopAudioBridge(clearPipeline: !isCapturing)
             guard startSilentAudioBridge() else {
                 lastResult =
-                    "Wireless microphone audio engine stopped: " +
+                    String(localized: "Wireless microphone audio engine stopped: ", bundle: AppResources.localizationBundle) +
                     error.localizedDescription
                 return false
             }

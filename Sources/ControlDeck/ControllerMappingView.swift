@@ -315,23 +315,23 @@ struct ControllerMappingView: View {
     private func inputDescription(_ input: ControllerInput) -> String {
         switch input {
         case .cross, .circle, .square, .triangle:
-            "Face button · Primary action"
+            String(localized: "Face button · Primary action", bundle: AppResources.localizationBundle)
         case .dpadUp, .dpadDown, .dpadLeft, .dpadRight:
-            "Directional pad"
+            String(localized: "Directional pad", bundle: AppResources.localizationBundle)
         case .l1, .r1:
-            "Shoulder button"
+            String(localized: "Shoulder button", bundle: AppResources.localizationBundle)
         case .l2, .r2:
-            "Adaptive trigger"
+            String(localized: "Adaptive trigger", bundle: AppResources.localizationBundle)
         case .l3, .r3:
-            "Analogue stick click"
+            String(localized: "Analogue stick click", bundle: AppResources.localizationBundle)
         case .create, .options:
-            "System button"
+            String(localized: "System button", bundle: AppResources.localizationBundle)
         case .ps:
-            "PlayStation button"
+            String(localized: "PlayStation button", bundle: AppResources.localizationBundle)
         case .touchpadClick:
-            "Touchpad click"
+            String(localized: "Touchpad click", bundle: AppResources.localizationBundle)
         case .microphone:
-            "Microphone button"
+            String(localized: "Microphone button", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -484,6 +484,8 @@ struct ControllerMappingView: View {
             return "doc.on.clipboard"
         case .screenshotSelection:
             return "camera.viewfinder"
+        case .codexAppSnapshot:
+            return "macwindow"
         case .openClaude:
             return "sparkles"
         default:

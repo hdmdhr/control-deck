@@ -6,11 +6,11 @@ import Foundation
 @MainActor
 final class AudioDeviceService: ObservableObject {
     @Published private(set) var controllerAudioAvailable = false
-    @Published private(set) var controllerAudioName = "Not detected"
+    @Published private(set) var controllerAudioName = String(localized: "Not detected", bundle: AppResources.localizationBundle)
     @Published private(set) var codexMicrophoneAvailable = false
     @Published private(set) var codexMicrophoneName =
         DualSenseMicrophoneAggregate.name
-    @Published private(set) var lastAudioResult = "Not tested"
+    @Published private(set) var lastAudioResult = String(localized: "Not tested", bundle: AppResources.localizationBundle)
 
     private var codexMicrophoneDevice: AudioObjectID?
     private let microphoneOwnershipToken = UUID()
@@ -27,7 +27,7 @@ final class AudioDeviceService: ObservableObject {
             controllerAudioName = stringProperty(device, selector: kAudioObjectPropertyName) ?? "DualSense"
         } else {
             controllerAudioAvailable = false
-            controllerAudioName = "Not detected"
+            controllerAudioName = String(localized: "Not detected", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -38,7 +38,7 @@ final class AudioDeviceService: ObservableObject {
         ) else {
             codexMicrophoneAvailable = false
             lastAudioResult =
-                "DualSense Microphone is in use by the other controller app"
+                String(localized: "DualSense Microphone is in use by the other controller app", bundle: AppResources.localizationBundle)
             return false
         }
         guard let sourceDevice = dualSenseInputDevice(),
@@ -51,7 +51,7 @@ final class AudioDeviceService: ObservableObject {
                 for: microphoneOwnershipToken
             )
             codexMicrophoneAvailable = false
-            lastAudioResult = "Controller microphone unavailable"
+            lastAudioResult = String(localized: "Controller microphone unavailable", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -64,7 +64,7 @@ final class AudioDeviceService: ObservableObject {
             )
             codexMicrophoneAvailable = false
             lastAudioResult =
-                "Could not publish \(DualSenseMicrophoneAggregate.name) " +
+                String(localized: "Could not publish \(DualSenseMicrophoneAggregate.name) ", bundle: AppResources.localizationBundle) +
                 "(\(aggregateResult.status))"
             return false
         }
@@ -82,8 +82,8 @@ final class AudioDeviceService: ObservableObject {
                 selector: kAudioObjectPropertyName
             ) ?? DualSenseMicrophoneAggregate.name
         lastAudioResult = codexMicrophoneAvailable
-            ? "\(codexMicrophoneName) is available to Codex"
-            : "Could not attach the controller microphone"
+            ? String(localized: "\(codexMicrophoneName) is available to Codex", bundle: AppResources.localizationBundle)
+            : String(localized: "Could not attach the controller microphone", bundle: AppResources.localizationBundle)
         if !codexMicrophoneAvailable {
             DualSenseMicrophonePublisherCoordinator.release(
                 for: microphoneOwnershipToken
@@ -124,7 +124,7 @@ final class AudioDeviceService: ObservableObject {
         volume: Float = 0.12
     ) -> Bool {
         guard let device = dualSenseOutputDevice() else {
-            lastAudioResult = "Controller speaker unavailable"
+            lastAudioResult = String(localized: "Controller speaker unavailable", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -146,7 +146,7 @@ final class AudioDeviceService: ObservableObject {
             UInt32(MemoryLayout<AudioObjectID>.size)
         )
         guard status == noErr else {
-            lastAudioResult = "Speaker selection failed (\(status))"
+            lastAudioResult = String(localized: "Speaker selection failed (\(status))", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -162,7 +162,7 @@ final class AudioDeviceService: ObservableObject {
                   frameCapacity: AVAudioFrameCount(hardwareFormat.sampleRate * duration)
               )
         else {
-            lastAudioResult = "Unsupported controller speaker format"
+            lastAudioResult = String(localized: "Unsupported controller speaker format", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -186,7 +186,7 @@ final class AudioDeviceService: ObservableObject {
             player.play()
             toneEngine = engine
             tonePlayer = player
-            lastAudioResult = "Controller speaker played"
+            lastAudioResult = String(localized: "Controller speaker played", bundle: AppResources.localizationBundle)
             DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.1) { [weak self] in
                 self?.toneEngine?.stop()
                 self?.toneEngine = nil
@@ -194,7 +194,7 @@ final class AudioDeviceService: ObservableObject {
             }
             return true
         } catch {
-            lastAudioResult = "Speaker error: \(error.localizedDescription)"
+            lastAudioResult = String(localized: "Speaker error: \(error.localizedDescription)", bundle: AppResources.localizationBundle)
             return false
         }
     }

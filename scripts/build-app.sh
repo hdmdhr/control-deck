@@ -58,9 +58,9 @@ minimum_macos_version() {
 verify_bundled_opus() {
   local binary="$1"
 
-  lipo "$binary" -verify_arch arm64 x86_64
   local architecture
   for architecture in arm64 x86_64; do
+    lipo "$binary" -verify_arch "$architecture"
     [[ "$(minimum_macos_version "$binary" "$architecture")" == \
       "$OPUS_DEPLOYMENT_TARGET" ]]
     [[ "$(otool -arch "$architecture" -D "$binary" | sed -n '2p')" == \
@@ -71,9 +71,9 @@ verify_bundled_opus() {
 verify_universal_executable() {
   local binary="$1"
 
-  lipo "$binary" -verify_arch arm64 x86_64
   local architecture
   for architecture in arm64 x86_64; do
+    lipo "$binary" -verify_arch "$architecture"
     [[ "$(minimum_macos_version "$binary" "$architecture")" == \
       "$OPUS_DEPLOYMENT_TARGET" ]]
   done
@@ -137,6 +137,21 @@ package_app() {
     cp "$icon" "$resources/$(basename "$icon")"
   fi
   cp -R "$RESOURCE_BUNDLE" "$resources/ControlDeck_ControlDeck.bundle"
+  # SwiftUI's app-level controls look up localized literals in Bundle.main.
+  # Model/status strings use the same tables in the SwiftPM resource bundle.
+  local locale localization
+  for locale in en zh-Hans ja; do
+    localization="$RESOURCE_BUNDLE/Contents/Resources/$locale.lproj"
+    if [[ ! -d "$localization" ]]; then
+      localization="$RESOURCE_BUNDLE/$locale.lproj"
+    fi
+    if [[ ! -s "$localization/Localizable.strings" ||
+          ! -s "$localization/InfoPlist.strings" ]]; then
+      print -u2 "Missing localization resources: $locale"
+      exit 1
+    fi
+    cp -R "$localization" "$resources/"
+  done
   local opus_load_path
   opus_load_path="$(otool -L "$macos/control-deck" | awk '/libopus/{print $1; exit}')"
   install_name_tool \

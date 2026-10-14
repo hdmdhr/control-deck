@@ -39,10 +39,9 @@ verify_universal_library() {
   local binary="$1"
 
   [[ -f "$binary" ]] || return 1
-  lipo "$binary" -verify_arch arm64 x86_64 >/dev/null || return 1
-
   local architecture
   for architecture in arm64 x86_64; do
+    lipo "$binary" -verify_arch "$architecture" >/dev/null || return 1
     [[ "$(minimum_macos_version "$binary" "$architecture")" == "$DEPLOYMENT_TARGET" ]] ||
       return 1
     [[ "$(otool -arch "$architecture" -D "$binary" | sed -n '2p')" == \

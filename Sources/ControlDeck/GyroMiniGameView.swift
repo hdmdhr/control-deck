@@ -8,10 +8,10 @@ struct GyroTelemetryMeters: View {
 
     var body: some View {
         HStack(spacing: 18) {
-            meter("Tilt X", value: telemetry.sample.gravityX, color: .blue)
-            meter("Tilt Y", value: telemetry.sample.gravityY, color: .purple)
+            meter(String(localized: "Tilt X", bundle: AppResources.localizationBundle), value: telemetry.sample.gravityX, color: .blue)
+            meter(String(localized: "Tilt Y", bundle: AppResources.localizationBundle), value: telemetry.sample.gravityY, color: .purple)
             meter(
-                "Shake",
+                String(localized: "Shake", bundle: AppResources.localizationBundle),
                 value: min(
                     hypot(
                         telemetry.sample.accelerationX,
@@ -129,8 +129,8 @@ struct GyroMiniGameView: View {
 
             Label(
                 playing
-                    ? "Gyro shortcuts are paused during the run. Falling returns you to the latest checkpoint with a two-second penalty."
-                    : "Start the timer here or with the button inside the course.",
+                    ? String(localized: "Gyro shortcuts are paused during the run. Falling returns you to the latest checkpoint with a two-second penalty.", bundle: AppResources.localizationBundle)
+                    : String(localized: "Start the timer here or with the button inside the course.", bundle: AppResources.localizationBundle),
                 systemImage: "gyroscope"
             )
             .font(.caption)
@@ -212,23 +212,45 @@ private struct TiltRunWebView: NSViewRepresentable {
             context.coordinator,
             name: "gyroGame"
         )
+        // Use the app's selected language, which can differ from the system/browser language.
+        let strings = [
+            "course": String(localized: "Course", bundle: AppResources.localizationBundle),
+            "best": String(localized: "Best", bundle: AppResources.localizationBundle),
+            "seed": String(localized: "Seed", bundle: AppResources.localizationBundle),
+            "title": String(localized: "Tilt Run", bundle: AppResources.localizationBundle),
+            "hint": String(localized: "Tilt the controller to roll", bundle: AppResources.localizationBundle),
+            "start": String(localized: "Start run", bundle: AppResources.localizationBundle),
+            "again": String(localized: "Run again", bundle: AppResources.localizationBundle),
+            "clear": String(localized: "Course clear", bundle: AppResources.localizationBundle),
+            "saved": String(localized: "+2 sec · Ball saved", bundle: AppResources.localizationBundle),
+            "token": String(localized: "−1 sec", bundle: AppResources.localizationBundle)
+        ]
+        if let data = try? JSONSerialization.data(withJSONObject: strings, options: [.sortedKeys]),
+           let json = String(data: data, encoding: .utf8) {
+            configuration.userContentController.addUserScript(WKUserScript(
+                source: "window.controlDeckGameStrings = \(json);",
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+        }
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.underPageBackgroundColor = .clear
 
-        let resourceURL = Bundle.module.url(
+        let resourceURL = AppResources.bundle?.url(
             forResource: "index",
             withExtension: "html",
             subdirectory: "GyroGame"
-        ) ?? Bundle.module.url(forResource: "index", withExtension: "html")
+        ) ?? AppResources.bundle?.url(forResource: "index", withExtension: "html")
         if let resourceURL {
             webView.loadFileURL(
                 resourceURL,
                 allowingReadAccessTo: resourceURL.deletingLastPathComponent()
             )
         } else {
+            let message = String(localized: "Tilt Run resources are missing.", bundle: AppResources.localizationBundle)
             webView.loadHTMLString(
-                "<p style='font: 14px sans-serif'>Tilt Run resources are missing.</p>",
+                "<p style='font: 14px sans-serif'>\(message)</p>",
                 baseURL: nil
             )
         }

@@ -10,6 +10,7 @@ swiftc \
   -framework ApplicationServices \
   -framework Carbon \
   -o "$OUTPUT" \
+  "$ROOT/Sources/ControlDeck/AppResources.swift" \
   "$ROOT/Sources/ControlDeck/Models.swift" \
   "$ROOT/Sources/ControlDeck/GyroModels.swift" \
   "$ROOT/Sources/ControlDeck/InputMappingModels.swift" \
@@ -18,6 +19,9 @@ swiftc \
   "$ROOT/Sources/ControlDeck/ShiftLayerModels.swift" \
   "$ROOT/Sources/ControlDeck/QuickTutorial.swift" \
   "$ROOT/Sources/ControlDeck/CodexDictationIntent.swift" \
+  "$ROOT/Sources/ControlDeck/AppSnapshotShortcut.swift" \
+  "$ROOT/Sources/ControlDeck/AssistantDictationShortcut.swift" \
+  "$ROOT/Sources/ControlDeck/GrokBotNavigation.swift" \
   "$ROOT/Sources/ControlDeck/TouchpadGestureEngine.swift" \
   "$ROOT/Sources/ControlDeck/PointerService.swift" \
   "$ROOT/Sources/ControlDeck/ScreenshotEditorModels.swift" \
@@ -27,6 +31,20 @@ swiftc \
   "$ROOT/Tests/ControlDeckTests/ControlDeckTests.swift"
 
 "$OUTPUT"
+ACTIVATION_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-activation.XXXXXX")"
+trap 'rm -f "$ACTIVATION_OUTPUT"' EXIT
+swiftc -parse-as-library -framework AppKit \
+  "$ROOT/Sources/ControlDeck/AppResources.swift" \
+  "$ROOT/Sources/ControlDeck/Models.swift" \
+  "$ROOT/Sources/ControlDeck/GyroModels.swift" \
+  "$ROOT/Sources/ControlDeck/InputMappingModels.swift" \
+  "$ROOT/Sources/ControlDeck/ExpandedProfileCatalog.swift" \
+  "$ROOT/Sources/ControlDeck/ProfileApplicationActivator.swift" \
+  "$ROOT/Tests/ControlDeckTests/ProfileApplicationActivationTests.swift" \
+  -o "$ACTIVATION_OUTPUT"
+"$ACTIVATION_OUTPUT"
+"$ROOT/scripts/test-resource-bundle.sh"
+"$ROOT/scripts/test-localization.sh"
 
 GYRO_GAME="$ROOT/Sources/ControlDeck/Resources/GyroGame"
 node --check "$GYRO_GAME/game.js"

@@ -6,10 +6,16 @@ import Foundation
 @MainActor
 final class CodexAutomation: ObservableObject {
     @Published private(set) var accessibilityTrusted = AXIsProcessTrusted()
-    @Published private(set) var lastResult = "Ready"
+    @Published private(set) var lastResult = String(localized: "Ready", bundle: AppResources.localizationBundle)
 
     private let codexBundleIdentifier = "com.openai.codex"
-    private var dictationShortcutHeld = false
+    private var nativeDictationStarted = false
+    private var nativeDictationWindow: AXUIElement?
+    private var lastActivatedNativeWindow: AXUIElement?
+    private var assistantDictationRelease: CGEvent?
+    private var assistantDictationPID: pid_t?
+    private var assistantDictationAction: MappedAction?
+    private var assistantDictationObserver: NSObjectProtocol?
     private var meetingPushToTalkHeld = false
     private var appSwitcherModifierHeld = false
 
@@ -29,7 +35,7 @@ final class CodexAutomation: ObservableObject {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         accessibilityTrusted = AXIsProcessTrustedWithOptions(options)
         if !accessibilityTrusted {
-            lastResult = "Accessibility permission is required for controller actions"
+            lastResult = String(localized: "Accessibility permission is required for controller actions", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -84,10 +90,22 @@ final class CodexAutomation: ObservableObject {
     }
 
     @discardableResult
+    func navigateGrokBot(_ action: MappedAction) async -> Bool {
+        let result: (succeeded: Bool, message: String)
+        switch action {
+        case .grokCollapseSection, .grokExpandSection:
+            result = await GrokBotNavigation.setCurrentSectionExpanded(action == .grokExpandSection)
+        default:
+            result = await GrokBotNavigation.navigate(offset: action == .grokPreviousBot ? -1 : 1)
+        }
+        lastResult = result.message
+        return result.succeeded
+    }
+
     func run(_ action: MappedAction) -> Bool {
         switch action {
         case .none:
-            lastResult = "No action assigned"
+            lastResult = String(localized: "No action assigned", bundle: AppResources.localizationBundle)
             return true
         case .codexSend: return run(.sendMessage)
         case .codexStop: return run(.interrupt)
@@ -106,6 +124,8 @@ final class CodexAutomation: ObservableObject {
         case .codexApprove: return run(.approve)
         case .codexDecline: return run(.decline)
         case .codexDictation: return toggleDictation()
+        case .codexAppSnapshot:
+            return appSnapshotShortcut()
         case .codexFastMode: return run(.toggleFastMode)
         case .codexContinueInNewTask: return run(.continueInNewTask)
 
@@ -122,7 +142,7 @@ final class CodexAutomation: ObservableObject {
 
         case .meetingMute: return meetingShortcut(.mute)
         case .meetingPushToTalk:
-            lastResult = "Hold L2 for push to talk"
+            lastResult = String(localized: "Hold L2 for push to talk", bundle: AppResources.localizationBundle)
             return true
         case .meetingVideo: return meetingShortcut(.video)
         case .meetingChat: return meetingShortcut(.chat)
@@ -228,7 +248,7 @@ final class CodexAutomation: ObservableObject {
 
         case .mouseLeftClick, .mouseRightClick, .mouseMiddleClick,
              .screenshotSelection:
-            lastResult = "Mouse action"
+            lastResult = String(localized: "Mouse action", bundle: AppResources.localizationBundle)
             return true
         case .back:
             return key(
@@ -341,10 +361,22 @@ final class CodexAutomation: ObservableObject {
                 bundleIdentifier: "com.anthropic.claudefordesktop",
                 fallbackPath: "/Applications/Claude.app"
             )
+        case .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection:
+            lastResult = "Grok Bot navigation requires asynchronous dispatch"
+            return false
+        case .assistantRightPanel:
+            guard ["com.anysphere.sand", "com.todesktop.230313mzl4w4u92"].contains(frontmostBundleIdentifier ?? "") else {
+                lastResult = String(localized: "Bring Cursor or Grok Bot to the foreground first", bundle: AppResources.localizationBundle)
+                return false
+            }
+            return key(kVK_ANSI_B, flags: [.maskCommand, .maskAlternate], focusCodex: false)
+        case .cursorDictation, .grokDictation:
+            lastResult = String(localized: "Hold the assigned controller button to dictate", bundle: AppResources.localizationBundle)
+            return false
         case .systemDictation:
             return toggleSystemDictation()
         case .showControllerOverlay:
-            lastResult = "Controller overlay"
+            lastResult = String(localized: "Controller overlay", bundle: AppResources.localizationBundle)
             return true
         case .deleteTextWithConfirmation:
             return confirmDeleteFocusedText()
@@ -366,14 +398,14 @@ final class CodexAutomation: ObservableObject {
         ) == .success,
         let focused = focusedValue as! AXUIElement?
         else {
-            lastResult = "Focus a text field before shaking"
+            lastResult = String(localized: "Focus a text field before shaking", bundle: AppResources.localizationBundle)
             return false
         }
 
         let role = stringAttribute(focused, kAXRoleAttribute)
         let textRoles = [kAXTextAreaRole, kAXTextFieldRole, kAXComboBoxRole]
         guard let role, textRoles.contains(role) else {
-            lastResult = "Shake to delete only works in a focused text field"
+            lastResult = String(localized: "Shake to delete only works in a focused text field", bundle: AppResources.localizationBundle)
             return false
         }
         var settable = DarwinBoolean(false)
@@ -384,7 +416,7 @@ final class CodexAutomation: ObservableObject {
         ) == .success,
         settable.boolValue
         else {
-            lastResult = "This text field does not allow safe clearing"
+            lastResult = String(localized: "This text field does not allow safe clearing", bundle: AppResources.localizationBundle)
             return false
         }
         var value: CFTypeRef?
@@ -394,29 +426,28 @@ final class CodexAutomation: ObservableObject {
             &value
         )
         guard let text = value as? String, !text.isEmpty else {
-            lastResult = "The focused text field is already empty"
+            lastResult = String(localized: "The focused text field is already empty", bundle: AppResources.localizationBundle)
             return false
         }
 
         var processIdentifier: pid_t = 0
         AXUIElementGetPid(focused, &processIdentifier)
         let app = NSRunningApplication(processIdentifier: processIdentifier)
-        let appName = app?.localizedName ?? "the current app"
+        let appName = app?.localizedName ?? String(localized: "the current app", bundle: AppResources.localizationBundle)
 
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "Delete all text?"
+        alert.messageText = String(localized: "Delete all text?", bundle: AppResources.localizationBundle)
         alert.informativeText =
-            "This will clear the focused text field in \(appName). " +
-            "The action cannot be undone by ControlDeck."
-        alert.addButton(withTitle: "Delete")
-        alert.addButton(withTitle: "Cancel")
+            String(localized: "This will clear the focused text field in \(appName). The action cannot be undone by ControlDeck.", bundle: AppResources.localizationBundle)
+        alert.addButton(withTitle: String(localized: "Delete", bundle: AppResources.localizationBundle))
+        alert.addButton(withTitle: String(localized: "Cancel", bundle: AppResources.localizationBundle))
         alert.buttons.first?.hasDestructiveAction = true
         NSApp.activate(ignoringOtherApps: true)
 
         guard alert.runModal() == .alertFirstButtonReturn else {
             _ = app?.activate(options: [.activateAllWindows])
-            lastResult = "Delete cancelled"
+            lastResult = String(localized: "Delete cancelled", bundle: AppResources.localizationBundle)
             return false
         }
         let result = AXUIElementSetAttributeValue(
@@ -426,8 +457,8 @@ final class CodexAutomation: ObservableObject {
         )
         _ = app?.activate(options: [.activateAllWindows])
         lastResult = result == .success
-            ? "Text deleted"
-            : "The text field changed before it could be cleared"
+            ? String(localized: "Text deleted", bundle: AppResources.localizationBundle)
+            : String(localized: "The text field changed before it could be cleared", bundle: AppResources.localizationBundle)
         return result == .success
     }
 
@@ -435,7 +466,7 @@ final class CodexAutomation: ObservableObject {
     func runPrompt(_ prompt: String) -> Bool {
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else {
-            lastResult = "This skill slot has no prompt"
+            lastResult = String(localized: "This skill slot has no prompt", bundle: AppResources.localizationBundle)
             return false
         }
         guard key(kVK_ANSI_N, flags: .maskCommand) else { return false }
@@ -446,7 +477,7 @@ final class CodexAutomation: ObservableObject {
                 _ = self?.key(kVK_Return)
             }
         }
-        lastResult = "Started custom skill"
+        lastResult = String(localized: "Started custom skill", bundle: AppResources.localizationBundle)
         return true
     }
 
@@ -473,6 +504,60 @@ final class CodexAutomation: ObservableObject {
         _ = key(kVK_Return, focusCodex: false)
     }
 
+    /// Uses only the screenshot-verified native hold shortcuts, and never activates an app.
+    @discardableResult
+    func beginAssistantDictation(_ action: MappedAction) -> Bool {
+        if assistantDictationAction == action { return true }
+        endAssistantDictation()
+        guard let shortcut = AssistantDictationShortcut.shortcut(for: action) else { return false }
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              app.bundleIdentifier == shortcut.bundleIdentifier else {
+            lastResult = String(localized: "Bring the dictation app to the foreground first", bundle: AppResources.localizationBundle)
+            return false
+        }
+        guard accessibilityTrusted || AXIsProcessTrusted() else {
+            requestAccessibility()
+            return false
+        }
+        // Allocate the matching release before posting the press. Send both to the
+        // captured process so a later focus change cannot type into another app.
+        guard let down = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(shortcut.keyCode), keyDown: true),
+              let up = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(shortcut.keyCode), keyDown: false) else {
+            lastResult = String(localized: "Unable to create keyboard event", bundle: AppResources.localizationBundle)
+            return false
+        }
+        down.flags = shortcut.flags
+        up.flags = shortcut.flags
+        assistantDictationRelease = up
+        assistantDictationPID = app.processIdentifier
+        assistantDictationAction = action
+        down.postToPid(app.processIdentifier)
+        assistantDictationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self,
+                      NSWorkspace.shared.frontmostApplication?.processIdentifier != self.assistantDictationPID else { return }
+                self.endAssistantDictation()
+            }
+        }
+        lastResult = action.label
+        return true
+    }
+
+    func endAssistantDictation() {
+        if let up = assistantDictationRelease, let pid = assistantDictationPID {
+            up.postToPid(pid)
+        }
+        assistantDictationRelease = nil
+        assistantDictationPID = nil
+        assistantDictationAction = nil
+        if let observer = assistantDictationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+            assistantDictationObserver = nil
+        }
+    }
+
     @discardableResult
     func setMeetingPushToTalk(_ active: Bool) -> Bool {
         guard active != meetingPushToTalkHeld else { return true }
@@ -496,31 +581,39 @@ final class CodexAutomation: ObservableObject {
         }
         if succeeded {
             meetingPushToTalkHeld = active
-            lastResult = active ? "Meeting microphone open" : "Meeting microphone muted"
+            lastResult = active ? String(localized: "Meeting microphone open", bundle: AppResources.localizationBundle) : String(localized: "Meeting microphone muted", bundle: AppResources.localizationBundle)
         }
         return succeeded
     }
 
     @discardableResult
     func toggleDictation() -> Bool {
-        dictationShortcutHeld
+        nativeDictationStarted
             ? stopDictationAndInsert()
             : startDictation()
     }
 
     @discardableResult
     func startDictation() -> Bool {
-        guard activate() else { return false }
-        guard postDictationShortcut(.start) else { return false }
-        dictationShortcutHeld = true
+        // Reconcile with the visible native state after manual interaction. A local
+        // flag alone must never report a new capture as successfully started.
+        if nativeDictationStarted,
+           performNativeCodexButton(exact: CodexDictationIntent.stopAndInsert.exactLabels,
+                                    requiredWindow: nativeDictationWindow, press: false) {
+            return true
+        }
+        guard performNativeCodexButton(exact: CodexDictationIntent.start.exactLabels) else { return false }
+        nativeDictationStarted = true
+        nativeDictationWindow = lastActivatedNativeWindow
         return true
     }
 
     @discardableResult
     func stopDictationAndInsert() -> Bool {
-        guard activate() else { return false }
-        guard postDictationShortcut(.stopAndInsert) else { return false }
-        dictationShortcutHeld = false
+        guard nativeDictationStarted else { return true }
+        guard performNativeCodexButton(exact: CodexDictationIntent.stopAndInsert.exactLabels, requiredWindow: nativeDictationWindow) else { return false }
+        nativeDictationStarted = false
+        nativeDictationWindow = nil
         return true
     }
 
@@ -541,7 +634,7 @@ final class CodexAutomation: ObservableObject {
             _ = endAppSwitcher()
             return false
         }
-        lastResult = "App switcher open"
+        lastResult = String(localized: "App switcher open", bundle: AppResources.localizationBundle)
         return true
     }
 
@@ -551,7 +644,7 @@ final class CodexAutomation: ObservableObject {
             return beginAppSwitcher()
         }
         guard postAppSwitcherTab(reverse: false) else { return false }
-        lastResult = "Next application"
+        lastResult = String(localized: "Next application", bundle: AppResources.localizationBundle)
         return true
     }
 
@@ -561,7 +654,7 @@ final class CodexAutomation: ObservableObject {
             return beginAppSwitcher()
         }
         guard postAppSwitcherTab(reverse: true) else { return false }
-        lastResult = "Previous application"
+        lastResult = String(localized: "Previous application", bundle: AppResources.localizationBundle)
         return true
     }
 
@@ -571,8 +664,8 @@ final class CodexAutomation: ObservableObject {
         let succeeded = postKeyState(kVK_Command, keyDown: false)
         appSwitcherModifierHeld = false
         lastResult = succeeded
-            ? "Application selected"
-            : "Could not close app switcher"
+            ? String(localized: "Application selected", bundle: AppResources.localizationBundle)
+            : String(localized: "Could not close app switcher", bundle: AppResources.localizationBundle)
         return succeeded
     }
 
@@ -588,31 +681,31 @@ final class CodexAutomation: ObservableObject {
         appSwitcherModifierHeld = false
         let succeeded = escaped && released
         lastResult = succeeded
-            ? "App switcher cancelled"
-            : "Could not cancel app switcher"
+            ? String(localized: "App switcher cancelled", bundle: AppResources.localizationBundle)
+            : String(localized: "Could not cancel app switcher", bundle: AppResources.localizationBundle)
         return succeeded
     }
 
     func openThread(_ id: String) -> Bool {
         guard let url = URL(string: "codex://threads/\(id)") else {
-            lastResult = "Invalid task identifier"
+            lastResult = String(localized: "Invalid task identifier", bundle: AppResources.localizationBundle)
             return false
         }
         let result = NSWorkspace.shared.open(url)
-        lastResult = result ? "Opened task" : "Could not open task"
+        lastResult = result ? String(localized: "Opened task", bundle: AppResources.localizationBundle) : String(localized: "Could not open task", bundle: AppResources.localizationBundle)
         return result
     }
 
     @discardableResult
     func openSettings() -> Bool {
         guard let url = URL(string: "codex://settings") else {
-            lastResult = "Could not create the Codex settings link"
+            lastResult = String(localized: "Could not create the Codex settings link", bundle: AppResources.localizationBundle)
             return false
         }
         let result = NSWorkspace.shared.open(url)
         lastResult = result
-            ? "Opened Codex settings"
-            : "Could not open Codex settings"
+            ? String(localized: "Opened Codex settings", bundle: AppResources.localizationBundle)
+            : String(localized: "Could not open Codex settings", bundle: AppResources.localizationBundle)
         return result
     }
 
@@ -634,12 +727,33 @@ final class CodexAutomation: ObservableObject {
                 at: URL(fileURLWithPath: fallbackPath),
                 configuration: NSWorkspace.OpenConfiguration()
             )
-            lastResult = "Launching application"
+            lastResult = String(localized: "Launching application", bundle: AppResources.localizationBundle)
             return true
         }
         let result = app.activate(options: [.activateAllWindows])
-        lastResult = result ? "Application focused" : "Could not focus application"
+        lastResult = result ? String(localized: "Application focused", bundle: AppResources.localizationBundle) : String(localized: "Could not focus application", bundle: AppResources.localizationBundle)
         return result
+    }
+
+    private func appSnapshotShortcut() -> Bool {
+        guard accessibilityTrusted || AXIsProcessTrusted() else {
+            requestAccessibility()
+            return false
+        }
+        let modifiers: CGEventFlags = [.maskCommand, .maskShift, .maskControl, .maskAlternate, .maskSecondaryFn]
+        guard CGEventSource.flagsState(.combinedSessionState).intersection(modifiers).isEmpty else {
+            lastResult = String(localized: "Release keyboard modifiers before taking an app snapshot", bundle: AppResources.localizationBundle)
+            return false
+        }
+        guard let events = AppSnapshotShortcut.events() else {
+            lastResult = String(localized: "Unable to create keyboard event", bundle: AppResources.localizationBundle)
+            return false
+        }
+        // Do not activate Codex: its global shortcut captures the foreground app.
+        // Post the whole balanced chord together; no delayed release can be cancelled.
+        for event in events { event.post(tap: .cghidEventTap) }
+        lastResult = String(localized: "Sent app snapshot shortcut", bundle: AppResources.localizationBundle)
+        return true
     }
 
     private func key(
@@ -657,14 +771,14 @@ final class CodexAutomation: ObservableObject {
         guard let down = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(code), keyDown: true),
               let up = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(code), keyDown: false)
         else {
-            lastResult = "Unable to create keyboard event"
+            lastResult = String(localized: "Unable to create keyboard event", bundle: AppResources.localizationBundle)
             return false
         }
         down.flags = flags
         up.flags = flags
         down.post(tap: .cghidEventTap)
         up.post(tap: .cghidEventTap)
-        lastResult = "Sent shortcut"
+        lastResult = String(localized: "Sent shortcut", bundle: AppResources.localizationBundle)
         return true
     }
 
@@ -674,7 +788,7 @@ final class CodexAutomation: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
             _ = self?.key(kVK_Function, focusCodex: false)
         }
-        lastResult = "Universal dictation"
+        lastResult = String(localized: "Universal dictation", bundle: AppResources.localizationBundle)
         return true
     }
 
@@ -686,7 +800,7 @@ final class CodexAutomation: ObservableObject {
         guard frontmostBundleIdentifier == "com.anthropic.claudefordesktop" ||
                 frontmostBundleIdentifier == "com.anthropic.Claude"
         else {
-            lastResult = "Claude is not the foreground application"
+            lastResult = String(localized: "Claude is not the foreground application", bundle: AppResources.localizationBundle)
             return false
         }
         return semanticInFrontmostApp(
@@ -704,7 +818,7 @@ final class CodexAutomation: ObservableObject {
         guard frontmostBundleIdentifier == "com.anthropic.claudefordesktop" ||
                 frontmostBundleIdentifier == "com.anthropic.Claude"
         else {
-            lastResult = "Claude is not the foreground application"
+            lastResult = String(localized: "Claude is not the foreground application", bundle: AppResources.localizationBundle)
             return false
         }
         return semanticInFrontmostApp(
@@ -792,7 +906,7 @@ final class CodexAutomation: ObservableObject {
 
     private func semanticInFrontmostApp(exact: [String]) -> Bool {
         guard let bundleID = frontmostBundleIdentifier else {
-            lastResult = "No foreground application"
+            lastResult = String(localized: "No foreground application", bundle: AppResources.localizationBundle)
             return false
         }
         return performSemanticButton(
@@ -816,7 +930,7 @@ final class CodexAutomation: ObservableObject {
             virtualKey: CGKeyCode(code),
             keyDown: keyDown
         ) else {
-            lastResult = "Unable to create keyboard event"
+            lastResult = String(localized: "Unable to create keyboard event", bundle: AppResources.localizationBundle)
             return false
         }
         event.flags = flags
@@ -858,7 +972,7 @@ final class CodexAutomation: ObservableObject {
         )
         down?.cgEvent?.post(tap: .cghidEventTap)
         up?.cgEvent?.post(tap: .cghidEventTap)
-        lastResult = "Sent media key"
+        lastResult = String(localized: "Sent media key", bundle: AppResources.localizationBundle)
         return down != nil && up != nil
     }
 
@@ -903,7 +1017,7 @@ final class CodexAutomation: ObservableObject {
         guard let app = NSRunningApplication.runningApplications(
             withBundleIdentifier: bundleIdentifier ?? codexBundleIdentifier
         ).first else {
-            lastResult = "Application is not running"
+            lastResult = String(localized: "Application is not running", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -926,38 +1040,118 @@ final class CodexAutomation: ObservableObject {
                 kAXPressAction as CFString
             )
             lastResult =
-                result == .success ? exact[0] : "Could not press \(exact[0])"
+                result == .success ? exact[0] : String(localized: "Could not press \(exact[0])", bundle: AppResources.localizationBundle)
             return result == .success
         }
 
         if let match = findButton(in: root, exact: exact, prefixes: prefixes, depth: 0) {
             let result = AXUIElementPerformAction(match, kAXPressAction as CFString)
-            lastResult = result == .success ? exact[0] : "Could not press \(exact[0])"
+            lastResult = result == .success ? exact[0] : String(localized: "Could not press \(exact[0])", bundle: AppResources.localizationBundle)
             return result == .success
         }
 
-        lastResult = "No \(exact[0].lowercased()) request is visible"
+        lastResult = String(localized: "No \(exact[0].lowercased()) request is visible", bundle: AppResources.localizationBundle)
         return false
     }
 
-    private func postDictationShortcut(
-        _ intent: CodexDictationIntent
-    ) -> Bool {
+    /// Only the focused window of the actual Codex bundle is eligible. A unique,
+    /// enabled exact semantic match is required; no root-window or shortcut fallback.
+    private func performNativeCodexButton(exact: [String], requiredWindow: AXUIElement? = nil, press: Bool = true) -> Bool {
         guard accessibilityTrusted || AXIsProcessTrusted() else {
             requestAccessibility()
             return false
         }
-        guard let event = CGEvent(
-            keyboardEventSource: nil,
-            virtualKey: CGKeyCode(kVK_ANSI_D),
-            keyDown: intent.keyDown
-        ) else {
-            lastResult = "Unable to create the Codex dictation event"
+        guard let app = NSRunningApplication.runningApplications(
+            withBundleIdentifier: codexBundleIdentifier
+        ).first, app.activate(options: [.activateAllWindows]) else {
+            lastResult = String(localized: "Application is not running", bundle: AppResources.localizationBundle)
             return false
         }
-        event.flags = [.maskControl, .maskShift]
-        event.post(tap: .cghidEventTap)
-        lastResult = intent.successMessage
+        let root = AXUIElementCreateApplication(app.processIdentifier)
+        var focusedWindowValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(root, kAXFocusedWindowAttribute as CFString, &focusedWindowValue) == .success,
+              let value = focusedWindowValue,
+              CFGetTypeID(value) == AXUIElementGetTypeID()
+        else {
+            lastResult = String(localized: "Native Codex control is unavailable in the focused window", bundle: AppResources.localizationBundle)
+            return false
+        }
+        let focusedWindow = value as! AXUIElement
+        if let requiredWindow, !CFEqual(requiredWindow, focusedWindow) {
+            lastResult = String(localized: "Native Codex control is unavailable in the focused window", bundle: AppResources.localizationBundle)
+            return false
+        }
+        var matches: [AXUIElement] = []
+        var remaining = 16384
+        var visited = Set<AXUIElement>()
+        let complete = collectNativeButtons(in: focusedWindow, exact: exact, depth: 0, remaining: &remaining, visited: &visited, matches: &matches)
+        let opposingLabels: [String]
+        if exact == CodexDictationIntent.start.exactLabels {
+            opposingLabels = CodexDictationIntent.stopAndInsert.exactLabels
+        } else if exact == CodexDictationIntent.stopAndInsert.exactLabels {
+            opposingLabels = CodexDictationIntent.start.exactLabels
+        } else {
+            opposingLabels = []
+        }
+        var opposing: [AXUIElement] = []
+        var opposingBudget = 16384
+        var opposingVisited = Set<AXUIElement>()
+        let opposingComplete = opposingLabels.isEmpty || collectNativeButtons(
+            in: focusedWindow, exact: opposingLabels, depth: 0,
+            remaining: &opposingBudget, visited: &opposingVisited, matches: &opposing
+        )
+        guard NativeCodexSemanticMatch.isUnique(desiredCount: matches.count,
+                                               opposingCount: opposing.count,
+                                               traversalComplete: complete && opposingComplete) else {
+            if !complete || !opposingComplete {
+                lastResult = String(localized: "Dictation search exceeded the window complexity limit", bundle: AppResources.localizationBundle)
+            } else if matches.isEmpty {
+                lastResult = String(localized: "No accessible dictation button was found in this window", bundle: AppResources.localizationBundle)
+            } else {
+                lastResult = String(localized: "Multiple or conflicting dictation controls were found", bundle: AppResources.localizationBundle)
+            }
+            return false
+        }
+        guard press else { return true }
+        let pressed = AXUIElementPerformAction(matches[0], kAXPressAction as CFString) == .success
+        if pressed { lastActivatedNativeWindow = focusedWindow }
+        lastResult = pressed
+            ? String(localized: "Native Codex control activated", bundle: AppResources.localizationBundle)
+            : String(localized: "Could not activate native Codex control", bundle: AppResources.localizationBundle)
+        return pressed
+    }
+
+    private func collectNativeButtons(
+        in element: AXUIElement, exact: [String], depth: Int,
+        remaining: inout Int, visited: inout Set<AXUIElement>, matches: inout [AXUIElement]
+    ) -> Bool {
+        guard visited.insert(element).inserted else { return true }
+        guard depth < 64, remaining > 0 else { return false }
+        remaining -= 1
+        if stringAttribute(element, kAXRoleAttribute) == kAXButtonRole {
+            var enabled: CFTypeRef?
+            let enabledResult = AXUIElementCopyAttributeValue(element, kAXEnabledAttribute as CFString, &enabled)
+            let labels = [kAXTitleAttribute, kAXDescriptionAttribute, kAXHelpAttribute]
+                .compactMap { stringAttribute(element, $0)?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            var actions: CFArray?
+            let actionsResult = AXUIElementCopyActionNames(element, &actions)
+            if NativeCodexSemanticMatch.matches(
+                labels: labels, exact: exact, isButton: true,
+                enabled: enabledResult == .success && (enabled as? Bool) == true,
+                pressable: actionsResult == .success && (actions as? [String])?.contains(kAXPressAction) == true
+            ) {
+                matches.append(element)
+            }
+        }
+        var childrenValue: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &childrenValue)
+        if result == .noValue || result == .attributeUnsupported { return true }
+        // Unreadable leaves must not discard valid sibling controls. Bounds still
+        // fail closed, and every reachable eligible button participates in uniqueness.
+        guard result == .success, let children = childrenValue as? [AXUIElement] else { return true }
+        for child in children {
+            guard collectNativeButtons(in: child, exact: exact, depth: depth + 1, remaining: &remaining, visited: &visited, matches: &matches) else { return false }
+        }
         return true
     }
 

@@ -23,8 +23,7 @@ struct ProfileSharingView: View {
                     Text("Portable JSON profiles")
                         .font(.headline)
                     Text(
-                        "Export \(profiles.editingProfile.name), or review a " +
-                            "shared profile before importing it into any slot."
+                        "Export \(profiles.editingProfile.displayName), or review a shared profile before importing it into any slot."
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -35,7 +34,7 @@ struct ProfileSharingView: View {
                 Button("Import Profile…") {
                     showingImporter = true
                 }
-                Button("Export \(profiles.editingProfile.name)…") {
+                Button("Export \(profiles.editingProfile.displayName)…") {
                     prepareExport()
                 }
                 .buttonStyle(.borderedProminent)
@@ -53,9 +52,7 @@ struct ProfileSharingView: View {
             Divider()
 
             Label(
-                "Imports are data only: the format has no fields for scripts, " +
-                    "shell commands, URLs or downloaded code. Files are " +
-                    "size-limited and every input, action and setting is validated.",
+                "Imports are data only: the format has no fields for scripts, shell commands, URLs or downloaded code. Files are size-limited and every input, action and setting is validated.",
                 systemImage: "lock.shield"
             )
             .font(.caption)
@@ -78,7 +75,7 @@ struct ProfileSharingView: View {
         ) { result in
             switch result {
             case .success:
-                statusMessage = "Exported \(profiles.editingProfile.name)."
+                statusMessage = String(localized: "Exported \(profiles.editingProfile.displayName).", bundle: AppResources.localizationBundle)
             case let .failure(error):
                 errorMessage = error.localizedDescription
             }
@@ -96,8 +93,7 @@ struct ProfileSharingView: View {
                         importAppAssignments: importApps
                     )
                     statusMessage =
-                        "Imported \(candidate.shared.profile.name) into " +
-                        "\(profiles.profile(for: destination).name)."
+                        String(localized: "Imported \(candidate.shared.profile.displayName) into \(profiles.profile(for: destination).displayName).", bundle: AppResources.localizationBundle)
                     importCandidate = nil
                 }
             )
@@ -111,7 +107,7 @@ struct ProfileSharingView: View {
         ) {
             Button("OK", role: .cancel) { errorMessage = nil }
         } message: {
-            Text(errorMessage ?? "The profile could not be read.")
+            Text(errorMessage ?? String(localized: "The profile could not be read.", bundle: AppResources.localizationBundle))
         }
     }
 
@@ -243,19 +239,19 @@ private struct ProfileImportReviewView: View {
 
             GroupBox {
                 VStack(alignment: .leading, spacing: 10) {
-                    reviewRow("Profile", candidate.shared.profile.name)
+                    reviewRow(String(localized: "Profile", bundle: AppResources.localizationBundle), candidate.shared.profile.displayName)
                     reviewRow(
-                        "Controls",
-                        "\(candidate.shared.profile.bindings.count) buttons · " +
-                            "\(gestureCount) gestures"
+                        String(localized: "Controls", bundle: AppResources.localizationBundle),
+                        String(localized: "\(candidate.shared.profile.bindings.count) buttons · ", bundle: AppResources.localizationBundle) +
+                            String(localized: "\(gestureCount) gestures", bundle: AppResources.localizationBundle)
                     )
                     reviewRow(
-                        "Sticks",
-                        "\(candidate.shared.profile.pointer.source.label) pointer · " +
-                            "\(candidate.shared.profile.pointer.scrollSource.label) scroll"
+                        String(localized: "Sticks", bundle: AppResources.localizationBundle),
+                        String(localized: "\(candidate.shared.profile.pointer.source.label) pointer · ", bundle: AppResources.localizationBundle) +
+                            String(localized: "\(candidate.shared.profile.pointer.scrollSource.label) scroll", bundle: AppResources.localizationBundle)
                     )
                     reviewRow(
-                        "Exported",
+                        String(localized: "Exported", bundle: AppResources.localizationBundle),
                         candidate.shared.exportedAt.formatted(
                             date: .abbreviated,
                             time: .shortened
@@ -267,7 +263,7 @@ private struct ProfileImportReviewView: View {
 
             Picker("Import into", selection: $destination) {
                 ForEach(destinations) { profile in
-                    Text(profile.name).tag(profile.kind)
+                    Text(profile.displayName).tag(profile.kind)
                 }
             }
 
@@ -279,8 +275,8 @@ private struct ProfileImportReviewView: View {
                 )
                 Text(
                     importAppAssignments
-                        ? "The imported app identifiers can activate this profile automatically."
-                        : "Recommended: keep this Mac’s existing app assignments."
+                        ? String(localized: "The imported app identifiers can activate this profile automatically.", bundle: AppResources.localizationBundle)
+                        : String(localized: "Recommended: keep this Mac’s existing app assignments.", bundle: AppResources.localizationBundle)
                 )
                 .font(.caption)
                 .foregroundStyle(
@@ -289,8 +285,7 @@ private struct ProfileImportReviewView: View {
             }
 
             Label(
-                "Importing replaces the controls and sensitivity settings in " +
-                    "the selected destination. You can restore its defaults later.",
+                "Importing replaces the controls and sensitivity settings in the selected destination. You can restore its defaults later.",
                 systemImage: "exclamationmark.triangle"
             )
             .font(.caption)

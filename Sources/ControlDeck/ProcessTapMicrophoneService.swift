@@ -421,7 +421,7 @@ final class ProcessTapMicrophoneService {
 
     private(set) var tapID = AudioObjectID(kAudioObjectUnknown)
     private(set) var aggregateDeviceID = AudioObjectID(kAudioObjectUnknown)
-    private(set) var lastResult = "Not published"
+    private(set) var lastResult = String(localized: "Not published", bundle: AppResources.localizationBundle)
     private let ownershipToken = UUID()
 
     var isPublished: Bool {
@@ -432,14 +432,14 @@ final class ProcessTapMicrophoneService {
     @discardableResult
     func publish() -> Bool {
         guard #available(macOS 14.2, *) else {
-            lastResult = "Wireless microphone requires macOS 14.2 or later"
+            lastResult = String(localized: "Wireless microphone requires macOS 14.2 or later", bundle: AppResources.localizationBundle)
             return false
         }
         guard DualSenseMicrophonePublisherCoordinator.acquire(
             for: ownershipToken
         ) else {
             lastResult =
-                "DualSense Microphone is in use by the other controller app"
+                String(localized: "DualSense Microphone is in use by the other controller app", bundle: AppResources.localizationBundle)
             return false
         }
         var published = false
@@ -464,7 +464,7 @@ final class ProcessTapMicrophoneService {
            DualSenseMicrophoneAggregate.hasAttachedTap(aggregateDeviceID),
            DualSenseMicrophoneAggregate.hasInputStreams(aggregateDeviceID)
         {
-            lastResult = "\(Self.deviceName) is available"
+            lastResult = String(localized: "\(Self.deviceName) is available", bundle: AppResources.localizationBundle)
             published = true
             return true
         }
@@ -483,7 +483,7 @@ final class ProcessTapMicrophoneService {
             {
                 aggregateDeviceID = aggregateResult.device
                 enableDriftCompensation(on: aggregateResult.device)
-                lastResult = "\(Self.deviceName) is available"
+                lastResult = String(localized: "\(Self.deviceName) is available", bundle: AppResources.localizationBundle)
                 published = true
                 return true
             }
@@ -501,7 +501,7 @@ final class ProcessTapMicrophoneService {
               aggregateResult.device != kAudioObjectUnknown
         else {
             lastResult =
-                "Could not publish \(Self.deviceName) (\(aggregateResult.status))"
+                String(localized: "Could not publish \(Self.deviceName) (\(aggregateResult.status))", bundle: AppResources.localizationBundle)
             return false
         }
         let stableAggregate = aggregateResult.device
@@ -512,7 +512,7 @@ final class ProcessTapMicrophoneService {
         destroyOrphanedOwnedTaps()
 
         guard let processID = currentAudioProcessObjectID() else {
-            lastResult = "Could not find the app's Core Audio process"
+            lastResult = String(localized: "Could not find the app's Core Audio process", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -530,7 +530,7 @@ final class ProcessTapMicrophoneService {
             &newTapID
         )
         guard tapStatus == noErr, newTapID != kAudioObjectUnknown else {
-            lastResult = "Could not create wireless audio tap (\(tapStatus))"
+            lastResult = String(localized: "Could not create wireless audio tap (\(tapStatus))", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -539,7 +539,7 @@ final class ProcessTapMicrophoneService {
             selector: kAudioTapPropertyUID
         ) else {
             AudioHardwareDestroyProcessTap(newTapID)
-            lastResult = "Wireless audio tap has no UID"
+            lastResult = String(localized: "Wireless audio tap has no UID", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -549,14 +549,14 @@ final class ProcessTapMicrophoneService {
         ) else {
             _ = DualSenseMicrophoneAggregate.detachTap(from: stableAggregate)
             AudioHardwareDestroyProcessTap(newTapID)
-            lastResult = "Could not attach wireless audio to \(Self.deviceName)"
+            lastResult = String(localized: "Could not attach wireless audio to \(Self.deviceName)", bundle: AppResources.localizationBundle)
             return false
         }
 
         enableDriftCompensation(on: stableAggregate)
         tapID = newTapID
         aggregateDeviceID = stableAggregate
-        lastResult = "\(Self.deviceName) is available"
+        lastResult = String(localized: "\(Self.deviceName) is available", bundle: AppResources.localizationBundle)
         published = true
         return true
     }
@@ -586,7 +586,7 @@ final class ProcessTapMicrophoneService {
             destroyOrphanedOwnedTaps()
         }
         DualSenseMicrophonePublisherCoordinator.release(for: ownershipToken)
-        lastResult = "Wireless microphone is offline"
+        lastResult = String(localized: "Wireless microphone is offline", bundle: AppResources.localizationBundle)
     }
 
     private func currentAudioProcessObjectID() -> AudioObjectID? {

@@ -9,11 +9,11 @@ enum DualSenseBluetoothSpeakerEncodingError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .encoderCreation(code):
-            return "Could not create the speaker encoder (\(code))"
+            return String(localized: "Could not create the speaker encoder (\(code))", bundle: AppResources.localizationBundle)
         case let .encoderConfiguration(code):
-            return "Could not configure the speaker encoder (\(code))"
+            return String(localized: "Could not configure the speaker encoder (\(code))", bundle: AppResources.localizationBundle)
         case let .encoding(code):
-            return "Could not encode Bluetooth speaker audio (\(code))"
+            return String(localized: "Could not encode Bluetooth speaker audio (\(code))", bundle: AppResources.localizationBundle)
         }
     }
 }

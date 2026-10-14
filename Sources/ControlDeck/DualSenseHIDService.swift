@@ -38,8 +38,8 @@ final class DualSenseHIDService {
         category: "dualsense-hid"
     )
 
-    private(set) var lastBluetoothMicrophoneResult = "Not started"
-    private(set) var lastBluetoothSpeakerResult = "Not started"
+    private(set) var lastBluetoothMicrophoneResult = String(localized: "Not started", bundle: AppResources.localizationBundle)
+    private(set) var lastBluetoothSpeakerResult = String(localized: "Not started", bundle: AppResources.localizationBundle)
 
     init() {
         reportBuffer = .allocate(capacity: reportBufferSize)
@@ -142,7 +142,7 @@ final class DualSenseHIDService {
 
     func setBluetoothMicrophoneCapture(_ active: Bool) -> Bool {
         guard let device, transport == .bluetooth else {
-            lastBluetoothMicrophoneResult = "DualSense is not connected over Bluetooth"
+            lastBluetoothMicrophoneResult = String(localized: "DualSense is not connected over Bluetooth", bundle: AppResources.localizationBundle)
             return false
         }
 
@@ -187,12 +187,12 @@ final class DualSenseHIDService {
             }
         guard results.state == kIOReturnSuccess else {
             lastBluetoothMicrophoneResult =
-                "Bluetooth microphone state failed (\(ioResult(results.state)))"
+                String(localized: "Bluetooth microphone state failed (\(ioResult(results.state)))", bundle: AppResources.localizationBundle)
             return false
         }
         guard results.stream == kIOReturnSuccess else {
             lastBluetoothMicrophoneResult =
-                "Bluetooth microphone command failed (\(ioResult(results.stream)))"
+                String(localized: "Bluetooth microphone command failed (\(ioResult(results.stream)))", bundle: AppResources.localizationBundle)
             logger.error(
                 "Bluetooth mic command active=\(active, privacy: .public) failed: \(self.ioResult(results.stream), privacy: .public)"
             )
@@ -200,8 +200,8 @@ final class DualSenseHIDService {
         }
 
         lastBluetoothMicrophoneResult = active
-            ? "Bluetooth microphone stream opened"
-            : "Bluetooth microphone stream closed"
+            ? String(localized: "Bluetooth microphone stream opened", bundle: AppResources.localizationBundle)
+            : String(localized: "Bluetooth microphone stream closed", bundle: AppResources.localizationBundle)
         logger.notice(
             "Bluetooth mic stream active=\(active, privacy: .public); stateSeq=\(self.stateReportSequence, privacy: .public) streamSeq=\(self.microphoneReportSequence, privacy: .public)"
         )
@@ -216,13 +216,13 @@ final class DualSenseHIDService {
     ) -> Bool {
         guard let requestedDevice = device, transport == .bluetooth else {
             lastBluetoothSpeakerResult =
-                "DualSense is not connected over Bluetooth"
+                String(localized: "DualSense is not connected over Bluetooth", bundle: AppResources.localizationBundle)
             return false
         }
 
         speakerRequestGeneration &+= 1
         let generation = speakerRequestGeneration
-        lastBluetoothSpeakerResult = "Encoding Bluetooth speaker audio"
+        lastBluetoothSpeakerResult = String(localized: "Encoding Bluetooth speaker audio", bundle: AppResources.localizationBundle)
         speakerEncoder.encodeTone(
             frequency: frequency,
             duration: duration,
@@ -449,11 +449,11 @@ final class DualSenseHIDService {
         device: IOHIDDevice
     ) {
         guard !frames.isEmpty else {
-            lastBluetoothSpeakerResult = "Bluetooth speaker audio was empty"
+            lastBluetoothSpeakerResult = String(localized: "Bluetooth speaker audio was empty", bundle: AppResources.localizationBundle)
             onBluetoothSpeakerResult?(lastBluetoothSpeakerResult)
             return
         }
-        lastBluetoothSpeakerResult = "Streaming to controller speaker"
+        lastBluetoothSpeakerResult = String(localized: "Streaming to controller speaker", bundle: AppResources.localizationBundle)
 
         outputQueue.async { [weak self, device] in
             guard let self else { return }
@@ -472,8 +472,8 @@ final class DualSenseHIDService {
                 )
                 guard result == kIOReturnSuccess else {
                     self.finishBluetoothSpeakerLocked(
-                        "Bluetooth speaker initialization failed " +
-                            "(\(self.ioResult(result)))",
+                        String(localized: "Bluetooth speaker initialization failed ", bundle: AppResources.localizationBundle) +
+                            String(localized: "(\(self.ioResult(result)))", bundle: AppResources.localizationBundle),
                         device: device,
                         restoreRoute: false
                     )
@@ -497,8 +497,8 @@ final class DualSenseHIDService {
             )
             guard routeResult == kIOReturnSuccess else {
                 self.finishBluetoothSpeakerLocked(
-                    "Bluetooth speaker route failed " +
-                        "(\(self.ioResult(routeResult)))",
+                    String(localized: "Bluetooth speaker route failed ", bundle: AppResources.localizationBundle) +
+                        String(localized: "(\(self.ioResult(routeResult)))", bundle: AppResources.localizationBundle),
                     device: device,
                     restoreRoute: false
                 )
@@ -524,7 +524,7 @@ final class DualSenseHIDService {
     private func sendNextBluetoothSpeakerFrame(to device: IOHIDDevice) {
         guard speakerFrameIndex < speakerFrames.count else {
             finishBluetoothSpeakerLocked(
-                "Controller speaker played over Bluetooth",
+                String(localized: "Controller speaker played over Bluetooth", bundle: AppResources.localizationBundle),
                 device: device,
                 restoreRoute: true
             )
@@ -540,7 +540,7 @@ final class DualSenseHIDService {
             )
         else {
             finishBluetoothSpeakerLocked(
-                "Bluetooth speaker frame had the wrong size",
+                String(localized: "Bluetooth speaker frame had the wrong size", bundle: AppResources.localizationBundle),
                 device: device,
                 restoreRoute: true
             )
@@ -551,7 +551,7 @@ final class DualSenseHIDService {
         let result = sendOutputReport(report, reportID: 0x36, to: device)
         guard result == kIOReturnSuccess else {
             finishBluetoothSpeakerLocked(
-                "Bluetooth speaker write failed (\(ioResult(result)))",
+                String(localized: "Bluetooth speaker write failed (\(ioResult(result)))", bundle: AppResources.localizationBundle),
                 device: device,
                 restoreRoute: true
             )

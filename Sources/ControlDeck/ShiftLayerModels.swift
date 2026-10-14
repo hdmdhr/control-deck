@@ -9,23 +9,23 @@ struct ProfileWheelSlot: Codable, Equatable, Identifiable, Sendable {
 
     var positionLabel: String {
         switch position {
-        case 0: "Top"
-        case 1: "Upper right"
-        case 2: "Right"
-        case 3: "Lower right"
-        case 4: "Bottom"
-        case 5: "Lower left"
-        case 6: "Left"
-        case 7: "Upper left"
-        default: "Slot \(position + 1)"
+        case 0: String(localized: "Top", bundle: AppResources.localizationBundle)
+        case 1: String(localized: "Upper right", bundle: AppResources.localizationBundle)
+        case 2: String(localized: "Right", bundle: AppResources.localizationBundle)
+        case 3: String(localized: "Lower right", bundle: AppResources.localizationBundle)
+        case 4: String(localized: "Bottom", bundle: AppResources.localizationBundle)
+        case 5: String(localized: "Lower left", bundle: AppResources.localizationBundle)
+        case 6: String(localized: "Left", bundle: AppResources.localizationBundle)
+        case 7: String(localized: "Upper left", bundle: AppResources.localizationBundle)
+        default: String(localized: "Slot \(position + 1)", bundle: AppResources.localizationBundle)
         }
     }
 
     static let defaults: [ProfileWheelSlot] = [
         .init(position: 0, profileKind: .codex),
         .init(position: 1, profileKind: .chrome),
-        .init(position: 2, profileKind: .claude),
-        .init(position: 3, profileKind: .spotify),
+        .init(position: 2, profileKind: .cursor),
+        .init(position: 3, profileKind: .grokBot),
         .init(position: 4, profileKind: .general),
         .init(position: 5, profileKind: .finder),
         .init(position: 6, profileKind: .terminal),
@@ -38,6 +38,7 @@ final class ShiftLayerStore: ObservableObject {
     @Published private(set) var profileSlots: [ProfileWheelSlot]
 
     static let storageKey = "profileWheelSettings.v1"
+    private static let assistantWheelMigrationKey = "assistantProfileWheel.v1"
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -47,10 +48,13 @@ final class ShiftLayerStore: ObservableObject {
                [ProfileWheelSlot].self,
                from: data
            ) {
-            profileSlots = Self.merged(decoded)
+            let migrated = defaults.bool(forKey: Self.assistantWheelMigrationKey)
+                ? decoded : Self.migrateLegacyDefaults(decoded)
+            profileSlots = Self.merged(migrated)
         } else {
             profileSlots = ProfileWheelSlot.defaults
         }
+        defaults.set(true, forKey: Self.assistantWheelMigrationKey)
         persist()
     }
 
@@ -98,6 +102,18 @@ final class ShiftLayerStore: ObservableObject {
     private func persist() {
         guard let data = try? JSONEncoder().encode(profileSlots) else { return }
         defaults.set(data, forKey: Self.storageKey)
+    }
+
+    /// Upgrade only unchanged legacy slots, leaving reordered or custom slots intact.
+    static func migrateLegacyDefaults(_ saved: [ProfileWheelSlot]) -> [ProfileWheelSlot] {
+        var result = saved
+        for (position, legacy, replacement) in [(2, ProfileKind.claude, ProfileKind.cursor), (3, .spotify, .grokBot)] {
+            guard !result.contains(where: { $0.profileKind == replacement }),
+                  let index = result.firstIndex(where: { $0.position == position && $0.profileKind == legacy })
+            else { continue }
+            result[index].profileKind = replacement
+        }
+        return result
     }
 
     private static func merged(
@@ -155,8 +171,8 @@ enum ReasoningStep: Equatable, Sendable {
 
     var title: String {
         switch self {
-        case .smarter: "Smarter"
-        case .faster: "Faster"
+        case .smarter: String(localized: "Smarter", bundle: AppResources.localizationBundle)
+        case .faster: String(localized: "Faster", bundle: AppResources.localizationBundle)
         }
     }
 }

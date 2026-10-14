@@ -53,7 +53,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        panel.title = "Screen Capture Editor"
+        panel.title = String(localized: "Screen Capture Editor", bundle: AppResources.localizationBundle)
         panel.isReleasedWhenClosed = false
         panel.delegate = self
         panel.contentView = hostingView
@@ -213,8 +213,8 @@ private struct ScreenshotEditorRootView: View {
 
             Label(
                 copyOnDone
-                    ? "Done copies the marked-up image"
-                    : "Done closes without copying",
+                    ? String(localized: "Done copies the marked-up image", bundle: AppResources.localizationBundle)
+                    : String(localized: "Done closes without copying", bundle: AppResources.localizationBundle),
                 systemImage: copyOnDone ? "doc.on.clipboard.fill" : "xmark.circle"
             )
             .font(.caption.weight(.semibold))
@@ -225,7 +225,7 @@ private struct ScreenshotEditorRootView: View {
             Button("Save", systemImage: "square.and.arrow.down", action: onSave)
                 .keyboardShortcut("s", modifiers: .command)
             Button(
-                copyOnDone ? "Done & Copy" : "Done",
+                copyOnDone ? String(localized: "Done & Copy", bundle: AppResources.localizationBundle) : String(localized: "Done", bundle: AppResources.localizationBundle),
                 systemImage: copyOnDone ? "doc.on.clipboard.fill" : "checkmark",
                 action: onDone
             )
@@ -233,7 +233,7 @@ private struct ScreenshotEditorRootView: View {
                 .keyboardShortcut(.return, modifiers: [.command])
                 .help(
                     copyOnDone
-                        ? "Close the editor and copy the marked-up image to the clipboard"
+                        ? String(localized: "Close the editor and copy the marked-up image to the clipboard", bundle: AppResources.localizationBundle)
                         : "Close the editor without changing the clipboard"
                 )
         }
@@ -333,10 +333,10 @@ private struct ScreenshotEditorRootView: View {
             Spacer()
             Text(
                 copyOnDone
-                    ? "Done & Copy replaces the clipboard with the current image and all markup. It will be ready to paste immediately."
+                    ? String(localized: "Done & Copy replaces the clipboard with the current image and all markup. It will be ready to paste immediately.", bundle: AppResources.localizationBundle)
                     : model.originalOnClipboard
-                    ? "The unedited capture was copied before this window opened. Dismiss at any time to keep it unchanged."
-                    : "Dismiss without changing the clipboard, or choose Copy when the edit is ready."
+                    ? String(localized: "The unedited capture was copied before this window opened. Dismiss at any time to keep it unchanged.", bundle: AppResources.localizationBundle)
+                    : String(localized: "Dismiss without changing the clipboard, or choose Copy when the edit is ready.", bundle: AppResources.localizationBundle)
             )
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -347,14 +347,14 @@ private struct ScreenshotEditorRootView: View {
 
     private var controllerHints: some View {
         HStack(spacing: 16) {
-            hint("L STICK", "Pointer")
-            hint("CROSS", "Draw")
-            hint("L1 / R1", "Tool")
-            hint("SQUARE", "Undo")
-            hint("TRIANGLE", "Redo")
-            hint("CREATE", "Save")
-            hint("OPTIONS", "Done")
-            hint("CIRCLE", "Dismiss")
+            hint(String(localized: "L STICK", bundle: AppResources.localizationBundle), String(localized: "Pointer", bundle: AppResources.localizationBundle))
+            hint(String(localized: "CROSS", bundle: AppResources.localizationBundle), String(localized: "Draw", bundle: AppResources.localizationBundle))
+            hint(String(localized: "L1 / R1", bundle: AppResources.localizationBundle), String(localized: "Tool", bundle: AppResources.localizationBundle))
+            hint(String(localized: "SQUARE", bundle: AppResources.localizationBundle), String(localized: "Undo", bundle: AppResources.localizationBundle))
+            hint(String(localized: "TRIANGLE", bundle: AppResources.localizationBundle), String(localized: "Redo", bundle: AppResources.localizationBundle))
+            hint(String(localized: "CREATE", bundle: AppResources.localizationBundle), String(localized: "Save", bundle: AppResources.localizationBundle))
+            hint(String(localized: "OPTIONS", bundle: AppResources.localizationBundle), String(localized: "Done", bundle: AppResources.localizationBundle))
+            hint(String(localized: "CIRCLE", bundle: AppResources.localizationBundle), String(localized: "Dismiss", bundle: AppResources.localizationBundle))
             Spacer()
         }
         .padding(.horizontal, 18)

@@ -44,14 +44,14 @@ struct ControlDeckLogicTestRunner {
             "dictation modes expose system, live, balanced and high-accuracy choices"
         )
         expect(
-            ControllerProfile.codex.action(for: .l2) == .codexDictation,
-            "Codex L2 dictates"
+            ControllerProfile.codex.action(for: .l2) == .systemDictation,
+            "Codex L2 uses universal dictation"
         )
         expect(
             ControllerProfile.defaults
-                .filter { $0.kind != .codex }
+                .filter { ![.cursor, .grokBot].contains($0.kind) }
                 .allSatisfy { $0.action(for: .l2) == .systemDictation },
-            "L2 provides universal dictation in every non-Codex profile"
+            "L2 provides universal dictation outside native assistant profiles"
         )
         expect(
             ControllerProfile.codex.action(for: .l3) == .copy &&
@@ -64,10 +64,150 @@ struct ControlDeckLogicTestRunner {
         )
         expect(
             ControllerProfile.defaults.allSatisfy {
-                $0.action(for: .r2) == .screenshotSelection
+                $0.action(for: .r2) == .codexAppSnapshot
             },
-            "R2 captures a selected area in every default profile"
+            "Every profile uses the global app snapshot shortcut on R2"
         )
+        var legacyCodexCapture = ControllerProfile.codex
+        legacyCodexCapture.setAction(.screenshotSelection, for: .r2)
+        legacyCodexCapture.migrateLegacyCodexSnapshot()
+        expect(legacyCodexCapture.action(for: .r2) == .codexAppSnapshot,
+               "legacy Codex R2 capture upgrades to app snapshot")
+        legacyCodexCapture.setAction(.copy, for: .r2)
+        legacyCodexCapture.migrateLegacyCodexSnapshot()
+        expect(legacyCodexCapture.action(for: .r2) == .copy,
+               "Codex R2 migration preserves custom actions")
+        expect(CodexDictationIntent.start.matches([" dictation "]) &&
+               !CodexDictationIntent.start.matches(["Start voice mode", "Send", "Dictation settings"]),
+               "dictation tolerates exact-label casing and whitespace without matching unrelated controls")
+        expect(ControllerProfile.cursor.action(for: .l2) == .cursorDictation &&
+               ControllerProfile.grokBot.action(for: .l2) == .grokDictation,
+               "Cursor and Grok use their native hold-to-dictate actions")
+        let cursorShortcut = AssistantDictationShortcut.shortcut(for: .cursorDictation)
+        let grokShortcut = AssistantDictationShortcut.shortcut(for: .grokDictation)
+        expect(cursorShortcut?.bundleIdentifier == "com.todesktop.230313mzl4w4u92" &&
+               cursorShortcut?.keyCode == 46 && cursorShortcut?.flags == .maskControl,
+               "Cursor native dictation is Control M for the Cursor process")
+        expect(grokShortcut?.bundleIdentifier == "com.anysphere.sand" &&
+               grokShortcut?.keyCode == 2 && grokShortcut?.flags == .maskCommand &&
+               AssistantDictationShortcut.shortcut(for: .codexSend) == nil,
+               "Grok native dictation is Command D and unrelated actions have no shortcut")
+        var previousCodex = ControllerProfile.codex
+        previousCodex.setAction(.codexDictation, for: .l2)
+        previousCodex.migrateCodexUniversalDictation()
+        expect(previousCodex.action(for: .l2) == .systemDictation,
+               "old Codex native L2 migrates to universal dictation")
+        previousCodex.setAction(.copy, for: .l2)
+        previousCodex.migrateCodexUniversalDictation()
+        expect(previousCodex.action(for: .l2) == .copy,
+               "Codex dictation migration preserves a custom L2 action")
+        expect(ControllerProfile.grokBot.action(for: .dpadUp) == .grokCollapseSection &&
+               ControllerProfile.grokBot.action(for: .dpadLeft) == .grokPreviousBot &&
+               ControllerProfile.grokBot.action(for: .dpadDown) == .grokExpandSection &&
+               ControllerProfile.grokBot.action(for: .dpadRight) == .grokNextBot,
+               "Grok horizontal controls select bots and vertical controls collapse or expand sections")
+        var previousGrok = ControllerProfile.grokBot
+        previousGrok.setAction(.grokPreviousBot, for: .dpadUp)
+        previousGrok.setAction(.grokNextBot, for: .dpadDown)
+        previousGrok.migrateGrokSectionControls()
+        expect(previousGrok.action(for: .dpadUp) == .grokCollapseSection &&
+               previousGrok.action(for: .dpadDown) == .grokExpandSection &&
+               previousGrok.action(for: .dpadLeft) == .grokPreviousBot &&
+               previousGrok.action(for: .dpadRight) == .grokNextBot,
+               "legacy Grok bot navigation upgrades only vertical bindings")
+        previousGrok.setAction(.arrowUp, for: .dpadUp)
+        previousGrok.setAction(.arrowDown, for: .dpadDown)
+        previousGrok.migrateGrokSectionControls()
+        previousGrok.migrateGrokSectionControls()
+        expect(previousGrok.action(for: .dpadUp) == .grokCollapseSection &&
+               previousGrok.action(for: .dpadDown) == .grokExpandSection,
+               "legacy Grok arrow defaults migrate idempotently")
+        previousGrok.setAction(.copy, for: .dpadUp)
+        previousGrok.setAction(.paste, for: .dpadDown)
+        previousGrok.migrateGrokSectionControls()
+        expect(previousGrok.action(for: .dpadUp) == .copy && previousGrok.action(for: .dpadDown) == .paste,
+               "Grok section migration preserves custom vertical bindings")
+        var otherProfile = ControllerProfile.cursor
+        otherProfile.migrateGrokSectionControls()
+        expect(otherProfile == ControllerProfile.cursor,
+               "Grok section migration leaves other application profiles unchanged")
+        expect(MappedAction.grokCollapseSection.category == MappedAction.grokPreviousBot.category &&
+               MappedAction.grokExpandSection.category == MappedAction.grokNextBot.category,
+               "Grok section actions share the bot navigation category")
+        expect((try? GrokBotNavigation.adjacentIndex(names: ["A", "B", "C"], currentNames: ["B"], offset: 1)) == 2 &&
+               (try? GrokBotNavigation.adjacentIndex(names: ["A", "B", "C"], currentNames: ["B"], offset: -1)) == 0,
+               "bot navigation follows sidebar order in both directions")
+        expect((try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["A"], offset: -1)) == nil &&
+               (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["B"], offset: 1)) == nil,
+               "bot navigation stops at list boundaries")
+        expect((try? GrokBotNavigation.adjacentIndex(names: ["A", "A"], currentNames: ["A"], offset: 1)) == nil &&
+               (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["A", "B"], offset: 1)) == nil &&
+               (try? GrokBotNavigation.adjacentIndex(names: ["A", "B"], currentNames: ["C"], offset: 1)) == nil,
+               "bot navigation rejects duplicates, ambiguous selection and unknown current bot")
+        let ordinaryButtonAttributes = ["AXRole", "AXTitle", "AXEnabled"]
+        let disclosureAttributes = ordinaryButtonAttributes + ["AXExpanded"]
+        let ordinaryButtonState = GrokBotNavigation.disclosureState(
+            advertisedAttributes: ordinaryButtonAttributes, value: false)
+        expect(ordinaryButtonState == nil && GrokBotNavigation.isBotButton(
+            role: "AXButton", expanded: ordinaryButtonState, roleDescription: "button"),
+            "Chromium ordinary buttons returning AXExpanded false remain navigable bot rows")
+        expect(GrokBotNavigation.disclosureState(advertisedAttributes: disclosureAttributes, value: false) == false &&
+               GrokBotNavigation.disclosureState(advertisedAttributes: disclosureAttributes, value: true) == true,
+               "advertised disclosure capability preserves both collapsed and expanded section states")
+        expect(GrokBotNavigation.disclosureState(advertisedAttributes: disclosureAttributes, value: nil) == nil,
+               "unreadable disclosure state is not assumed collapsed")
+        let sidebarRows: [(String, [String], Bool, String)] = [
+            ("Presenter", ordinaryButtonAttributes, false, "button"),
+            ("Engineering", disclosureAttributes, true, "sortable"),
+            ("Webber", ordinaryButtonAttributes, false, "button"),
+            ("Chores", disclosureAttributes, false, "sortable")
+        ]
+        let botNames = sidebarRows.filter { row in
+            GrokBotNavigation.isBotButton(role: "AXButton", expanded: GrokBotNavigation.disclosureState(
+                advertisedAttributes: row.1, value: row.2), roleDescription: row.3)
+        }.map { $0.0 }
+        expect(botNames == ["Presenter", "Webber"] &&
+               (try? GrokBotNavigation.adjacentIndex(names: botNames, currentNames: ["Presenter"], offset: 1)) == 1,
+               "cross-section navigation retains ordinary bots and excludes both expanded and folded headers")
+        expect(GrokBotNavigation.isBotButton(role: "AXButton", expanded: nil, roleDescription: "button") &&
+               !GrokBotNavigation.isBotButton(role: "AXButton", expanded: true, roleDescription: "button") &&
+               !GrokBotNavigation.isBotButton(role: "AXButton", expanded: false, roleDescription: "button") &&
+               !GrokBotNavigation.isBotButton(role: "AXButton", expanded: nil, roleDescription: "sortable") &&
+               !GrokBotNavigation.isBotButton(role: "AXGroup", expanded: nil, roleDescription: "group"),
+               "bot rows exclude expanded and collapsed section headers, sortable handles and groups")
+        let rememberedBotOrder = ["Before", "Current", "Hidden sibling", "After", "Last"]
+        let visibleBotOrder = ["Before", "After", "Last"]
+        expect((try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: visibleBotOrder,
+                                                          current: "Current", offset: 1)) == 1 &&
+               (try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: visibleBotOrder,
+                                                          current: "Current", offset: -1)) == 0,
+               "collapsed current section navigates to visible neighbors in either direction and returns visible indices")
+        expect((try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: visibleBotOrder,
+                                                          current: "Before", offset: -1)) == nil &&
+               (try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: visibleBotOrder,
+                                                          current: "Last", offset: 1)) == nil,
+               "visible bot navigation stops at both remembered list boundaries")
+        expect((try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: ["After", "Before"],
+                                                          current: "Current", offset: 1)) == nil &&
+               (try? GrokBotNavigation.adjacentVisibleIndex(order: rememberedBotOrder, visible: ["Before", "Unknown"],
+                                                          current: "Current", offset: 1)) == nil,
+               "visible bot navigation rejects reordered and unknown sidebar rows")
+        expect(GrokBotNavigation.verification(current: "A", initial: "A", target: "B") == .unchanged &&
+               GrokBotNavigation.verification(current: "B", initial: "A", target: "B") == .confirmed &&
+               GrokBotNavigation.verification(current: "C", initial: "A", target: "B") == .unexpected,
+               "accepted click alone is not success; only the requested bot confirms navigation")
+        expect(ControllerProfile.cursor.action(for: .square) == .assistantRightPanel &&
+               ControllerProfile.grokBot.action(for: .square) == .assistantRightPanel &&
+               ControllerProfile.cursor.action(for: .l3) == .copy &&
+               ControllerProfile.grokBot.action(for: .triangle) == .paste,
+               "assistant square opens the right panel while copy and paste stay accessible")
+        let snapshotEvents = AppSnapshotShortcut.events() ?? []
+        expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
+               "app snapshot uses four modifier transitions")
+        expect(snapshotEvents.map { $0.getIntegerValueField(.keyboardEventKeycode) } == [55, 54, 54, 55],
+               "app snapshot presses left then right Command and releases in reverse order")
+        expect(snapshotEvents.map { $0.flags.rawValue } == [0x100008, 0x100018, 0x100008, 0],
+               "app snapshot overlaps both Command sides and leaves no synthetic modifier held")
         var appSwitcherHold = AppSwitcherHoldGate()
         let deferredTouchpad = appSwitcherHold.handle(
             .touchpadClick,
@@ -295,8 +435,8 @@ struct ControlDeckLogicTestRunner {
             "Spotify Cross controls playback"
         )
         expect(
-            ControllerProfile.defaults.count == 16,
-            "ControlDeck has sixteen curated app profiles"
+            ControllerProfile.defaults.count == 18,
+            "ControlDeck has eighteen curated app profiles"
         )
         expect(
             ControllerProfile.codex.pointer.source == .left,
@@ -304,8 +444,8 @@ struct ControlDeckLogicTestRunner {
         )
         expect(
             ControllerProfile.codex.action(for: .r2)
-                == .screenshotSelection,
-            "Codex R2 selects a screenshot area"
+                == .codexAppSnapshot,
+            "Codex R2 captures the Codex app"
         )
         let captureDefaultsName = "ControlDeckTests.ScreenCapture"
         let captureDefaults = UserDefaults(suiteName: captureDefaultsName)!
@@ -381,7 +521,7 @@ struct ControlDeckLogicTestRunner {
         expect(
             ControllerProfile.videoEditing.action(for: .l2) == .systemDictation &&
                 ControllerProfile.videoEditing.action(for: .r2) ==
-                    .screenshotSelection,
+                    .codexAppSnapshot,
             "Video editors keep universal dictation and reliable R2 capture"
         )
         expect(
@@ -442,13 +582,28 @@ struct ControlDeckLogicTestRunner {
             "Switch 2 controller identification"
         )
         expect(
-            CodexDictationIntent.start.keyDown,
-            "dictation starts by holding Codex's shortcut down"
+            CodexDictationIntent.start.matches(["听写"]) &&
+                !CodexDictationIntent.start.matches(["Start voice mode", "Send", "听写设置"]),
+            "dictation start only accepts exact native dictation controls"
         )
         expect(
-            !CodexDictationIntent.stopAndInsert.keyDown,
-            "dictation inserts by releasing Codex's held shortcut"
+            CodexDictationIntent.stopAndInsert.matches(["停止听写"]) &&
+                !CodexDictationIntent.stopAndInsert.matches(["听写"]),
+            "dictation stop only accepts the native stop control"
         )
+        for eligibility in [(false, true, true), (true, false, true), (true, true, false)] {
+            expect(!NativeCodexSemanticMatch.matches(
+                labels: ["听写"], exact: CodexDictationIntent.start.exactLabels,
+                isButton: eligibility.0, enabled: eligibility.1, pressable: eligibility.2
+            ), "native dictation rejects ineligible controls")
+        }
+        expect(NativeCodexSemanticMatch.isUnique(desiredCount: 1, opposingCount: 0, traversalComplete: true),
+               "one verified native control is actionable")
+        for counts in [(0, 0, true), (2, 0, true), (1, 1, true), (1, 0, false)] {
+            expect(!NativeCodexSemanticMatch.isUnique(
+                desiredCount: counts.0, opposingCount: counts.1, traversalComplete: counts.2
+            ), "missing, ambiguous, opposing or incomplete native controls fail closed")
+        }
         expect(
             ControllerProfile.general.pointer.source == .left,
             "General pointer uses left stick"
@@ -477,6 +632,33 @@ struct ControlDeckLogicTestRunner {
                 Set(ProfileWheelSlot.defaults.map(\.profileKind)).count == 8,
             "Options layer has eight unique popular-app profile slots"
         )
+        for fingers in [1, 2] {
+            func scrollSample(natural: Bool) -> CGPoint {
+                let engine = TouchpadGestureEngine()
+                engine.settings.naturalScrolling = natural
+                var sample = CGPoint.zero
+                engine.onScrollDelta = { sample = CGPoint(x: $0, y: $1) }
+                engine.update(finger: .primary, x: 0, y: 0, active: true)
+                if fingers == 2 {
+                    engine.update(finger: .secondary, x: 0, y: 0, active: true)
+                }
+                engine.update(finger: .primary, x: 0.1, y: 0.1, active: true)
+                engine.cancel()
+                return sample
+            }
+            let natural = scrollSample(natural: true)
+            let traditional = scrollSample(natural: false)
+            expect(natural.x > 0 && natural.y < 0,
+                   "Natural scroll follows both finger axes for \(fingers) fingers")
+            expect(natural.x == -traditional.x && natural.y == -traditional.y,
+                   "Scroll direction can be reversed for \(fingers) fingers")
+        }
+        var reversedProfile = ControllerProfile.general
+        reversedProfile.touchpad.naturalScrolling = false
+        let directionData = try! ProfileTransfer.encode(profile: reversedProfile)
+        let directionProfile = try! ProfileTransfer.decode(directionData)
+        expect(!directionProfile.profile.touchpad.naturalScrolling,
+               "Non-natural scrolling survives profile export and import")
         let tutorialDefaultsName = "ControlDeckTests.QuickTutorial"
         let tutorialDefaults = UserDefaults(suiteName: tutorialDefaultsName)!
         tutorialDefaults.removePersistentDomain(forName: tutorialDefaultsName)
@@ -510,6 +692,30 @@ struct ControlDeckLogicTestRunner {
             "tutorial completion persists and suppresses future offers"
         )
         tutorialDefaults.removePersistentDomain(forName: tutorialDefaultsName)
+        expect(
+            ControllerProfile.cursor.bundleIdentifiers == ["com.todesktop.230313mzl4w4u92"] &&
+                ControllerProfile.grokBot.bundleIdentifiers == ["com.anysphere.sand"] &&
+                !ControllerProfile.xcode.bundleIdentifiers.contains("com.todesktop.230313mzl4w4u92"),
+            "Cursor and Grok Bot have distinct native application profiles"
+        )
+        expect(
+            ProfileWheelSlot.defaults.map(\.profileKind) == [.codex, .chrome, .cursor, .grokBot, .general, .finder, .terminal, .slack],
+            "default wheel keeps the six retained profiles and adds Cursor and Grok Bot"
+        )
+        var legacyWheel = ProfileWheelSlot.defaults
+        legacyWheel[2].profileKind = .claude
+        legacyWheel[3].profileKind = .spotify
+        expect(
+            ShiftLayerStore.migrateLegacyDefaults(legacyWheel) == ProfileWheelSlot.defaults,
+            "unchanged legacy assistant and music slots migrate to the new defaults"
+        )
+        legacyWheel[2].profileKind = .terminal
+        legacyWheel[6].profileKind = .claude
+        let customMigrated = ShiftLayerStore.migrateLegacyDefaults(legacyWheel)
+        expect(
+            customMigrated[2].profileKind == .terminal && customMigrated[6].profileKind == .claude,
+            "legacy wheel migration preserves reordered custom slots"
+        )
         let wheelDefaultsName = "ControlDeckTests.ProfileWheel"
         let wheelDefaults = UserDefaults(suiteName: wheelDefaultsName)!
         wheelDefaults.removePersistentDomain(forName: wheelDefaultsName)
@@ -521,6 +727,10 @@ struct ControlDeckLogicTestRunner {
                 Set(wheelStore.profileSlots.map(\.profileKind)).count == 8,
             "assigning an existing profile swaps wheel slots without duplicates"
         )
+        wheelStore.setProfile(.claude, at: 2)
+        let reloadedWheel = ShiftLayerStore(defaults: wheelDefaults)
+        expect(reloadedWheel.slot(at: 2).profileKind == .claude,
+               "completed wheel migration does not replace later user customizations")
         wheelDefaults.removePersistentDomain(forName: wheelDefaultsName)
 
         var profileSelector = RadialProfileSelector()
@@ -666,6 +876,8 @@ struct ControlDeckLogicTestRunner {
             migratedTouchpad.oneFingerMode == .pointer,
             "legacy touchpad pointer setting remains compatible"
         )
+
+        expect(migratedTouchpad.naturalScrolling, "Legacy profiles adopt natural scrolling")
 
         let horizontalDisplays = [
             CGRect(x: 0, y: 0, width: 1_920, height: 1_080),

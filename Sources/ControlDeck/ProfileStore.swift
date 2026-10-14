@@ -22,10 +22,21 @@ final class ProfileStore: ObservableObject {
     private let expandedProfileCatalogKey = "expandedProfileCatalog.v1"
     private let stickClickCopyPasteKey = "stickClickCopyPaste.v1"
     private let universalL2DictationKey = "universalL2Dictation.v1"
+    private let assistantNativeDictationKey = "assistantNativeL2Dictation.v1"
+    private let assistantRightPanelKey = "assistantSquareRightPanel.v1"
+    private let grokBotNavigationKey = "grokBotNavigation.v1"
+    private let grokSectionControlsKey = "grokSectionControls.v1"
+    private let cursorProfileMigrationKey = "cursorProfile.v1"
+    private let allAppsSnapshotKey = "allAppsR2Snapshot.v1"
+    private let codexUniversalDictationKey = "codexUniversalDictation.v1"
+    private let codexSnapshotKey = "codexAppSnapshot.v1"
     private let universalR2CaptureKey = "universalR2Capture.v1"
     private var activationObserver: NSObjectProtocol?
     private var contextTimer: Timer?
     private var wheelOverrideBundleIdentifier: String?
+    private var wheelActivationToken: UUID?
+    private var wheelActivationSource: String?
+    private var wheelActivationGraceUntil: Date?
     private let logger = Logger(
         subsystem: "com.ianhansel.controldeck",
         category: "profiles"
@@ -48,6 +59,15 @@ final class ProfileStore: ObservableObject {
             autoSwitchEnabled = true
         } else {
             autoSwitchEnabled = UserDefaults.standard.bool(forKey: autoSwitchKey)
+        }
+        if !UserDefaults.standard.bool(forKey: cursorProfileMigrationKey) {
+            // Preserve editor bindings while giving Cursor its dedicated app association.
+            if let editor = profiles.firstIndex(where: { $0.kind == .xcode }) {
+                profiles[editor].bundleIdentifiers.removeAll {
+                    $0 == "com.todesktop.230313mzl4w4u92"
+                }
+            }
+            UserDefaults.standard.set(true, forKey: cursorProfileMigrationKey)
         }
         if !UserDefaults.standard.bool(forKey: mouseRefinementKey) {
             for index in profiles.indices {
@@ -138,6 +158,16 @@ final class ProfileStore: ObservableObject {
             }
             UserDefaults.standard.set(true, forKey: universalL2DictationKey)
         }
+        if !UserDefaults.standard.bool(forKey: assistantNativeDictationKey) {
+            for index in profiles.indices where profiles[index].action(for: .l2) == .systemDictation {
+                if profiles[index].kind == .cursor {
+                    profiles[index].setAction(.cursorDictation, for: .l2)
+                } else if profiles[index].kind == .grokBot {
+                    profiles[index].setAction(.grokDictation, for: .l2)
+                }
+            }
+            UserDefaults.standard.set(true, forKey: assistantNativeDictationKey)
+        }
         if !UserDefaults.standard.bool(forKey: universalR2CaptureKey) {
             let replacedDefaults: [MappedAction] = [
                 .mouseLeftClick,
@@ -153,6 +183,55 @@ final class ProfileStore: ObservableObject {
             }
             UserDefaults.standard.set(true, forKey: universalR2CaptureKey)
         }
+        if !UserDefaults.standard.bool(forKey: codexSnapshotKey) {
+            for index in profiles.indices {
+                profiles[index].migrateLegacyCodexSnapshot()
+            }
+            UserDefaults.standard.set(true, forKey: codexSnapshotKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: allAppsSnapshotKey) {
+            // User-requested global R2 convention; other inputs remain unchanged.
+            for index in profiles.indices {
+                profiles[index].setAction(.codexAppSnapshot, for: .r2)
+            }
+            UserDefaults.standard.set(true, forKey: allAppsSnapshotKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: codexUniversalDictationKey) {
+            for index in profiles.indices { profiles[index].migrateCodexUniversalDictation() }
+            UserDefaults.standard.set(true, forKey: codexUniversalDictationKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: assistantRightPanelKey) {
+            for index in profiles.indices where [.cursor, .grokBot].contains(profiles[index].kind) {
+                if profiles[index].action(for: .square) == .copy {
+                    profiles[index].setAction(.assistantRightPanel, for: .square)
+                }
+            }
+            UserDefaults.standard.set(true, forKey: assistantRightPanelKey)
+        }
+        if !UserDefaults.standard.bool(forKey: grokBotNavigationKey) {
+            for index in profiles.indices where profiles[index].kind == .grokBot {
+                let replacements: [(ControllerInput, MappedAction, MappedAction)] = [
+                    (.dpadUp, .arrowUp, .grokPreviousBot),
+                    (.dpadLeft, .arrowLeft, .grokPreviousBot),
+                    (.dpadDown, .arrowDown, .grokNextBot),
+                    (.dpadRight, .arrowRight, .grokNextBot)
+                ]
+                for (input, previous, next) in replacements
+                where profiles[index].action(for: input) == previous {
+                    profiles[index].setAction(next, for: input)
+                }
+            }
+            UserDefaults.standard.set(true, forKey: grokBotNavigationKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: grokSectionControlsKey) {
+            for index in profiles.indices { profiles[index].migrateGrokSectionControls() }
+            UserDefaults.standard.set(true, forKey: grokSectionControlsKey)
+        }
+
         if let data = try? JSONEncoder().encode(profiles) {
             UserDefaults.standard.set(data, forKey: storageKey)
         }
@@ -206,11 +285,27 @@ final class ProfileStore: ObservableObject {
         logger.notice("Manual profile selected: \(kind.rawValue)")
     }
 
-    func setActiveProfileFromWheel(_ kind: ProfileKind) {
+    @discardableResult
+    func setActiveProfileFromWheel(_ kind: ProfileKind) -> UUID {
+        let token = UUID()
+        wheelActivationToken = token
         setActiveProfile(kind)
         wheelOverrideBundleIdentifier =
             NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         logger.notice("Profile wheel selected: \(kind.rawValue)")
+        return token
+    }
+
+    /// Keep the selected layout while macOS opens/focuses its app, including
+    /// intermediate foreground notifications from the window manager.
+    func finishWheelActivation(_ token: UUID, targetBundleIdentifier: String? = nil) -> Bool {
+        guard wheelActivationToken == token else { return false }
+        let foreground = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        wheelActivationSource = foreground
+        wheelOverrideBundleIdentifier = targetBundleIdentifier ?? foreground
+        wheelActivationGraceUntil = targetBundleIdentifier == nil ? nil : Date().addingTimeInterval(2)
+        wheelActivationToken = nil
+        return true
     }
 
     func setAction(_ action: MappedAction, for input: ControllerInput) {
@@ -263,6 +358,10 @@ final class ProfileStore: ObservableObject {
 
     func updateTwoFingerScroll(_ enabled: Bool) {
         updateEditingProfile { $0.touchpad.twoFingerScroll = enabled }
+    }
+
+    func updateNaturalScrolling(_ enabled: Bool) {
+        updateEditingProfile { $0.touchpad.naturalScrolling = enabled }
     }
 
     func updateTouchPointerSensitivity(_ value: Double) {
@@ -342,12 +441,17 @@ final class ProfileStore: ObservableObject {
     }
 
     func refreshActiveProfile() {
-        guard autoSwitchEnabled else {
+        guard autoSwitchEnabled, wheelActivationToken == nil else {
             return
         }
         let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         if let wheelOverrideBundleIdentifier {
-            if bundleID == wheelOverrideBundleIdentifier { return }
+            if bundleID == wheelOverrideBundleIdentifier {
+                wheelActivationGraceUntil = nil
+                return
+            }
+            if bundleID == wheelActivationSource,
+               let graceUntil = wheelActivationGraceUntil, Date() < graceUntil { return }
             self.wheelOverrideBundleIdentifier = nil
         }
         let windowTitle = focusedWindowTitle()

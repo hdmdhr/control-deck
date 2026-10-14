@@ -32,27 +32,27 @@ enum AppleSpeechTranscriptionError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .requiresMacOS26:
-            "Apple SpeechTranscriber requires macOS 26 or later"
+            String(localized: "Apple SpeechTranscriber requires macOS 26 or later", bundle: AppResources.localizationBundle)
         case .accessibilityRequired:
-            "Accessibility is required to insert dictated text"
+            String(localized: "Accessibility is required to insert dictated text", bundle: AppResources.localizationBundle)
         case .microphonePermissionDenied:
-            "Enable ControlDeck in Privacy & Security → Microphone"
+            String(localized: "Enable ControlDeck in Privacy & Security → Microphone", bundle: AppResources.localizationBundle)
         case .speechPermissionDenied:
-            "Speech Recognition permission is required for Apple transcription"
+            String(localized: "Speech Recognition permission is required for Apple transcription", bundle: AppResources.localizationBundle)
         case .noTextField:
-            "Focus the app where dictated text should be inserted"
+            String(localized: "Focus the app where dictated text should be inserted", bundle: AppResources.localizationBundle)
         case .unsupportedLocale:
-            "Apple SpeechTranscriber does not support the current language"
+            String(localized: "Apple SpeechTranscriber does not support the current language", bundle: AppResources.localizationBundle)
         case .modelUnavailable:
-            "The Apple speech model could not be prepared"
+            String(localized: "The Apple speech model could not be prepared", bundle: AppResources.localizationBundle)
         case .microphoneUnavailable:
-            "The selected microphone is unavailable"
+            String(localized: "The selected microphone is unavailable", bundle: AppResources.localizationBundle)
         case .recordingUnavailable:
-            "Apple transcription could not start"
+            String(localized: "Apple transcription could not start", bundle: AppResources.localizationBundle)
         case .noSpeechDetected:
-            "No speech was detected"
+            String(localized: "No speech was detected", bundle: AppResources.localizationBundle)
         case .targetUnavailable:
-            "The original text field is no longer available"
+            String(localized: "The original text field is no longer available", bundle: AppResources.localizationBundle)
         }
     }
 }

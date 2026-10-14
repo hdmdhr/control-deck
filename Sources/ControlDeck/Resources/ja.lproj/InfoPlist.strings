@@ -1,0 +1,3 @@
+"NSMicrophoneUsageDescription" = "ControlDeck は、コントローラから音声入力するために選択したマイクを使用します。";
+"NSAudioCaptureUsageDescription" = "ControlDeck は、デコードした Bluetooth コントローラの音声を、この Mac 内で選択可能なマイク入力に転送します。";
+"NSSpeechRecognitionUsageDescription" = "ControlDeck は Apple SpeechTranscriber を使用し、コントローラから入力された音声をこの Mac 上でテキストに変換します。";

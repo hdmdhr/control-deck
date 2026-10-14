@@ -13,12 +13,12 @@ enum ControllerFamily: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .dualSense: "DualSense"
-        case .dualShock4: "DualShock 4"
-        case .switchPro: "Switch Pro"
-        case .switchPro2: "Switch 2 Pro"
-        case .eightBitDo: "8BitDo"
-        case .generic: "Game controller"
+        case .dualSense: String(localized: "DualSense", bundle: AppResources.localizationBundle)
+        case .dualShock4: String(localized: "DualShock 4", bundle: AppResources.localizationBundle)
+        case .switchPro: String(localized: "Switch Pro", bundle: AppResources.localizationBundle)
+        case .switchPro2: String(localized: "Switch 2 Pro", bundle: AppResources.localizationBundle)
+        case .eightBitDo: String(localized: "8BitDo", bundle: AppResources.localizationBundle)
+        case .generic: String(localized: "Game controller", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -57,14 +57,14 @@ enum CodexTaskState: String, Codable, CaseIterable, Sendable {
 
     var label: String {
         switch self {
-        case .disconnected: "Disconnected"
-        case .idle: "Idle"
-        case .thinking: "Thinking"
-        case .complete: "Complete"
-        case .needsInput: "Needs input"
-        case .error: "Error"
-        case .listening: "Listening"
-        case .processingVoice: "Processing voice"
+        case .disconnected: String(localized: "Disconnected", bundle: AppResources.localizationBundle)
+        case .idle: String(localized: "Idle", bundle: AppResources.localizationBundle)
+        case .thinking: String(localized: "Thinking", bundle: AppResources.localizationBundle)
+        case .complete: String(localized: "Complete", bundle: AppResources.localizationBundle)
+        case .needsInput: String(localized: "Needs input", bundle: AppResources.localizationBundle)
+        case .error: String(localized: "Error", bundle: AppResources.localizationBundle)
+        case .listening: String(localized: "Listening", bundle: AppResources.localizationBundle)
+        case .processingVoice: String(localized: "Processing voice", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -178,25 +178,25 @@ enum ControllerAction: String, CaseIterable, Codable, Sendable {
 
     var label: String {
         switch self {
-        case .sendMessage: "Send message"
-        case .interrupt: "Stop"
-        case .toggleReview: "Review changes"
-        case .togglePlan: "Toggle Plan mode"
-        case .newTask: "New task"
-        case .commandMenu: "Command menu"
-        case .focusCodex: "Focus Codex"
-        case .previousTask: "Previous task"
-        case .nextTask: "Next task"
-        case .back: "Back"
-        case .forward: "Forward"
-        case .toggleSidebar: "Toggle sidebar"
-        case .quickChat: "Quick chat"
-        case .toggleTerminal: "Toggle terminal"
-        case .approve: "Approve"
-        case .decline: "Decline"
-        case .continueInNewTask: "Continue in new task"
-        case .toggleFastMode: "Toggle Fast mode"
-        case .reasoning: "Reasoning effort"
+        case .sendMessage: String(localized: "Send message", bundle: AppResources.localizationBundle)
+        case .interrupt: String(localized: "Stop", bundle: AppResources.localizationBundle)
+        case .toggleReview: String(localized: "Review changes", bundle: AppResources.localizationBundle)
+        case .togglePlan: String(localized: "Toggle Plan mode", bundle: AppResources.localizationBundle)
+        case .newTask: String(localized: "New task", bundle: AppResources.localizationBundle)
+        case .commandMenu: String(localized: "Command menu", bundle: AppResources.localizationBundle)
+        case .focusCodex: String(localized: "Focus Codex", bundle: AppResources.localizationBundle)
+        case .previousTask: String(localized: "Previous task", bundle: AppResources.localizationBundle)
+        case .nextTask: String(localized: "Next task", bundle: AppResources.localizationBundle)
+        case .back: String(localized: "Back", bundle: AppResources.localizationBundle)
+        case .forward: String(localized: "Forward", bundle: AppResources.localizationBundle)
+        case .toggleSidebar: String(localized: "Toggle sidebar", bundle: AppResources.localizationBundle)
+        case .quickChat: String(localized: "Quick chat", bundle: AppResources.localizationBundle)
+        case .toggleTerminal: String(localized: "Toggle terminal", bundle: AppResources.localizationBundle)
+        case .approve: String(localized: "Approve", bundle: AppResources.localizationBundle)
+        case .decline: String(localized: "Decline", bundle: AppResources.localizationBundle)
+        case .continueInNewTask: String(localized: "Continue in new task", bundle: AppResources.localizationBundle)
+        case .toggleFastMode: String(localized: "Toggle Fast mode", bundle: AppResources.localizationBundle)
+        case .reasoning: String(localized: "Reasoning effort", bundle: AppResources.localizationBundle)
         }
     }
 }
@@ -236,19 +236,19 @@ enum SoundTheme: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .off: "Off"
-        case .playful: "Playful"
-        case .soft: "Soft"
-        case .arcade: "Arcade"
+        case .off: String(localized: "Off", bundle: AppResources.localizationBundle)
+        case .playful: String(localized: "Playful", bundle: AppResources.localizationBundle)
+        case .soft: String(localized: "Soft", bundle: AppResources.localizationBundle)
+        case .arcade: String(localized: "Arcade", bundle: AppResources.localizationBundle)
         }
     }
 
     var detail: String {
         switch self {
-        case .off: "Haptics only"
-        case .playful: "Bright, short and friendly"
-        case .soft: "Warm and understated"
-        case .arcade: "Crisp retro chirps"
+        case .off: String(localized: "Haptics only", bundle: AppResources.localizationBundle)
+        case .playful: String(localized: "Bright, short and friendly", bundle: AppResources.localizationBundle)
+        case .soft: String(localized: "Warm and understated", bundle: AppResources.localizationBundle)
+        case .arcade: String(localized: "Crisp retro chirps", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -393,13 +393,13 @@ enum GeneralDictationEngine: String, CaseIterable, Hashable, Identifiable {
     var label: String {
         switch self {
         case .appleSpeech:
-            "System"
+            String(localized: "System", bundle: AppResources.localizationBundle)
         case .parakeetEOU120M:
-            "Live"
+            String(localized: "Live", bundle: AppResources.localizationBundle)
         case .whisperKitBaseEnglish:
-            "Balanced"
+            String(localized: "Balanced", bundle: AppResources.localizationBundle)
         case .whisperKitSmallEnglish:
-            "High Accuracy"
+            String(localized: "High Accuracy", bundle: AppResources.localizationBundle)
         }
     }
 
@@ -419,13 +419,13 @@ enum GeneralDictationEngine: String, CaseIterable, Hashable, Identifiable {
     var detail: String {
         switch self {
         case .appleSpeech:
-            "Apple SpeechTranscriber · built into macOS 26"
+            String(localized: "Apple SpeechTranscriber · built into macOS 26", bundle: AppResources.localizationBundle)
         case .parakeetEOU120M:
-            "Parakeet EOU · live local text with automatic fallback"
+            String(localized: "Parakeet EOU · live local text with automatic fallback", bundle: AppResources.localizationBundle)
         case .whisperKitBaseEnglish:
-            "WhisperKit Base English · compact local transcription"
+            String(localized: "WhisperKit Base English · compact local transcription", bundle: AppResources.localizationBundle)
         case .whisperKitSmallEnglish:
-            "WhisperKit Small English · optional higher-accuracy model"
+            String(localized: "WhisperKit Small English · optional higher-accuracy model", bundle: AppResources.localizationBundle)
         }
     }
 

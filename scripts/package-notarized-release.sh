@@ -36,12 +36,15 @@ package_and_notarize() {
   local mount_point="$WORK_DIR/dmg-mount"
   local zip="$WORK_DIR/$app_name.zip"
 
-  if ! lipo "$app/Contents/MacOS/control-deck" \
-    -verify_arch arm64 x86_64; then
-    print -u2 \
-      "Refusing to package a development-only build; rebuild the universal app first."
-    return 1
-  fi
+  local architecture
+  for architecture in arm64 x86_64; do
+    if ! lipo "$app/Contents/MacOS/control-deck" \
+      -verify_arch "$architecture"; then
+      print -u2 \
+        "Refusing to package a development-only build; rebuild the universal app first."
+      return 1
+    fi
+  done
   "$ROOT/scripts/verify-no-bundled-speech-models.sh" "$app"
 
   codesign \
