@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import Foundation
+import OSLog
 
 /// Conservative reader for the Agents sidebar; accessory buttons are never navigation targets.
 enum CursorConversationNavigation {
@@ -32,17 +33,23 @@ enum CursorConversationNavigation {
     enum SelectionError: Error { case unavailable, boundary }
 
     /// Parse the same small tree representation used by live AX snapshots and regression fixtures.
-    static func parse(_ root: Node, rememberedCurrent: String? = nil) -> Parsed? {
+    static func parse(_ root: Node, rememberedCurrent: String? = nil,
+                      diagnose: (String) -> Void = { _ in }) -> Parsed? {
         let candidates = root.descendants.filter { node in
             let all = node.descendants
             return all.contains { $0.role == kAXButtonRole && $0.label == "Hide Sidebar" }
                 && all.contains { $0.role == kAXButtonRole && $0.label == "Workspaces" }
         }
-        guard let sidebar = candidates.last else { return nil }
+        guard let sidebar = candidates.last else { diagnose("missing sidebar markers"); return nil }
         let sidebarIDs = Set(sidebar.descendants.map(\.id))
         let activeTabNames = Set(root.descendants.filter { $0.role == kAXTabGroupRole && !sidebarIDs.contains($0.id) }
             .flatMap(\.descendants).filter(\.selected).map(\.label).filter { !$0.isEmpty })
-        guard activeTabNames.count == 1, let activeTabName = activeTabNames.first else { return nil }
+        guard activeTabNames.count == 1, let activeTabName = activeTabNames.first else {
+            let groups = root.descendants.filter { $0.role == kAXTabGroupRole && !sidebarIDs.contains($0.id) }
+            let roles = groups.flatMap(\.descendants).map(\.role).joined(separator: ",")
+            diagnose("tab selection groups=\(groups.count) distinctSelectedNames=\(activeTabNames.count) roles=\(roles)")
+            return nil
+        }
         var anchors: [Node] = []
         var headers: [Node] = []
         var disclosures: [Node?] = []
@@ -88,7 +95,10 @@ enum CursorConversationNavigation {
         }
         visit(sidebar)
         let names = anchors.map(\.label)
-        guard valid, Set(names).count == names.count else { return nil }
+        guard valid, Set(names).count == names.count else {
+            diagnose("invalid rows valid=\(valid) anchors=\(names.count) unique=\(Set(names).count) headers=\(headers.count)")
+            return nil
+        }
         let workspaces = headers.indices.map { index in
             let regularRowsExist = anchors.contains { owners[$0.id] == index && $0.label != activeTabName }
             return Workspace(header: headers[index].id, name: headers[index].label,
@@ -97,7 +107,11 @@ enum CursorConversationNavigation {
         }
         let rows = anchors.filter { row in owners[row.id].map { workspaces[$0].expanded } ?? true }
         let known = Set(names + [rememberedCurrent].compactMap { $0 })
-        guard known.contains(activeTabName) else { return nil }
+        guard known.contains(activeTabName) else {
+            let sortableRoles = sidebar.descendants.filter { $0.roleDescription == "sortable" }.map(\.role).joined(separator: ",")
+            diagnose("current tab absent from sidebar anchors=\(anchors.count) headers=\(headers.count) sortableRoles=\(sortableRoles)")
+            return nil
+        }
         return Parsed(rows: rows, anchors: anchors, workspaces: workspaces,
                       workspaceByRow: owners, current: activeTabName)
     }
@@ -125,6 +139,11 @@ enum CursorConversationNavigation {
     }
     @MainActor private static var folded: Folded?
     @MainActor private static var busy = false
+    private static let logger = Logger(subsystem: "com.controldeck.app", category: "CursorNavigation")
+    private static func diagnose(_ detail: String) {
+        // Structural diagnostics contain no conversation names or message content.
+        logger.error("Cursor snapshot unavailable: \(detail, privacy: .public)")
+    }
     private static func result(_ success: Bool, _ message: String.LocalizationValue) -> (Bool, String) {
         (success, String(localized: message, bundle: AppResources.localizationBundle))
     }
@@ -184,11 +203,15 @@ enum CursorConversationNavigation {
             }
         }
         discover(window, depth: 0)
-        guard complete, let sidebarRoot, !tabRoots.isEmpty else { return nil }
+        guard complete, let sidebarRoot, !tabRoots.isEmpty else {
+            diagnose("discovery complete=\(complete) sidebar=\(sidebarRoot != nil) tabs=\(tabRoots.count) remainingBudget=\(discoveryBudget)")
+            return nil
+        }
         let tree = Node(id: -1, role: kAXWindowRole, children:
             [read(sidebarRoot, depth: 0)] + tabRoots.map { read($0, depth: 0) })
         let remembered = folded.flatMap { CFEqual($0.window, window) ? $0 : nil }
-        guard complete, let parsed = parse(tree, rememberedCurrent: remembered?.current) else { return nil }
+        guard complete else { diagnose("materialization limit nodes=\(count)"); return nil }
+        guard let parsed = parse(tree, rememberedCurrent: remembered?.current, diagnose: diagnose) else { return nil }
         if !parsed.anchors.contains(where: { $0.label == parsed.current }) {
             guard let remembered, remembered.current == parsed.current,
                   parsed.workspaces.contains(where: { !$0.expanded && $0.name == remembered.name && elements[$0.header].map { CFEqual($0, remembered.header) } == true }) else { return nil }
