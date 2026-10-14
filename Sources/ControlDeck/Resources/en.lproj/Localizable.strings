@@ -1051,3 +1051,15 @@
 "Release keyboard modifiers before taking an app snapshot" = "Release keyboard modifiers before taking an app snapshot";
 
 "Sent app snapshot shortcut" = "Sent app snapshot shortcut";
+
+"App activation requested" = "App activation requested";
+
+"Profile selected · assigned app not found" = "Profile selected · assigned app not found";
+
+"Profile selected · could not activate app" = "Profile selected · could not activate app";
+
+"Dictation search exceeded the window complexity limit" = "Dictation search exceeded the window complexity limit";
+
+"No accessible dictation button was found in this window" = "No accessible dictation button was found in this window";
+
+"Multiple or conflicting dictation controls were found" = "Multiple or conflicting dictation controls were found";

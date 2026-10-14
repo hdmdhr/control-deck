@@ -9,7 +9,7 @@ enum CodexDictationIntent: Equatable {
     var exactLabels: [String] {
         switch self {
         case .start:
-            ["听写", "聽寫", "Dictate", "Start dictation", "音声入力"]
+            ["听写", "聽寫", "Dictate", "Dictation", "Start dictation", "音声入力"]
         case .stopAndInsert:
             ["停止听写", "停止聽寫", "Stop dictation", "Stop and insert", "音声入力を停止"]
         }
@@ -19,8 +19,6 @@ enum CodexDictationIntent: Equatable {
         NativeCodexSemanticMatch.matches(labels: labels, exact: exactLabels,
                                          isButton: true, enabled: true, pressable: true)
     }
-
-
 }
 
 /// Shared by AX traversal and the logic tests; uncertain or ineligible controls
@@ -29,7 +27,8 @@ enum NativeCodexSemanticMatch {
     static func matches(labels: [String], exact: [String], isButton: Bool,
                         enabled: Bool, pressable: Bool) -> Bool {
         isButton && enabled && pressable && labels.contains {
-            exact.contains($0.trimmingCharacters(in: .whitespacesAndNewlines))
+            let label = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+            return exact.contains { $0.caseInsensitiveCompare(label) == .orderedSame }
         }
     }
 

@@ -1000,8 +1000,9 @@ final class CodexAutomation: ObservableObject {
             return false
         }
         var matches: [AXUIElement] = []
-        var remaining = 4096
-        let complete = collectNativeButtons(in: focusedWindow, exact: exact, depth: 0, remaining: &remaining, matches: &matches)
+        var remaining = 16384
+        var visited = Set<AXUIElement>()
+        let complete = collectNativeButtons(in: focusedWindow, exact: exact, depth: 0, remaining: &remaining, visited: &visited, matches: &matches)
         let opposingLabels: [String]
         if exact == CodexDictationIntent.start.exactLabels {
             opposingLabels = CodexDictationIntent.stopAndInsert.exactLabels
@@ -1011,15 +1012,22 @@ final class CodexAutomation: ObservableObject {
             opposingLabels = []
         }
         var opposing: [AXUIElement] = []
-        var opposingBudget = 4096
+        var opposingBudget = 16384
+        var opposingVisited = Set<AXUIElement>()
         let opposingComplete = opposingLabels.isEmpty || collectNativeButtons(
             in: focusedWindow, exact: opposingLabels, depth: 0,
-            remaining: &opposingBudget, matches: &opposing
+            remaining: &opposingBudget, visited: &opposingVisited, matches: &opposing
         )
         guard NativeCodexSemanticMatch.isUnique(desiredCount: matches.count,
                                                opposingCount: opposing.count,
                                                traversalComplete: complete && opposingComplete) else {
-            lastResult = String(localized: "Native Codex control was not uniquely identified; no action was taken", bundle: AppResources.localizationBundle)
+            if !complete || !opposingComplete {
+                lastResult = String(localized: "Dictation search exceeded the window complexity limit", bundle: AppResources.localizationBundle)
+            } else if matches.isEmpty {
+                lastResult = String(localized: "No accessible dictation button was found in this window", bundle: AppResources.localizationBundle)
+            } else {
+                lastResult = String(localized: "Multiple or conflicting dictation controls were found", bundle: AppResources.localizationBundle)
+            }
             return false
         }
         guard press else { return true }
@@ -1033,9 +1041,10 @@ final class CodexAutomation: ObservableObject {
 
     private func collectNativeButtons(
         in element: AXUIElement, exact: [String], depth: Int,
-        remaining: inout Int, matches: inout [AXUIElement]
+        remaining: inout Int, visited: inout Set<AXUIElement>, matches: inout [AXUIElement]
     ) -> Bool {
-        guard depth < 32, remaining > 0 else { return false }
+        guard visited.insert(element).inserted else { return true }
+        guard depth < 64, remaining > 0 else { return false }
         remaining -= 1
         if stringAttribute(element, kAXRoleAttribute) == kAXButtonRole {
             var enabled: CFTypeRef?
@@ -1055,10 +1064,11 @@ final class CodexAutomation: ObservableObject {
         var childrenValue: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &childrenValue)
         if result == .noValue || result == .attributeUnsupported { return true }
-        guard result == .success else { return false }
-        guard let children = childrenValue as? [AXUIElement] else { return false }
+        // Unreadable leaves must not discard valid sibling controls. Bounds still
+        // fail closed, and every reachable eligible button participates in uniqueness.
+        guard result == .success, let children = childrenValue as? [AXUIElement] else { return true }
         for child in children {
-            guard collectNativeButtons(in: child, exact: exact, depth: depth + 1, remaining: &remaining, matches: &matches) else { return false }
+            guard collectNativeButtons(in: child, exact: exact, depth: depth + 1, remaining: &remaining, visited: &visited, matches: &matches) else { return false }
         }
         return true
     }

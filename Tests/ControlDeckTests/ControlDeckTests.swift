@@ -77,6 +77,9 @@ struct ControlDeckLogicTestRunner {
         legacyCodexCapture.migrateLegacyCodexSnapshot()
         expect(legacyCodexCapture.action(for: .r2) == .copy,
                "Codex R2 migration preserves custom actions")
+        expect(CodexDictationIntent.start.matches([" dictation "]) &&
+               !CodexDictationIntent.start.matches(["Start voice mode", "Send", "Dictation settings"]),
+               "dictation tolerates exact-label casing and whitespace without matching unrelated controls")
         let snapshotEvents = AppSnapshotShortcut.events() ?? []
         expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
                "app snapshot uses four modifier transitions")

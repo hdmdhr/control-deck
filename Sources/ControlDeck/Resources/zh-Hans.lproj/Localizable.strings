@@ -1051,3 +1051,15 @@
 "Release keyboard modifiers before taking an app snapshot" = "请先松开键盘修饰键，再拍摄应用快照";
 
 "Sent app snapshot shortcut" = "已发送应用快照快捷键";
+
+"App activation requested" = "已请求切换应用";
+
+"Profile selected · assigned app not found" = "已选择配置，但未找到关联应用";
+
+"Profile selected · could not activate app" = "已选择配置，但无法切换应用";
+
+"Dictation search exceeded the window complexity limit" = "听写控件查找超过窗口复杂度限制";
+
+"No accessible dictation button was found in this window" = "当前窗口没有可操作的听写按钮";
+
+"Multiple or conflicting dictation controls were found" = "检测到多个或状态冲突的听写控件";
