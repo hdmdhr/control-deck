@@ -22,7 +22,9 @@ swiftc \
   "$ROOT/Sources/ControlDeck/AppSnapshotShortcut.swift" \
   "$ROOT/Sources/ControlDeck/AssistantDictationShortcut.swift" \
   "$ROOT/Sources/ControlDeck/GrokBotNavigation.swift" \
+  "$ROOT/Sources/ControlDeck/CursorConversationNavigation.swift" \
   "$ROOT/Sources/ControlDeck/TouchpadGestureEngine.swift" \
+  "$ROOT/Sources/ControlDeck/CaretStickEngine.swift" \
   "$ROOT/Sources/ControlDeck/PointerService.swift" \
   "$ROOT/Sources/ControlDeck/ScreenshotEditorModels.swift" \
   "$ROOT/Sources/ControlDeck/ScreenshotEditorController.swift" \
@@ -31,6 +33,25 @@ swiftc \
   "$ROOT/Tests/ControlDeckTests/ControlDeckTests.swift"
 
 "$OUTPUT"
+CARET_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-caret.XXXXXX")"
+swiftc -parse-as-library \
+  "$ROOT/Sources/ControlDeck/CaretStickEngine.swift" \
+  "$ROOT/Tests/ControlDeckTests/CaretStickTests.swift" \
+  -o "$CARET_OUTPUT"
+"$CARET_OUTPUT"
+rm -f "$CARET_OUTPUT"
+CATALOG_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-catalog.XXXXXX")"
+swiftc -parse-as-library -framework AppKit \
+  "$ROOT/Sources/ControlDeck/AppResources.swift" \
+  "$ROOT/Sources/ControlDeck/Models.swift" \
+  "$ROOT/Sources/ControlDeck/GyroModels.swift" \
+  "$ROOT/Sources/ControlDeck/InputMappingModels.swift" \
+  "$ROOT/Sources/ControlDeck/ExpandedProfileCatalog.swift" \
+  "$ROOT/Sources/ControlDeck/ActionSelectionCatalog.swift" \
+  "$ROOT/Tests/ControlDeckTests/ActionSelectionCatalogTests.swift" \
+  -o "$CATALOG_OUTPUT"
+"$CATALOG_OUTPUT"
+rm -f "$CATALOG_OUTPUT"
 ACTIVATION_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-activation.XXXXXX")"
 trap 'rm -f "$ACTIVATION_OUTPUT"' EXIT
 swiftc -parse-as-library -framework AppKit \
@@ -43,6 +64,22 @@ swiftc -parse-as-library -framework AppKit \
   "$ROOT/Tests/ControlDeckTests/ProfileApplicationActivationTests.swift" \
   -o "$ACTIVATION_OUTPUT"
 "$ACTIVATION_OUTPUT"
+CURSOR_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-cursor.XXXXXX")"
+swiftc -parse-as-library -framework AppKit -framework ApplicationServices \
+  "$ROOT/Sources/ControlDeck/AppResources.swift" \
+  "$ROOT/Sources/ControlDeck/CursorConversationNavigation.swift" \
+  "$ROOT/Tests/ControlDeckTests/CursorConversationNavigationTests.swift" \
+  -o "$CURSOR_OUTPUT"
+"$CURSOR_OUTPUT"
+rm -f "$CURSOR_OUTPUT"
+CHAT_SIDEBAR_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-chat-sidebar.XXXXXX")"
+swiftc -parse-as-library -framework AppKit -framework ApplicationServices \
+  "$ROOT/Sources/ControlDeck/AppResources.swift" \
+  "$ROOT/Sources/ControlDeck/ChatGPTSidebarNavigation.swift" \
+  "$ROOT/Tests/ControlDeckTests/ChatGPTSidebarNavigationTests.swift" \
+  -o "$CHAT_SIDEBAR_OUTPUT"
+"$CHAT_SIDEBAR_OUTPUT"
+rm -f "$CHAT_SIDEBAR_OUTPUT"
 "$ROOT/scripts/test-resource-bundle.sh"
 "$ROOT/scripts/test-localization.sh"
 

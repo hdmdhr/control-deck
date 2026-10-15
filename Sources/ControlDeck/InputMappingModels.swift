@@ -264,6 +264,10 @@ enum TouchGesture: String, Codable, CaseIterable, Identifiable, Sendable {
 enum ActionCategory: String, CaseIterable, Identifiable, Sendable {
     case codex
     case claude
+    case cursor
+    case grokBot
+    case slack
+    case mail
     case meeting
     case presentation
     case communication
@@ -282,15 +286,25 @@ enum ActionCategory: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .codex: String(localized: "Codex", bundle: AppResources.localizationBundle)
+        case .codex: String(localized: "Codex / ChatGPT", bundle: AppResources.localizationBundle)
         case .claude: String(localized: "Claude", bundle: AppResources.localizationBundle)
+        case .cursor: String(localized: "Cursor", bundle: AppResources.localizationBundle)
+        case .grokBot: String(localized: "Grok Bot", bundle: AppResources.localizationBundle)
+        case .slack: String(localized: "Slack", bundle: AppResources.localizationBundle)
+        case .mail: String(localized: "Mail", bundle: AppResources.localizationBundle)
         case .meeting: String(localized: "Meetings", bundle: AppResources.localizationBundle)
         case .presentation: String(localized: "Presentations", bundle: AppResources.localizationBundle)
-        case .communication: String(localized: "Communication", bundle: AppResources.localizationBundle)
+        case .communication: String(localized: "Shared assistant actions", bundle: AppResources.localizationBundle)
         case .files: String(localized: "Files & photos", bundle: AppResources.localizationBundle)
         case .creative: String(localized: "Creative tools", bundle: AppResources.localizationBundle)
         case .terminal: String(localized: "Terminal", bundle: AppResources.localizationBundle)
-        default: rawValue.capitalized
+        case .mouse: String(localized: "Mouse", bundle: AppResources.localizationBundle)
+        case .navigation: String(localized: "Navigation", bundle: AppResources.localizationBundle)
+        case .keyboard: String(localized: "Keyboard", bundle: AppResources.localizationBundle)
+        case .browser: String(localized: "Browser", bundle: AppResources.localizationBundle)
+        case .media: String(localized: "Media", bundle: AppResources.localizationBundle)
+        case .apps: String(localized: "Apps", bundle: AppResources.localizationBundle)
+        case .other: String(localized: "System & other", bundle: AppResources.localizationBundle)
         }
     }
 }
@@ -305,6 +319,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case codexNewTask
     case codexCommandMenu
     case codexFocus
+    case chatGPTPreviousConversation
+    case chatGPTNextConversation
     case codexPreviousTask
     case codexNextTask
     case codexBack
@@ -396,6 +412,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case appSwitcher
 
     case returnKey
+    case deleteBackward
     case escapeKey
     case spaceKey
     case tabKey
@@ -403,6 +420,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case paste
     case cut
     case selectAll
+    case textSelectionHold
     case undo
     case redo
     case zoomIn
@@ -435,11 +453,17 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case systemDictation
     case cursorDictation
     case grokDictation
+    case cursorPreviousConversation
+    case cursorNextConversation
+    case cursorCollapseWorkspace
+    case cursorExpandWorkspace
     case grokPreviousBot
     case grokNextBot
     case grokCollapseSection
     case grokExpandSection
     case assistantRightPanel
+    case assistantLeftPanel
+    case assistantSend
     case showControllerOverlay
     case deleteTextWithConfirmation
 
@@ -450,16 +474,18 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .none: String(localized: "No action", bundle: AppResources.localizationBundle)
         case .codexSend: String(localized: "Codex · Send", bundle: AppResources.localizationBundle)
         case .codexStop: String(localized: "Codex · Stop", bundle: AppResources.localizationBundle)
-        case .codexReview: String(localized: "Codex · Review changes", bundle: AppResources.localizationBundle)
+        case .codexReview: String(localized: "Codex · Right panel", bundle: AppResources.localizationBundle)
         case .codexPlan: String(localized: "Codex · Plan mode", bundle: AppResources.localizationBundle)
         case .codexNewTask: String(localized: "Codex · New task", bundle: AppResources.localizationBundle)
         case .codexCommandMenu: String(localized: "Codex · Command menu", bundle: AppResources.localizationBundle)
         case .codexFocus: String(localized: "Codex · Focus", bundle: AppResources.localizationBundle)
+        case .chatGPTPreviousConversation: String(localized: "ChatGPT · Previous sidebar conversation", bundle: AppResources.localizationBundle)
+        case .chatGPTNextConversation: String(localized: "ChatGPT · Next sidebar conversation", bundle: AppResources.localizationBundle)
         case .codexPreviousTask: String(localized: "Codex · Previous task", bundle: AppResources.localizationBundle)
         case .codexNextTask: String(localized: "Codex · Next task", bundle: AppResources.localizationBundle)
         case .codexBack: String(localized: "Codex · Back", bundle: AppResources.localizationBundle)
         case .codexForward: String(localized: "Codex · Forward", bundle: AppResources.localizationBundle)
-        case .codexSidebar: String(localized: "Codex · Toggle sidebar", bundle: AppResources.localizationBundle)
+        case .codexSidebar: String(localized: "Codex · Left panel", bundle: AppResources.localizationBundle)
         case .codexQuickChat: String(localized: "Codex · Quick chat", bundle: AppResources.localizationBundle)
         case .codexTerminal: String(localized: "Codex · Toggle terminal", bundle: AppResources.localizationBundle)
         case .codexApprove: String(localized: "Codex · Approve", bundle: AppResources.localizationBundle)
@@ -533,6 +559,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .missionControl: String(localized: "Mission Control", bundle: AppResources.localizationBundle)
         case .showDesktop: String(localized: "Show desktop", bundle: AppResources.localizationBundle)
         case .appSwitcher: String(localized: "App switcher", bundle: AppResources.localizationBundle)
+        case .deleteBackward: String(localized: "Keyboard · Delete (Backspace)", bundle: AppResources.localizationBundle)
         case .returnKey: String(localized: "Return", bundle: AppResources.localizationBundle)
         case .escapeKey: String(localized: "Escape", bundle: AppResources.localizationBundle)
         case .spaceKey: String(localized: "Space", bundle: AppResources.localizationBundle)
@@ -540,6 +567,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .copy: String(localized: "Edit · Copy", bundle: AppResources.localizationBundle)
         case .paste: String(localized: "Edit · Paste", bundle: AppResources.localizationBundle)
         case .cut: String(localized: "Edit · Cut", bundle: AppResources.localizationBundle)
+        case .textSelectionHold: String(localized: "Text · Hold to select", bundle: AppResources.localizationBundle)
         case .selectAll: String(localized: "Edit · Select all", bundle: AppResources.localizationBundle)
         case .undo: String(localized: "Edit · Undo", bundle: AppResources.localizationBundle)
         case .redo: String(localized: "Edit · Redo", bundle: AppResources.localizationBundle)
@@ -568,7 +596,13 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .openSpotify: String(localized: "Open Spotify", bundle: AppResources.localizationBundle)
         case .openClaude: String(localized: "Open Claude", bundle: AppResources.localizationBundle)
         case .cursorDictation: String(localized: "Cursor · Hold to dictate", bundle: AppResources.localizationBundle)
+        case .cursorPreviousConversation: String(localized: "Cursor · Previous conversation", bundle: AppResources.localizationBundle)
+        case .cursorNextConversation: String(localized: "Cursor · Next conversation", bundle: AppResources.localizationBundle)
+        case .cursorCollapseWorkspace: String(localized: "Cursor · Collapse current workspace", bundle: AppResources.localizationBundle)
+        case .cursorExpandWorkspace: String(localized: "Cursor · Expand current workspace", bundle: AppResources.localizationBundle)
         case .grokPreviousBot: String(localized: "Grok Bot · Previous bot", bundle: AppResources.localizationBundle)
+        case .assistantSend: String(localized: "Assistant · Send message", bundle: AppResources.localizationBundle)
+        case .assistantLeftPanel: String(localized: "Assistant · Left panel", bundle: AppResources.localizationBundle)
         case .assistantRightPanel: String(localized: "Assistant · Right panel", bundle: AppResources.localizationBundle)
         case .grokNextBot: String(localized: "Grok Bot · Next bot", bundle: AppResources.localizationBundle)
         case .grokCollapseSection: String(localized: "Grok Bot · Collapse current section", bundle: AppResources.localizationBundle)
@@ -582,7 +616,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var category: ActionCategory {
         switch self {
-        case .codexSend, .codexStop, .codexReview, .codexPlan, .codexNewTask,
+        case .chatGPTPreviousConversation, .chatGPTNextConversation, .codexSend, .codexStop, .codexReview, .codexPlan, .codexNewTask,
              .codexCommandMenu, .codexFocus, .codexPreviousTask, .codexNextTask,
              .codexBack, .codexForward, .codexSidebar, .codexQuickChat,
              .codexTerminal, .codexApprove, .codexDecline, .codexDictation, .codexAppSnapshot,
@@ -600,9 +634,18 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
              .presentationPointer, .presentationNotesUp,
              .presentationNotesDown, .presentationExit:
             .presentation
-        case .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection, .slackJumpConversation, .slackPreviousUnread,
-             .slackNextUnread, .slackThreads, .slackActivity,
-             .slackHuddle, .mailArchive, .mailReply, .mailUnread:
+        case .cursorDictation, .cursorPreviousConversation, .cursorNextConversation,
+             .cursorCollapseWorkspace, .cursorExpandWorkspace:
+            .cursor
+        case .grokDictation, .grokPreviousBot, .grokNextBot,
+             .grokCollapseSection, .grokExpandSection:
+            .grokBot
+        case .slackJumpConversation, .slackPreviousUnread, .slackNextUnread,
+             .slackThreads, .slackActivity, .slackHuddle:
+            .slack
+        case .mailArchive, .mailReply, .mailUnread:
+            .mail
+        case .assistantSend, .assistantRightPanel, .assistantLeftPanel:
             .communication
         case .photosFavorite, .photosEdit, .photosRotate, .photosInfo:
             .files
@@ -621,8 +664,8 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
             .mouse
         case .back, .forward, .missionControl, .showDesktop, .appSwitcher:
             .navigation
-        case .returnKey, .escapeKey, .spaceKey, .tabKey, .copy, .paste, .cut,
-             .selectAll, .undo, .redo, .zoomIn, .zoomOut, .arrowUp,
+        case .returnKey, .deleteBackward, .escapeKey, .spaceKey, .tabKey, .copy, .paste, .cut,
+             .selectAll, .textSelectionHold, .undo, .redo, .zoomIn, .zoomOut, .arrowUp,
              .arrowDown, .arrowLeft, .arrowRight:
             .keyboard
         case .browserAddress, .browserNewTab, .browserCloseTab, .browserReopenTab,
@@ -633,7 +676,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
             .media
         case .openCodex, .openChrome, .openSpotify, .openClaude:
             .apps
-        case .none, .systemDictation, .cursorDictation, .grokDictation, .assistantRightPanel, .screenshotSelection,
+        case .none, .systemDictation, .screenshotSelection,
              .showControllerOverlay, .deleteTextWithConfirmation:
             .other
         }
@@ -646,6 +689,7 @@ struct StickPointerSettings: Codable, Equatable, Sendable {
     var acceleration: Double
     var deadZone: Double
     var scrollSource: ControllerStick
+    var caretSource: ControllerStick
     var scrollSpeed: Double
     var scrollAcceleration: Double
     var scrollDeadZone: Double
@@ -655,7 +699,8 @@ struct StickPointerSettings: Codable, Equatable, Sendable {
         speed: Double,
         acceleration: Double,
         deadZone: Double,
-        scrollSource: ControllerStick = .right,
+        scrollSource: ControllerStick = .off,
+        caretSource: ControllerStick = .right,
         scrollSpeed: Double = 1_050,
         scrollAcceleration: Double = 1.35,
         scrollDeadZone: Double = 0.18
@@ -665,6 +710,7 @@ struct StickPointerSettings: Codable, Equatable, Sendable {
         self.acceleration = acceleration
         self.deadZone = deadZone
         self.scrollSource = scrollSource
+        self.caretSource = caretSource
         self.scrollSpeed = scrollSpeed
         self.scrollAcceleration = scrollAcceleration
         self.scrollDeadZone = scrollDeadZone
@@ -676,6 +722,7 @@ struct StickPointerSettings: Codable, Equatable, Sendable {
         case acceleration
         case deadZone
         case scrollSource
+        case caretSource
         case scrollSpeed
         case scrollAcceleration
         case scrollDeadZone
@@ -691,6 +738,8 @@ struct StickPointerSettings: Codable, Equatable, Sendable {
             ControllerStick.self,
             forKey: .scrollSource
         ) ?? .right
+        // Legacy imports retain their original behavior until the explicit app migration.
+        caretSource = try values.decodeIfPresent(ControllerStick.self, forKey: .caretSource) ?? .off
         scrollSpeed = try values.decodeIfPresent(
             Double.self,
             forKey: .scrollSpeed
@@ -945,6 +994,9 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         self.pointer = pointer
         self.touchpad = touchpad
         self.gyro = gyro
+        // Built-in layouts use the same lossless normalization as saved layouts.
+        _ = migrateUnifiedClipboardControls()
+        _ = migrateTextSelectionControls()
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -1037,38 +1089,42 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         ]
     }
 
-    static let codex = ControllerProfile(
-        kind: .codex,
-        name: "Codex",
-        bundleIdentifiers: [
-            "com.openai.codex",
-            "com.ianhansel.controldeck",
-            "com.ianhansel.ps5codex"
-        ],
-        bindings: mapping([
-            .cross: .mouseLeftClick,
-            .circle: .codexStop,
-            .square: .codexReview,
-            .triangle: .codexPlan,
-            .l1: .codexPreviousTask,
-            .r1: .codexNextTask,
-            .l2: .systemDictation,
-            .r2: .codexAppSnapshot,
-            .l3: .copy,
-            .r3: .paste,
-            .create: .codexNewTask,
-            .options: .codexCommandMenu,
-            .ps: .codexFocus,
-            .dpadUp: .codexSend,
-            .dpadDown: .codexSidebar,
-            .dpadLeft: .codexBack,
-            .dpadRight: .codexForward,
-            .touchpadClick: .showControllerOverlay,
-            .microphone: .codexDictation
-        ]),
-        pointer: .codexDefault,
-        touchpad: .trackpadDefault
-    )
+    static let codex: ControllerProfile = {
+        var profile = ControllerProfile(
+            kind: .codex,
+            name: "Codex",
+            bundleIdentifiers: [
+                "com.openai.codex",
+                "com.ianhansel.controldeck",
+                "com.ianhansel.ps5codex"
+            ],
+            bindings: mapping([
+                .cross: .mouseLeftClick,
+                .circle: .codexSend,
+                .square: .codexReview,
+                .triangle: .codexPlan,
+                .l1: .back,
+                .r1: .forward,
+                .l2: .systemDictation,
+                .r2: .codexAppSnapshot,
+                .l3: .copy,
+                .r3: .paste,
+                .create: .codexNewTask,
+                .options: .codexCommandMenu,
+                .ps: .codexFocus,
+                .dpadUp: .codexSend,
+                .dpadDown: .codexSidebar,
+                .dpadLeft: .chatGPTPreviousConversation,
+                .dpadRight: .chatGPTNextConversation,
+                .touchpadClick: .showControllerOverlay,
+                .microphone: .codexDictation
+            ]),
+            pointer: .codexDefault,
+            touchpad: .trackpadDefault
+        )
+        _ = profile.migrateAIConversationLayout()
+        return profile
+    }()
 
     static let general = ControllerProfile(
         kind: .general,
@@ -1221,10 +1277,61 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         }
     }
 
-    static let cursor = desktopAssistant(
-        kind: .cursor, name: "Cursor",
-        bundleIdentifier: "com.todesktop.230313mzl4w4u92", dictation: .cursorDictation
-    )
+    /// Upgrade the former AI defaults without touching dictation or custom mappings.
+    mutating func migrateChatGPTSidebarNavigation() {
+        guard kind == .codex else { return }
+        if [.codexPreviousTask, .codexBack].contains(action(for: .dpadLeft)) {
+            setAction(.chatGPTPreviousConversation, for: .dpadLeft)
+        }
+        if [.codexNextTask, .codexForward].contains(action(for: .dpadRight)) {
+            setAction(.chatGPTNextConversation, for: .dpadRight)
+        }
+    }
+
+    /// Apply the requested Slack shoulder-button history controls once.
+    mutating func migrateSlackHistoryNavigation() {
+        guard kind == .slack else { return }
+        setAction(.back, for: .l1)
+        setAction(.forward, for: .r1)
+    }
+
+    mutating func migrateAIConversationControls() {
+        if kind == .codex {
+            let replacements: [(ControllerInput, MappedAction, MappedAction)] = [
+                (.circle, .codexStop, .codexSend),
+                (.l1, .codexPreviousTask, .back), (.r1, .codexNextTask, .forward),
+                (.dpadLeft, .codexBack, .codexPreviousTask), (.dpadRight, .codexForward, .codexNextTask)
+            ]
+            for (input, old, new) in replacements where action(for: input) == old {
+                setAction(new, for: input)
+            }
+        } else if [.cursor, .grokBot].contains(kind), action(for: .circle) == .escapeKey {
+            setAction(.assistantSend, for: .circle)
+        }
+    }
+
+    mutating func migrateCursorConversationNavigation() {
+        guard kind == .cursor else { return }
+        let replacements: [(ControllerInput, MappedAction, MappedAction)] = [
+            (.dpadLeft, .arrowLeft, .cursorPreviousConversation),
+            (.dpadRight, .arrowRight, .cursorNextConversation),
+            (.dpadUp, .arrowUp, .cursorCollapseWorkspace),
+            (.dpadDown, .arrowDown, .cursorExpandWorkspace)
+        ]
+        for (input, old, new) in replacements where action(for: input) == old {
+            setAction(new, for: input)
+        }
+    }
+
+    static let cursor: ControllerProfile = {
+        var profile = desktopAssistant(
+            kind: .cursor, name: "Cursor",
+            bundleIdentifier: "com.todesktop.230313mzl4w4u92", dictation: .cursorDictation
+        )
+        profile.migrateCursorConversationNavigation()
+        _ = profile.migrateAIConversationLayout()
+        return profile
+    }()
 
     static let grokBot: ControllerProfile = {
         var profile = desktopAssistant(
@@ -1235,6 +1342,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         profile.setAction(.grokPreviousBot, for: .dpadLeft)
         profile.setAction(.grokExpandSection, for: .dpadDown)
         profile.setAction(.grokNextBot, for: .dpadRight)
+        _ = profile.migrateAIConversationLayout()
         return profile
     }()
 
@@ -1246,7 +1354,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
             kind: kind, name: name,
             bundleIdentifiers: [bundleIdentifier],
             bindings: mapping([
-                .cross: .mouseLeftClick, .circle: .escapeKey,
+                .cross: .mouseLeftClick, .circle: .assistantSend,
                 .square: .assistantRightPanel, .triangle: .paste,
                 .l1: .back, .r1: .forward,
                 .l2: dictation, .r2: .codexAppSnapshot,
@@ -1300,5 +1408,162 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         Dictionary(
             uniqueKeysWithValues: values.map { ($0.key.rawValue, $0.value.rawValue) }
         )
+    }
+}
+
+extension ControllerProfile {
+    /// Make stick clicks consistent without discarding a unique existing action.
+    /// Work on a copy: an unusually full custom layout is preserved if no usable
+    /// destination remains. Ordinary defaults have spare or duplicate controls.
+    @discardableResult
+    mutating func migrateUnifiedClipboardControls() -> Bool {
+        var updated = self
+        let displaced = [action(for: .l3), action(for: .r3)]
+            .filter { $0 != .none && $0 != .copy && $0 != .paste }
+        let otherButtons = ControllerInput.allCases.filter { $0 != .l3 && $0 != .r3 }
+        let freed = otherButtons.filter { [.copy, .paste].contains(action(for: $0)) }
+        for input in freed { updated.setAction(.none, for: input) }
+        // Clipboard actions on gestures also become redundant with stick clicks.
+        for gesture in TouchGesture.allCases where [.copy, .paste].contains(updated.touchpad.action(for: gesture)) {
+            updated.touchpad.setAction(.none, for: gesture)
+        }
+        for gesture in GyroGesture.allCases where [.copy, .paste].contains(updated.gyro.action(for: gesture)) {
+            updated.gyro.setAction(.none, for: gesture)
+        }
+        updated.setAction(.copy, for: .l3)
+        updated.setAction(.paste, for: .r3)
+
+        // Prefer the just-freed face buttons, then non-layer controls whose
+        // existing action still has another button. Never replace the shoulder
+        // conventions, profile layers or overlay click to find relocation room.
+        let candidates = freed + [.square, .triangle, .create, .options, .microphone,
+                                  .dpadUp, .dpadDown, .dpadLeft, .dpadRight]
+        for action in displaced {
+            if ControllerInput.allCases.contains(where: { updated.action(for: $0) == action }) { continue }
+            if let destination = candidates.first(where: { input in
+                let existing = updated.action(for: input)
+                return existing == .none || otherButtons.contains {
+                    $0 != input && updated.action(for: $0) == existing
+                }
+            }) {
+                updated.setAction(action, for: destination)
+                continue
+            }
+            // A stationary long press works even when pad movement scrolls.
+            // Do not put a displaced action on a swipe suppressed by scrolling.
+            if let gesture = [TouchGesture.twoFingerLongPress, .oneFingerLongPress,
+                              .twoFingerTap, .oneFingerTap].first(where: {
+                updated.touchpad.action(for: $0) == .none
+            }) {
+                updated.touchpad.setAction(action, for: gesture)
+                continue
+            }
+            return false
+        }
+        self = updated
+        return true
+    }
+}
+
+
+extension ControllerProfile {
+    /// Upgrade the requested R3 selection / Triangle paste convention while
+    /// retaining unique actions previously assigned to those buttons.
+    @discardableResult
+    mutating func migrateTextSelectionControls() -> Bool {
+        var updated = self
+        let displaced = [action(for: .r3), action(for: .triangle)]
+            .filter { ![.none, .paste, .textSelectionHold].contains($0) }
+        let candidates: [ControllerInput] = [.square, .create, .options, .microphone,
+                                            .dpadUp, .dpadDown, .dpadLeft, .dpadRight]
+        for input in ControllerInput.allCases where input != .triangle && updated.action(for: input) == .paste {
+            updated.setAction(.none, for: input)
+        }
+        for gesture in TouchGesture.allCases where updated.touchpad.action(for: gesture) == .paste {
+            updated.touchpad.setAction(.none, for: gesture)
+        }
+        for gesture in GyroGesture.allCases where updated.gyro.action(for: gesture) == .paste {
+            updated.gyro.setAction(.none, for: gesture)
+        }
+        updated.setAction(.textSelectionHold, for: .r3)
+        updated.setAction(.paste, for: .triangle)
+        for action in displaced {
+            if ControllerInput.allCases.contains(where: { updated.action(for: $0) == action }) { continue }
+            if let destination = candidates.first(where: { input in
+                let current = updated.action(for: input)
+                return current == .none || ControllerInput.allCases.contains {
+                    $0 != input && updated.action(for: $0) == current
+                }
+            }) {
+                updated.setAction(action, for: destination)
+            } else if let gesture = [TouchGesture.twoFingerLongPress, .oneFingerLongPress,
+                                     .twoFingerTap, .oneFingerTap].first(where: {
+                let existing = updated.touchpad.action(for: $0)
+                let candidate = $0
+                return existing == .none || ControllerInput.allCases.contains {
+                    updated.action(for: $0) == existing
+                } || TouchGesture.allCases.contains {
+                    $0 != candidate && updated.touchpad.action(for: $0) == existing
+                }
+            }) {
+                updated.touchpad.setAction(action, for: gesture)
+            } else {
+                return false
+            }
+        }
+        self = updated
+        return true
+    }
+}
+
+
+extension ControllerProfile {
+    /// Up/down navigate conversations; left/right toggle their respective panels.
+    /// Square deletes backward. Unique replaced actions remain reachable.
+    @discardableResult
+    mutating func migrateAIConversationLayout() -> Bool {
+        let desired: [ControllerInput: MappedAction]
+        switch kind {
+        case .codex:
+            desired = [.dpadUp: .chatGPTPreviousConversation, .dpadDown: .chatGPTNextConversation,
+                       .dpadLeft: .codexSidebar, .dpadRight: .codexReview, .square: .deleteBackward]
+        case .cursor:
+            desired = [.dpadUp: .cursorPreviousConversation, .dpadDown: .cursorNextConversation,
+                       .dpadLeft: .assistantLeftPanel, .dpadRight: .assistantRightPanel, .square: .deleteBackward]
+        case .grokBot:
+            desired = [.dpadUp: .grokPreviousBot, .dpadDown: .grokNextBot,
+                       .dpadLeft: .assistantLeftPanel, .dpadRight: .assistantRightPanel, .square: .deleteBackward]
+        default: return true
+        }
+        let changed: [ControllerInput] = [.dpadUp, .dpadDown, .dpadLeft, .dpadRight, .square]
+        let displaced = changed.map { action(for: $0) }.filter { $0 != .none }
+        var updated = self
+        for input in changed { updated.setAction(desired[input]!, for: input) }
+        let stationary: [TouchGesture] = [.twoFingerLongPress, .oneFingerLongPress,
+                                         .twoFingerTap, .oneFingerTap]
+        for action in displaced {
+            if ControllerInput.allCases.contains(where: { updated.action(for: $0) == action }) ||
+                stationary.contains(where: { updated.touchpad.action(for: $0) == action }) { continue }
+            if let destination = stationary.first(where: { candidate in
+                let existing = updated.touchpad.action(for: candidate)
+                return existing == .none || ControllerInput.allCases.contains {
+                    updated.action(for: $0) == existing
+                } || stationary.contains {
+                    $0 != candidate && updated.touchpad.action(for: $0) == existing
+                }
+            }) {
+                updated.touchpad.setAction(action, for: destination)
+            } else { return false }
+        }
+        self = updated
+        return true
+    }
+}
+
+
+extension ControllerProfile {
+    mutating func migrateAIDeleteButton() {
+        guard [.codex, .cursor, .grokBot].contains(kind), action(for: .square) == .none else { return }
+        setAction(.deleteBackward, for: .square)
     }
 }

@@ -102,8 +102,31 @@ final class CodexAutomation: ObservableObject {
         return result.succeeded
     }
 
+    @discardableResult
+    func navigateCursorConversation(_ action: MappedAction) async -> Bool {
+        let result: (succeeded: Bool, message: String)
+        switch action {
+        case .cursorCollapseWorkspace, .cursorExpandWorkspace:
+            result = await CursorConversationNavigation.setCurrentWorkspaceExpanded(action == .cursorExpandWorkspace)
+        default:
+            result = await CursorConversationNavigation.navigate(offset: action == .cursorPreviousConversation ? -1 : 1)
+        }
+        lastResult = result.message
+        return result.succeeded
+    }
+
+    @discardableResult
+    func navigateChatGPTSidebar(_ action: MappedAction) async -> Bool {
+        let result = await ChatGPTSidebarNavigation.navigate(offset: action == .chatGPTPreviousConversation ? -1 : 1)
+        lastResult = result.message
+        return result.succeeded
+    }
+
     func run(_ action: MappedAction) -> Bool {
         switch action {
+        case .textSelectionHold:
+            lastResult = String(localized: "Hold a controller button to select text with the caret stick.", bundle: AppResources.localizationBundle)
+            return false
         case .none:
             lastResult = String(localized: "No action assigned", bundle: AppResources.localizationBundle)
             return true
@@ -296,6 +319,8 @@ final class CodexAutomation: ObservableObject {
             return key(kVK_ANSI_Equal, flags: .maskCommand, focusCodex: false)
         case .zoomOut:
             return key(kVK_ANSI_Minus, flags: .maskCommand, focusCodex: false)
+        case .deleteBackward:
+            return key(kVK_Delete, focusCodex: false)
         case .arrowUp:
             return key(kVK_UpArrow, focusCodex: false)
         case .arrowDown:
@@ -364,12 +389,27 @@ final class CodexAutomation: ObservableObject {
         case .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection:
             lastResult = "Grok Bot navigation requires asynchronous dispatch"
             return false
-        case .assistantRightPanel:
+        case .chatGPTPreviousConversation, .chatGPTNextConversation:
+            lastResult = String(localized: "ChatGPT sidebar navigation requires asynchronous dispatch", bundle: AppResources.localizationBundle)
+            return false
+        case .cursorPreviousConversation, .cursorNextConversation, .cursorCollapseWorkspace, .cursorExpandWorkspace:
+            lastResult = String(localized: "Cursor navigation requires asynchronous dispatch", bundle: AppResources.localizationBundle)
+            return false
+        case .assistantSend:
+            guard let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+                  ["com.todesktop.230313mzl4w4u92", "com.anysphere.sand"].contains(bundleID) else {
+                lastResult = String(localized: "Bring Cursor or Grok Bot to the foreground to send", bundle: AppResources.localizationBundle)
+                return false
+            }
+            return key(kVK_Return, focusCodex: false)
+        case .assistantLeftPanel, .assistantRightPanel:
             guard ["com.anysphere.sand", "com.todesktop.230313mzl4w4u92"].contains(frontmostBundleIdentifier ?? "") else {
                 lastResult = String(localized: "Bring Cursor or Grok Bot to the foreground first", bundle: AppResources.localizationBundle)
                 return false
             }
-            return key(kVK_ANSI_B, flags: [.maskCommand, .maskAlternate], focusCodex: false)
+            return key(kVK_ANSI_B,
+                       flags: action == .assistantLeftPanel ? .maskCommand : [.maskCommand, .maskAlternate],
+                       focusCodex: false)
         case .cursorDictation, .grokDictation:
             lastResult = String(localized: "Hold the assigned controller button to dictate", bundle: AppResources.localizationBundle)
             return false

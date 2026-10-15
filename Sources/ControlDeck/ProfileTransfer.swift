@@ -164,7 +164,7 @@ enum ProfileTransfer {
                 pointer,
                 allowed: [
                     "source", "speed", "acceleration", "deadZone",
-                    "scrollSource", "scrollSpeed", "scrollAcceleration",
+                    "scrollSource", "caretSource", "scrollSpeed", "scrollAcceleration",
                     "scrollDeadZone"
                 ]
             ),
