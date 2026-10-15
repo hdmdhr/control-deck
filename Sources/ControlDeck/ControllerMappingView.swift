@@ -1,221 +1,282 @@
+import AppKit
 import SwiftUI
 
 struct ControllerMappingView: View {
     @Binding var selectedInput: ControllerInput
-    let profileKind: ProfileKind
+    let profile: ControllerProfile
+    let availableProfiles: [ControllerProfile]
+    let activeProfileName: String
+    let selectProfile: (ProfileKind) -> Void
+    let openPointerSettings: () -> Void
+    let openTouchpadSettings: () -> Void
     let actionForInput: (ControllerInput) -> MappedAction
     let setAction: (MappedAction, ControllerInput) -> Void
     let resetSelected: () -> Void
 
     @State private var searchText = ""
+    @State private var relevantOnly = true
+    @State private var selectedCategory: ActionCategory?
 
     var body: some View {
         GeometryReader { proxy in
-            let inspectorWidth = proxy.size.width * (406.0 / 1_241.0)
-            let inspectorPadding = inspectorWidth * (28.0 / 406.0)
-
             HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 0) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Button Mapping")
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
-                        Text("Select a control on the controller, then choose what it does.")
-                            .font(.system(size: 15))
-                            .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 12) {
+                    mappingHeader
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            controllerCanvas.frame(height: 260)
+                            movementSummary
+                            Text("Buttons · press to assign")
+                                .font(.headline)
+                            LazyVStack(spacing: 3) {
+                                ForEach(ControllerInput.allCases) { input in
+                                    inputRow(input)
+                                }
+                            }
+                            touchpadSummary
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 24)
                     }
-                    .padding(.horizontal, 54)
-                    .padding(.top, 30)
-                    .padding(.bottom, 10)
-
-                    controllerCanvas
                 }
+                .frame(maxWidth: .infinity)
                 Divider()
-                inspector(horizontalPadding: inspectorPadding)
-                    .frame(width: inspectorWidth)
+                inspector
+                    .frame(width: max(340, min(430, proxy.size.width * 0.38)))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)
+        .onChange(of: profile.kind) { _, _ in selectedCategory = nil }
+    }
+
+    private var mappingHeader: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Button Mapping").font(.system(size: 28, weight: .bold, design: .rounded))
+            HStack(spacing: 10) {
+                Text("Editing profile").font(.caption).foregroundStyle(.secondary)
+                Picker("Editing profile", selection: Binding(get: { profile.kind }, set: selectProfile)) {
+                    ForEach(availableProfiles) { item in
+                        Text(item.displayName).tag(item.kind)
+                    }
+                }
+                .labelsHidden()
+                .frame(maxWidth: 220)
+                Spacer(minLength: 0)
+            }
+            Text(profileApplications)
+                .font(.caption).foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Label("Active profile", systemImage: "bolt.circle")
+                Text(activeProfileName).fontWeight(.medium)
+            }
+            .font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 22)
+    }
+
+    private var profileApplications: String {
+        if profile.kind == .codex {
+            return localized("Codex / ChatGPT share one app and this profile.")
+        }
+        let apps = profile.bundleIdentifiers.compactMap { identifier -> String? in
+            guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: identifier) else { return identifier }
+            return FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
+        }
+        return localized("Associated apps") + ": " + (apps.isEmpty ? profile.kind.label : apps.joined(separator: ", "))
     }
 
     private var controllerCanvas: some View {
         GeometryReader { proxy in
-            let imageWidth = min(
-                proxy.size.width * 1.29,
-                max(620, (proxy.size.height - 118) * 1.5),
-                1_080
-            )
-            let imageHeight = imageWidth / 1.5
-            let imageTop: CGFloat = 15
-
+            let baseWidth: CGFloat = 800
+            let imageWidth = min(proxy.size.width, 580)
+            let imageHeight = baseWidth / 1.5
             ZStack {
-                Color.white
-
-                ZStack {
-                    ProjectRasterImage(name: "dualsense-turn-1")
-                        .scaledToFit()
-                        .shadow(color: .black.opacity(0.15), radius: 24, y: 16)
-                        .accessibilityLabel("Tilted DualSense controller with selectable controls")
-
-                    ForEach(shoulderCallouts) { callout in
-                        calloutLine(callout, imageWidth: imageWidth, imageHeight: imageHeight)
-                    }
-
-                    ForEach(mappingHotspots) { hotspot in
-                        mappingButton(hotspot)
-                            .position(
-                                x: imageWidth * hotspot.x,
-                                y: imageHeight * hotspot.y
-                            )
-                    }
-
-                    ForEach(shoulderCallouts) { callout in
-                        calloutButton(callout, imageWidth: imageWidth, imageHeight: imageHeight)
-                    }
+                ProjectRasterImage(name: "dualsense-turn-1").scaledToFit()
+                    .accessibilityLabel("Tilted DualSense controller with selectable controls")
+                ForEach(shoulderCallouts) { callout in
+                    calloutLine(callout, imageWidth: baseWidth, imageHeight: imageHeight)
                 }
-                .frame(width: imageWidth, height: imageHeight)
-                .position(
-                    x: proxy.size.width / 2 - imageWidth * 0.027,
-                    y: imageTop + imageHeight / 2
-                )
-
-                HStack {
-                    Label("Click any highlighted control", systemImage: "info.circle")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.accentColor)
-                    Spacer()
+                ForEach(mappingHotspots) { hotspot in
+                    mappingButton(hotspot)
+                        .position(x: baseWidth * hotspot.x, y: imageHeight * hotspot.y)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
-                .frame(maxHeight: .infinity, alignment: .top)
-
-                selectedInputSummary
-                    .frame(width: min(proxy.size.width - 96, 550))
-                    .position(
-                        x: proxy.size.width / 2,
-                        y: proxy.size.height - 96
-                    )
+                ForEach(shoulderCallouts) { callout in
+                    calloutButton(callout, imageWidth: baseWidth, imageHeight: imageHeight)
+                }
             }
+            .frame(width: baseWidth, height: imageHeight)
+            .scaleEffect(imageWidth / baseWidth, anchor: .top)
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
+            .clipped()
         }
     }
 
-    private func inspector(horizontalPadding: CGFloat) -> some View {
+    private var movementSummary: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Text("Stick movement · separate from L3 / R3 presses").font(.headline)
+            ForEach([ControllerStick.left, .right]) { stick in
+                Button(action: openPointerSettings) {
+                    HStack {
+                        Label(stick.label, systemImage: "l.joystick")
+                        Spacer()
+                        Text(stickMovement(stick)).foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right").font(.caption)
+                    }
+                    .font(.subheadline)
+                    .padding(10)
+                    .background(Color.accentColor.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            Text("Caret movement takes priority over pointer movement, then scrolling.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private func stickMovement(_ stick: ControllerStick) -> String {
+        if profile.pointer.caretSource == stick { return localized("Text caret · tilt to repeat arrows") }
+        if profile.pointer.source == stick { return localized("Pointer") }
+        if profile.pointer.scrollSource == stick { return localized("Scroll") }
+        return localized("Off")
+    }
+
+    private func inputRow(_ input: ControllerInput) -> some View {
+        Button { selectedInput = input } label: {
+            HStack(spacing: 10) {
+                Text(controllerGlyph(input))
+                    .font(.system(size: 12, weight: .semibold))
+                    .frame(width: 34)
+                Text(input == .l3 ? localized("L3 · left stick press") : input == .r3 ? localized("R3 · right stick press") : input.label)
+                    .font(.system(size: 13, weight: .medium))
+                Spacer(minLength: 10)
+                Text(actionForInput(input).label)
+                    .font(.system(size: 12))
+                    .foregroundStyle(actionForInput(input) == .none ? .secondary : .primary)
+                    .multilineTextAlignment(.trailing)
+                if selectedInput == input {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.accentColor)
+                }
+            }
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(selectedInput == input ? Color.accentColor.opacity(0.09) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var touchpadSummary: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Touchpad movement & gestures").font(.headline)
+                Spacer()
+                Button("Edit touchpad", action: openTouchpadSettings).font(.caption)
+            }
+            summaryRow(localized("One-finger movement"), value: profile.touchpad.oneFingerMode.label)
+            summaryRow(localized("Two-finger movement"), value: localized(profile.touchpad.twoFingerScroll ? "Scroll" : "Gestures"))
+            summaryRow(localized("Natural scrolling"), value: localized(profile.touchpad.naturalScrolling ? "On" : "Off"))
+            Text("Touchpad click is a separate button in the list above.")
+                .font(.caption).foregroundStyle(.secondary)
+            ForEach(TouchGesture.allCases) { gesture in
+                summaryRow(gesture.label, value: profile.touchpad.action(for: gesture).label)
+            }
+            Text("Swipes are available only when movement uses Gestures mode.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private func summaryRow(_ title: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title).foregroundStyle(.secondary)
+            Spacer()
+            Text(value).multilineTextAlignment(.trailing)
+        }
+        .font(.caption)
+    }
+
+    private var inspector: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 controlBadge(selectedInput, selected: true)
-                Text(selectedInput.label)
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(selectedInput == .l3 ? localized("L3 · left stick press") : selectedInput == .r3 ? localized("R3 · right stick press") : selectedInput.label)
+                        .font(.title3.weight(.semibold))
+                    Text(inputDescription(selectedInput)).font(.caption).foregroundStyle(.secondary)
+                }
             }
-            .padding(.top, 12)
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text("Current action").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Unassign") { setAction(.none, selectedInput) }.font(.caption)
+                }
+                Label(actionForInput(selectedInput).label, systemImage: actionIcon(actionForInput(selectedInput)))
+                    .font(.subheadline.weight(.medium))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
 
-            Text("Current action")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Menu {
-                ForEach(ActionCategory.allCases) { category in
-                    Menu(category.label) {
-                        ForEach(MappedAction.allCases.filter { $0.category == category }) { action in
-                            Button {
-                                setAction(action, selectedInput)
-                            } label: {
-                                if action == actionForInput(selectedInput) {
-                                    Label(action.label, systemImage: "checkmark")
-                                } else {
-                                    Text(action.label)
-                                }
+            Picker("Action scope", selection: $relevantOnly) {
+                Text("This profile").tag(true)
+                Text("All actions").tag(false)
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: relevantOnly) { _, _ in selectedCategory = nil }
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("Search actions or apps", text: $searchText).textFieldStyle(.plain)
+                if !searchText.isEmpty {
+                    Button { searchText = "" } label: { Image(systemName: "xmark.circle.fill") }
+                        .buttonStyle(.plain).accessibilityLabel("Clear search")
+                }
+            }
+            .padding(10)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+            Picker("Category", selection: $selectedCategory) {
+                Text("All categories").tag(nil as ActionCategory?)
+                ForEach(catalogCategories) { category in
+                    Text(category.label).tag(Optional(category))
+                }
+            }
+            Text("Choose an action to assign it immediately.")
+                .font(.caption).foregroundStyle(.secondary)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 14) {
+                    if filteredCategories.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("No matching actions").font(.headline)
+                            Text("Try another search or browse all actions.").foregroundStyle(.secondary)
+                            Button("Show all actions") {
+                                searchText = ""; relevantOnly = false; selectedCategory = nil
                             }
                         }
+                        .font(.subheadline).padding(.vertical, 20)
                     }
-                }
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: actionIcon(actionForInput(selectedInput)))
-                        .font(.system(size: 17))
-                    Text(actionForInput(selectedInput).label)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 14)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .menuStyle(.borderlessButton)
-            .buttonStyle(.plain)
-            .tint(Color.accentColor)
-            .frame(maxWidth: .infinity)
-            .frame(height: 44)
-            .background(
-                Color.accentColor.opacity(0.09),
-                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-            )
-
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
-                TextField("Search actions", text: $searchText)
-                    .textFieldStyle(.plain)
-            }
-                .padding(.horizontal, 12)
-                .frame(height: 40)
-                .background(Color.white, in: RoundedRectangle(cornerRadius: 8))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(PS5Palette.border, lineWidth: 1)
-                }
-
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(filteredCategories) { category in
                         VStack(alignment: .leading, spacing: 5) {
-                            Text(category.label)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-
-                            VStack(spacing: 0) {
-                                ForEach(filteredActions(in: category)) { action in
-                                    actionRow(action)
-                                    if action != filteredActions(in: category).last {
-                                        Divider()
-                                            .padding(.leading, 34)
-                                    }
-                                }
-                            }
-                            .background(
-                                Color.white,
-                                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            )
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(PS5Palette.border, lineWidth: 1)
-                            }
+                            Text(category.label).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                            ForEach(filteredActions(in: category)) { action in actionRow(action) }
                         }
                     }
                 }
-                .padding(.vertical, 2)
             }
-
             Button(action: resetSelected) {
-                Text("Reset \(selectedInput.label)")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.red)
+                Label("Reset selected button", systemImage: "arrow.counterclockwise")
                     .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(Color.white)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(Color.red.opacity(0.75), lineWidth: 1)
-                    }
             }
-            .buttonStyle(.plain)
+            .controlSize(.large)
         }
-        .padding(.horizontal, horizontalPadding)
-        .padding(.top, 18)
-        .padding(.bottom, 44)
-        .background(Color.white)
+        .padding(20)
+    }
+
+    private func localized(_ key: String) -> String {
+        AppResources.localizationBundle.localizedString(forKey: key, value: key, table: nil)
     }
 
     private func actionRow(_ action: MappedAction) -> some View {
@@ -227,21 +288,20 @@ struct ControllerMappingView: View {
                     .frame(width: 18)
                     .foregroundStyle(Color.accentColor)
                 Text(actionDisplayName(action))
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
                 if action == actionForInput(selectedInput) {
                     Image(systemName: "checkmark")
                         .foregroundStyle(Color.accentColor)
-                } else {
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.tertiary)
+                } else if action != .none, !inputsUsing(action).isEmpty {
+                    Text(inputsUsing(action)).font(.caption2).foregroundStyle(.secondary)
+                        .help(localized("Used by") + ": " + inputsUsing(action))
                 }
             }
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.primary)
             .padding(.horizontal, 10)
-            .frame(height: 29)
+            .padding(.vertical, 8)
             .background(
                 action == actionForInput(selectedInput)
                     ? Color.accentColor.opacity(0.09)
@@ -251,35 +311,8 @@ struct ControllerMappingView: View {
         .buttonStyle(.plain)
     }
 
-    private var selectedInputSummary: some View {
-        HStack(spacing: 14) {
-            controlBadge(selectedInput, selected: true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(selectedInput.label)
-                    .font(.headline)
-                Text(inputDescription(selectedInput))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Label(
-                actionForInput(selectedInput).label,
-                systemImage: actionIcon(actionForInput(selectedInput))
-            )
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(Color.accentColor)
-            .padding(.horizontal, 14)
-            .frame(height: 38)
-            .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-        }
-        .padding(.horizontal, 18)
-        .frame(height: 76)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(PS5Palette.border, lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.035), radius: 10, y: 4)
+    private func inputsUsing(_ action: MappedAction) -> String {
+        ControllerInput.allCases.filter { actionForInput($0) == action }.map(\.shortLabel).joined(separator: ", ")
     }
 
     private func controlBadge(
@@ -394,28 +427,17 @@ struct ControllerMappingView: View {
         )
     }
 
+    private var catalogCategories: [ActionCategory] {
+        ActionSelectionCatalog.categories(for: profile, relevantOnly: relevantOnly)
+    }
+
     private var filteredCategories: [ActionCategory] {
-        let preferred = profileKind.preferredActionCategories
-        let source = searchText.isEmpty ? preferred : ActionCategory.allCases
-        return source.filter { !filteredActions(in: $0).isEmpty }
+        catalogCategories.filter { (selectedCategory == nil || selectedCategory == $0) && !filteredActions(in: $0).isEmpty }
     }
 
     private func filteredActions(in category: ActionCategory) -> [MappedAction] {
-        let actions: [MappedAction]
-        if searchText.isEmpty {
-            actions = MappedAction.allCases.filter {
-                $0.category == category
-            }
-        } else {
-            actions = MappedAction.allCases
-        }
-
-        if searchText.isEmpty {
-            return actions
-        }
-        return actions.filter { action in
-            action.category == category &&
-                action.label.localizedCaseInsensitiveContains(searchText)
+        ActionSelectionCatalog.actions(in: category, for: profile, relevantOnly: relevantOnly).filter {
+            ActionSelectionCatalog.matches($0, query: searchText)
         }
     }
 
@@ -495,6 +517,10 @@ struct ControllerMappingView: View {
         return switch action.category {
         case .codex: "terminal"
         case .claude: "sparkles"
+        case .cursor: "cursorarrow"
+        case .grokBot: "bubble.left.and.bubble.right"
+        case .slack: "number"
+        case .mail: "envelope"
         case .meeting: "video"
         case .presentation: "play.rectangle"
         case .communication: "bubble.left.and.bubble.right"

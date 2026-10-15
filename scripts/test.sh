@@ -40,6 +40,18 @@ swiftc -parse-as-library \
   -o "$CARET_OUTPUT"
 "$CARET_OUTPUT"
 rm -f "$CARET_OUTPUT"
+CATALOG_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-catalog.XXXXXX")"
+swiftc -parse-as-library -framework AppKit \
+  "$ROOT/Sources/ControlDeck/AppResources.swift" \
+  "$ROOT/Sources/ControlDeck/Models.swift" \
+  "$ROOT/Sources/ControlDeck/GyroModels.swift" \
+  "$ROOT/Sources/ControlDeck/InputMappingModels.swift" \
+  "$ROOT/Sources/ControlDeck/ExpandedProfileCatalog.swift" \
+  "$ROOT/Sources/ControlDeck/ActionSelectionCatalog.swift" \
+  "$ROOT/Tests/ControlDeckTests/ActionSelectionCatalogTests.swift" \
+  -o "$CATALOG_OUTPUT"
+"$CATALOG_OUTPUT"
+rm -f "$CATALOG_OUTPUT"
 ACTIVATION_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-activation.XXXXXX")"
 trap 'rm -f "$ACTIVATION_OUTPUT"' EXIT
 swiftc -parse-as-library -framework AppKit \

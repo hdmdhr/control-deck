@@ -516,6 +516,9 @@ struct ContextControllerOverlay: View {
             ForEach([ControllerStick.left, .right]) { stick in
                 mappingRow(stick.label, action: stickAction(stick))
             }
+            Text("Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -525,6 +528,7 @@ struct ContextControllerOverlay: View {
             sectionTitle("Touch surface", icon: "hand.draw")
             mappingRow(localized("One-finger movement"), action: profile.touchpad.oneFingerMode.label)
             mappingRow(localized("Two-finger movement"), action: localized(profile.touchpad.twoFingerScroll ? "Scroll" : "Gestures"))
+            mappingRow(localized("Natural scrolling"), action: localized(profile.touchpad.naturalScrolling ? "On" : "Off"))
             ForEach(TouchGesture.allCases) { gesture in
                 mappingRow(gesture.label, action: profile.touchpad.action(for: gesture).label)
             }
@@ -588,6 +592,8 @@ struct ContextControllerOverlay: View {
         case .circle: "○  " + input.label
         case .square: "□  " + input.label
         case .triangle: "△  " + input.label
+        case .l3: localized("L3 · left stick press")
+        case .r3: localized("R3 · right stick press")
         case .dpadUp, .dpadDown, .dpadLeft, .dpadRight:
             input.shortLabel + "  " + input.label
         default: input.label
@@ -595,6 +601,7 @@ struct ContextControllerOverlay: View {
     }
 
     private func stickAction(_ stick: ControllerStick) -> String {
+        if profile.pointer.caretSource == stick { return localized("Text caret · tilt to repeat arrows") }
         if profile.pointer.source == stick { return localized("Pointer") }
         if profile.pointer.scrollSource == stick { return localized("Scroll") }
         return localized("Off")

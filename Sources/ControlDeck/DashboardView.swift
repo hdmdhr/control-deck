@@ -326,7 +326,12 @@ struct DashboardView: View {
     private var buttonMappings: some View {
         ControllerMappingView(
             selectedInput: $selectedInput,
-            profileKind: profiles.editingKind,
+            profile: profiles.editingProfile,
+            availableProfiles: profiles.profiles,
+            activeProfileName: profiles.activeProfile.displayName,
+            selectProfile: { profiles.editingKind = $0 },
+            openPointerSettings: { section = .pointer },
+            openTouchpadSettings: { section = .touchpad },
             actionForInput: { profiles.editingProfile.action(for: $0) },
             setAction: { action, input in
                 profiles.setAction(action, for: input)
@@ -481,10 +486,25 @@ struct DashboardView: View {
                         VStack(alignment: .leading) {
                             Text("Analogue sticks")
                                 .font(.title3.weight(.semibold))
-                            Text("Use one stick for the pointer and the other for smooth two-axis scrolling.")
+                            Text("Assign stick movement to the text caret, pointer or scrolling. Stick presses remain separate button actions.")
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    Picker(
+                        "Text caret stick",
+                        selection: Binding(
+                            get: { profiles.editingProfile.pointer.caretSource },
+                            set: { profiles.updateCaretSource($0) }
+                        )
+                    ) {
+                        ForEach(ControllerStick.allCases) { stick in
+                            Text(stick.label).tag(stick)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Text("Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop.")
+                        .font(.caption).foregroundStyle(.secondary)
+
                     Picker(
                         "Pointer stick",
                         selection: Binding(
@@ -542,14 +562,9 @@ struct DashboardView: View {
                     }
                     .pickerStyle(.segmented)
 
-                    Text(
-                        profiles.editingProfile.pointer.scrollSource ==
-                            profiles.editingProfile.pointer.source
-                            ? String(localized: "Choose different sticks for pointer and scrolling. Pointer takes priority.", bundle: AppResources.localizationBundle)
-                            : String(localized: "Push vertically or horizontally to scroll in that direction.", bundle: AppResources.localizationBundle)
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    Text("Caret movement takes priority over pointer movement, then scrolling.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
                     LabeledSlider(
                         label: String(localized: "Scroll speed", bundle: AppResources.localizationBundle),
@@ -1823,7 +1838,7 @@ struct DashboardView: View {
                 "Profile",
                 selection: Binding(
                     get: { profiles.editingKind },
-                    set: { profiles.setActiveProfile($0) }
+                    set: { profiles.editingKind = $0 }
                 )
             ) {
                 ForEach(profiles.profiles) { profile in
@@ -1867,10 +1882,10 @@ private struct ActionPicker: View {
 
     var body: some View {
         Picker("Action", selection: $selection) {
-            ForEach(ActionCategory.allCases) { category in
+            ForEach(ActionSelectionCatalog.categories(for: nil, relevantOnly: false)) { category in
                 Section(category.label) {
                     ForEach(
-                        MappedAction.allCases.filter { $0.category == category }
+                        ActionSelectionCatalog.actions(in: category)
                     ) { action in
                         Text(action.label).tag(action)
                     }

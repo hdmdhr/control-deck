@@ -58,7 +58,7 @@
 "Accessibility permission required" = "アクセシビリティの許可が必要です";
 "Action" = "アクション";
 "Action unavailable" = "アクションを利用できません";
-"Active profile" = "現在のプロファイル";
+"Active profile" = "使用中のプロファイル";
 "Adaptive trigger" = "アダプティブトリガー";
 "Add a useful controller action for my daily Codex workflow." = "普段の Codex 作業に便利なコントローラ操作を追加してください。";
 "Add behaviour" = "動作を追加";
@@ -1169,3 +1169,82 @@
 "ChatGPT sidebar switch could not be verified" = "ChatGPT の会話切り替えを確認できませんでした";
 "ChatGPT switched sidebar conversations" = "ChatGPT のサイドバーの会話を切り替えました";
 "Close the ChatGPT menu before switching conversations" = "会話を切り替える前に ChatGPT のメニューを閉じてください";
+
+"Codex / ChatGPT" = "Codex / ChatGPT";
+
+"Shared assistant actions" = "アシスタント共通アクション";
+
+"Mouse" = "マウス";
+
+"Navigation" = "ナビゲーション";
+
+"Keyboard" = "キーボード";
+
+"Browser" = "ブラウザ";
+
+"Media" = "メディア";
+
+"Apps" = "アプリ";
+
+"System & other" = "システムとその他";
+
+"Editing profile" = "編集中のプロファイル";
+
+"Associated apps" = "関連アプリ";
+
+"Codex / ChatGPT share one app and this profile." = "Codex / ChatGPT は同じアプリで、このプロファイルを共有します。";
+
+"Buttons · press to assign" = "ボタン · 選択して割り当て";
+
+"Stick movement · separate from L3 / R3 presses" = "スティック移動 · L3 / R3 の押し込みとは別";
+
+"Caret movement takes priority over pointer movement, then scrolling." = "同じスティックの割り当てが重なる場合は、文字カーソル、ポインタ、スクロールの順に優先されます。";
+
+"Text caret · tilt to repeat arrows" = "文字カーソル · 傾けて方向キーを連続入力";
+
+"L3 · left stick press" = "L3 · 左スティック押し込み";
+
+"R3 · right stick press" = "R3 · 右スティック押し込み";
+
+"Touchpad movement & gestures" = "タッチパッドの移動とジェスチャ";
+
+"Edit touchpad" = "タッチパッドを編集";
+
+"Touchpad click is a separate button in the list above." = "タッチパッドの押し込みは、上の一覧で独立したボタンとして設定できます。";
+
+"Action scope" = "アクションの範囲";
+
+"This profile" = "このプロファイル";
+
+"All actions" = "すべてのアクション";
+
+"Search actions or apps" = "アクションやアプリを検索";
+
+"Clear search" = "検索をクリア";
+
+"Category" = "カテゴリ";
+
+"All categories" = "すべてのカテゴリ";
+
+"Choose an action to assign it immediately." = "アクションを選ぶとすぐに保存されます。";
+
+"No matching actions" = "一致するアクションがありません";
+
+"Try another search or browse all actions." = "検索語を変えるか、すべてのアクションを表示してください。";
+
+"Show all actions" = "すべてのアクションを表示";
+
+"Reset selected button" = "選択したボタンをリセット";
+
+"Unassign" = "割り当てを解除";
+
+"Used by" = "使用ボタン";
+
+"Assign stick movement to the text caret, pointer or scrolling. Stick presses remain separate button actions." = "スティック移動に文字カーソル、ポインタ、スクロールを割り当てます。押し込みには別のアクションを設定できます。";
+
+"Text caret stick" = "文字カーソル用スティック";
+
+
+
+"On" = "オン";
+"Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop." = "倒すとすぐに1ステップ移動。350ミリ秒保持すると90ミリ秒ごとに繰り返し、中央に戻すと停止します。";

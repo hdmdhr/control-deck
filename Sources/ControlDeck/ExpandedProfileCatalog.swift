@@ -228,21 +228,22 @@ extension ControllerProfile {
 
 extension ProfileKind {
     var preferredActionCategories: [ActionCategory] {
-        let common: [ActionCategory] = [.mouse, .navigation, .keyboard]
+        let common: [ActionCategory] = [.mouse, .navigation, .keyboard, .other]
         switch self {
         case .codex: return [.codex] + common
         case .claude: return [.claude] + common
         case .meetings: return [.meeting] + common
         case .presentations: return [.presentation] + common
-        case .slack, .mail: return [.communication] + common
+        case .slack: return [.slack] + common
+        case .mail: return [.mail] + common
         case .photos, .finder: return [.files] + common
         case .figma, .videoEditing, .logic: return [.creative] + common
         case .terminal: return [.terminal] + common
         case .chrome: return [.browser] + common
         case .spotify: return [.media] + common
-        case .general: return common + [.other]
-        case .cursor: return [.terminal] + common
-        case .grokBot: return common + [.other]
+        case .general: return common
+        case .cursor: return [.cursor, .communication, .terminal] + common
+        case .grokBot: return [.grokBot, .communication] + common
         case .xcode: return [.codex, .terminal] + common
         }
     }

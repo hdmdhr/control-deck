@@ -264,6 +264,10 @@ enum TouchGesture: String, Codable, CaseIterable, Identifiable, Sendable {
 enum ActionCategory: String, CaseIterable, Identifiable, Sendable {
     case codex
     case claude
+    case cursor
+    case grokBot
+    case slack
+    case mail
     case meeting
     case presentation
     case communication
@@ -282,15 +286,25 @@ enum ActionCategory: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .codex: String(localized: "Codex", bundle: AppResources.localizationBundle)
+        case .codex: String(localized: "Codex / ChatGPT", bundle: AppResources.localizationBundle)
         case .claude: String(localized: "Claude", bundle: AppResources.localizationBundle)
+        case .cursor: String(localized: "Cursor", bundle: AppResources.localizationBundle)
+        case .grokBot: String(localized: "Grok Bot", bundle: AppResources.localizationBundle)
+        case .slack: String(localized: "Slack", bundle: AppResources.localizationBundle)
+        case .mail: String(localized: "Mail", bundle: AppResources.localizationBundle)
         case .meeting: String(localized: "Meetings", bundle: AppResources.localizationBundle)
         case .presentation: String(localized: "Presentations", bundle: AppResources.localizationBundle)
-        case .communication: String(localized: "Communication", bundle: AppResources.localizationBundle)
+        case .communication: String(localized: "Shared assistant actions", bundle: AppResources.localizationBundle)
         case .files: String(localized: "Files & photos", bundle: AppResources.localizationBundle)
         case .creative: String(localized: "Creative tools", bundle: AppResources.localizationBundle)
         case .terminal: String(localized: "Terminal", bundle: AppResources.localizationBundle)
-        default: rawValue.capitalized
+        case .mouse: String(localized: "Mouse", bundle: AppResources.localizationBundle)
+        case .navigation: String(localized: "Navigation", bundle: AppResources.localizationBundle)
+        case .keyboard: String(localized: "Keyboard", bundle: AppResources.localizationBundle)
+        case .browser: String(localized: "Browser", bundle: AppResources.localizationBundle)
+        case .media: String(localized: "Media", bundle: AppResources.localizationBundle)
+        case .apps: String(localized: "Apps", bundle: AppResources.localizationBundle)
+        case .other: String(localized: "System & other", bundle: AppResources.localizationBundle)
         }
     }
 }
@@ -614,10 +628,18 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
              .presentationPointer, .presentationNotesUp,
              .presentationNotesDown, .presentationExit:
             .presentation
-        case .assistantSend, .cursorPreviousConversation, .cursorNextConversation, .cursorCollapseWorkspace, .cursorExpandWorkspace,
-             .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection, .slackJumpConversation, .slackPreviousUnread,
-             .slackNextUnread, .slackThreads, .slackActivity,
-             .slackHuddle, .mailArchive, .mailReply, .mailUnread:
+        case .cursorDictation, .cursorPreviousConversation, .cursorNextConversation,
+             .cursorCollapseWorkspace, .cursorExpandWorkspace:
+            .cursor
+        case .grokDictation, .grokPreviousBot, .grokNextBot,
+             .grokCollapseSection, .grokExpandSection:
+            .grokBot
+        case .slackJumpConversation, .slackPreviousUnread, .slackNextUnread,
+             .slackThreads, .slackActivity, .slackHuddle:
+            .slack
+        case .mailArchive, .mailReply, .mailUnread:
+            .mail
+        case .assistantSend, .assistantRightPanel:
             .communication
         case .photosFavorite, .photosEdit, .photosRotate, .photosInfo:
             .files
@@ -648,7 +670,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
             .media
         case .openCodex, .openChrome, .openSpotify, .openClaude:
             .apps
-        case .none, .systemDictation, .cursorDictation, .grokDictation, .assistantRightPanel, .screenshotSelection,
+        case .none, .systemDictation, .screenshotSelection,
              .showControllerOverlay, .deleteTextWithConfirmation:
             .other
         }
