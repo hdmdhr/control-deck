@@ -124,6 +124,9 @@ final class CodexAutomation: ObservableObject {
 
     func run(_ action: MappedAction) -> Bool {
         switch action {
+        case .textSelectionHold:
+            lastResult = String(localized: "Hold a controller button to select text with the caret stick.", bundle: AppResources.localizationBundle)
+            return false
         case .none:
             lastResult = String(localized: "No action assigned", bundle: AppResources.localizationBundle)
             return true

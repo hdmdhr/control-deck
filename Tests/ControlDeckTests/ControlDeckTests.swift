@@ -55,8 +55,8 @@ struct ControlDeckLogicTestRunner {
         )
         expect(
             ControllerProfile.codex.action(for: .l3) == .copy &&
-                ControllerProfile.codex.action(for: .r3) == .paste,
-            "Codex stick clicks copy and paste"
+                ControllerProfile.codex.action(for: .r3) == .textSelectionHold,
+            "Codex stick clicks copy and hold-to-select"
         )
         expect(
             ControllerProfile.general.action(for: .cross) == .mouseLeftClick,
@@ -69,18 +69,19 @@ struct ControlDeckLogicTestRunner {
             "Every profile uses the global app snapshot shortcut on R2"
         )
         for profile in ControllerProfile.defaults {
-            expect(profile.action(for: .l3) == .copy && profile.action(for: .r3) == .paste,
-                   "Every new profile has consistent clipboard stick clicks")
+            expect(profile.action(for: .l3) == .copy && profile.action(for: .r3) == .textSelectionHold,
+                   "Every new profile has copy and hold-to-select stick clicks")
             expect(ControllerInput.allCases.filter { profile.action(for: $0) == .copy } == [.l3] &&
-                   ControllerInput.allCases.filter { profile.action(for: $0) == .paste } == [.r3],
+                   ControllerInput.allCases.filter { profile.action(for: $0) == .paste } == [.triangle],
                    "New profiles have no redundant clipboard buttons")
             var repeated = profile
-            expect(repeated.migrateUnifiedClipboardControls() && repeated == profile,
+            expect(repeated.migrateTextSelectionControls() && repeated == profile,
                    "Clipboard migration is idempotent")
             expect((try? ProfileTransfer.decode(ProfileTransfer.encode(profile: profile)))?.profile == profile,
                    "Caret settings and relocated mappings survive profile export")
         }
         var oldFinder = ControllerProfile.finder
+        oldFinder.setAction(.systemDictation, for: .microphone)
         oldFinder.setAction(.copy, for: .square)
         oldFinder.setAction(.paste, for: .triangle)
         oldFinder.setAction(.browserFind, for: .l3)
@@ -94,6 +95,8 @@ struct ControlDeckLogicTestRunner {
                oldFinder.gyro.action(for: .shake) == .none,
                "Old Finder moves search and Quick Look to freed face buttons and removes clipboard gestures")
         var oldSlack = ControllerProfile.slack
+        oldSlack.setAction(.slackActivity, for: .triangle)
+        oldSlack.setAction(.systemDictation, for: .microphone)
         oldSlack.setAction(.slackJumpConversation, for: .l3)
         oldSlack.setAction(.slackHuddle, for: .r3)
         oldSlack.setAction(.escapeKey, for: .options)
@@ -111,6 +114,34 @@ struct ControlDeckLogicTestRunner {
                uniqueBefore.isSubset(of: Set(ControllerInput.allCases.map { customClipboard.action(for: $0) } +
                    TouchGesture.allCases.map { customClipboard.touchpad.action(for: $0) })),
                "Custom unique stick click actions retain reachable buttons")
+        let selectionPointer = PointerService()
+        selectionPointer.setCaretSelection(.r3, pressed: true)
+        expect(selectionPointer.isSelectingText, "R3 press arms text selection without a global modifier")
+        selectionPointer.setCaretSelection(.r3, pressed: false)
+        expect(!selectionPointer.isSelectingText, "R3 release clears selection mode")
+        selectionPointer.setCaretSelection(.r3, pressed: true)
+        selectionPointer.stopCaret()
+        expect(!selectionPointer.isSelectingText, "Context stop clears a held selection button")
+        for direction in [CaretStickEngine.Direction.left, .right, .up, .down] {
+            let selectedEvents = PointerService.caretKeyEvents(direction, selecting: true)
+            let normalEvents = PointerService.caretKeyEvents(direction, selecting: false)
+            expect(selectedEvents.count == 2 && selectedEvents.map(\.type) == [.keyDown, .keyUp] &&
+                   selectedEvents.allSatisfy { $0.flags == .maskShift } &&
+                   selectedEvents[0].getIntegerValueField(.keyboardEventKeycode) == selectedEvents[1].getIntegerValueField(.keyboardEventKeycode),
+                   "Selection emits one matched Shift arrow pair")
+            expect(normalEvents.count == 2 && normalEvents.allSatisfy { $0.flags.isEmpty },
+                   "Ordinary caret arrows carry no selection modifier")
+        }
+        var oldSelectionLayout = ControllerProfile.codex
+        oldSelectionLayout.setAction(.paste, for: .r3)
+        oldSelectionLayout.setAction(.codexPlan, for: .triangle)
+        oldSelectionLayout.setAction(.codexSend, for: .dpadUp)
+        expect(oldSelectionLayout.migrateTextSelectionControls() &&
+               oldSelectionLayout.action(for: .r3) == .textSelectionHold &&
+               oldSelectionLayout.action(for: .triangle) == .paste &&
+               oldSelectionLayout.action(for: .dpadUp) == .codexPlan &&
+               oldSelectionLayout.action(for: .circle) == .codexSend,
+               "Saved Codex layout migrates selection and paste while retaining Plan and Send")
         var legacyCodexCapture = ControllerProfile.codex
         legacyCodexCapture.setAction(.screenshotSelection, for: .r2)
         legacyCodexCapture.migrateLegacyCodexSnapshot()
@@ -299,8 +330,8 @@ struct ControlDeckLogicTestRunner {
         expect(ControllerProfile.cursor.action(for: .square) == .assistantRightPanel &&
                ControllerProfile.grokBot.action(for: .square) == .assistantRightPanel &&
                ControllerProfile.cursor.action(for: .l3) == .copy &&
-               ControllerProfile.grokBot.action(for: .r3) == .paste &&
-               ControllerProfile.grokBot.action(for: .triangle) == .none,
+               ControllerProfile.grokBot.action(for: .r3) == .textSelectionHold &&
+               ControllerProfile.grokBot.action(for: .triangle) == .paste,
                "assistant square opens the right panel while copy and paste stay accessible")
         let snapshotEvents = AppSnapshotShortcut.events() ?? []
         expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
@@ -524,8 +555,9 @@ struct ControlDeckLogicTestRunner {
             "native separated gravity remains authoritative when available"
         )
         expect(
-            ControllerProfile.chrome.action(for: .triangle) == .browserAddress,
-            "Chrome Triangle focuses address"
+            ControllerInput.allCases.contains { ControllerProfile.chrome.action(for: $0) == .browserAddress } ||
+                TouchGesture.allCases.contains { ControllerProfile.chrome.touchpad.action(for: $0) == .browserAddress },
+            "Chrome address focus remains accessible after Triangle becomes paste"
         )
         expect(
             ControllerProfile.chrome.action(for: .cross) == .mouseLeftClick,
@@ -591,8 +623,8 @@ struct ControlDeckLogicTestRunner {
         )
         captureDefaults.removePersistentDomain(forName: captureDefaultsName)
         expect(
-            ControllerProfile.codex.action(for: .dpadUp) == .codexSend,
-            "Codex D-pad Up sends instead of duplicating Plan"
+            ControllerProfile.codex.action(for: .dpadUp) == .codexPlan,
+            "Codex D-pad Up retains Plan after Triangle becomes paste"
         )
         expect(
             ControllerProfile.codex.action(for: .touchpadClick) ==
@@ -600,8 +632,8 @@ struct ControlDeckLogicTestRunner {
             "Touchpad click shows the contextual controller overlay"
         )
         expect(
-            ControllerProfile.codex.action(for: .triangle) == .codexPlan,
-            "Triangle remains the single default Plan assignment"
+            ControllerProfile.codex.action(for: .triangle) == .paste,
+            "Codex Triangle pastes"
         )
         expect(
             ControllerProfile.claude.action(for: .cross) == .mouseLeftClick &&
@@ -611,7 +643,7 @@ struct ControlDeckLogicTestRunner {
         expect(
             ControllerProfile.terminal.action(for: .l2) == .systemDictation &&
                 ControllerProfile.terminal.action(for: .create) == .terminalNewTab &&
-                ControllerProfile.terminal.action(for: .triangle) == .terminalClear,
+                ControllerInput.allCases.contains { ControllerProfile.terminal.action(for: $0) == .terminalClear },
             "Terminal provides dictation, tab creation and clear-screen controls"
         )
         expect(
@@ -720,13 +752,13 @@ struct ControlDeckLogicTestRunner {
         )
         expect(
             ControllerProfile.general.action(for: .square) == .none &&
-                ControllerProfile.general.action(for: .triangle) == .none,
-            "General redundant clipboard face buttons are released"
+                ControllerProfile.general.action(for: .triangle) == .paste,
+            "General Square stays free and Triangle pastes"
         )
         expect(
             ControllerProfile.general.action(for: .l3) == .copy &&
-                ControllerProfile.general.action(for: .r3) == .paste,
-            "General stick clicks copy and paste"
+                ControllerProfile.general.action(for: .r3) == .textSelectionHold,
+            "General stick clicks copy and hold-to-select"
         )
         expect(
             ProfileWheelSlot.defaults.count == 8 &&

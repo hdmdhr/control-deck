@@ -419,6 +419,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case paste
     case cut
     case selectAll
+    case textSelectionHold
     case undo
     case redo
     case zoomIn
@@ -563,6 +564,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .copy: String(localized: "Edit · Copy", bundle: AppResources.localizationBundle)
         case .paste: String(localized: "Edit · Paste", bundle: AppResources.localizationBundle)
         case .cut: String(localized: "Edit · Cut", bundle: AppResources.localizationBundle)
+        case .textSelectionHold: String(localized: "Text · Hold to select", bundle: AppResources.localizationBundle)
         case .selectAll: String(localized: "Edit · Select all", bundle: AppResources.localizationBundle)
         case .undo: String(localized: "Edit · Undo", bundle: AppResources.localizationBundle)
         case .redo: String(localized: "Edit · Redo", bundle: AppResources.localizationBundle)
@@ -659,7 +661,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .back, .forward, .missionControl, .showDesktop, .appSwitcher:
             .navigation
         case .returnKey, .escapeKey, .spaceKey, .tabKey, .copy, .paste, .cut,
-             .selectAll, .undo, .redo, .zoomIn, .zoomOut, .arrowUp,
+             .selectAll, .textSelectionHold, .undo, .redo, .zoomIn, .zoomOut, .arrowUp,
              .arrowDown, .arrowLeft, .arrowRight:
             .keyboard
         case .browserAddress, .browserNewTab, .browserCloseTab, .browserReopenTab,
@@ -990,6 +992,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         self.gyro = gyro
         // Built-in layouts use the same lossless normalization as saved layouts.
         _ = migrateUnifiedClipboardControls()
+        _ = migrateTextSelectionControls()
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -1446,6 +1449,57 @@ extension ControllerProfile {
                 continue
             }
             return false
+        }
+        self = updated
+        return true
+    }
+}
+
+
+extension ControllerProfile {
+    /// Upgrade the requested R3 selection / Triangle paste convention while
+    /// retaining unique actions previously assigned to those buttons.
+    @discardableResult
+    mutating func migrateTextSelectionControls() -> Bool {
+        var updated = self
+        let displaced = [action(for: .r3), action(for: .triangle)]
+            .filter { ![.none, .paste, .textSelectionHold].contains($0) }
+        let candidates: [ControllerInput] = [.square, .create, .options, .microphone,
+                                            .dpadUp, .dpadDown, .dpadLeft, .dpadRight]
+        for input in ControllerInput.allCases where input != .triangle && updated.action(for: input) == .paste {
+            updated.setAction(.none, for: input)
+        }
+        for gesture in TouchGesture.allCases where updated.touchpad.action(for: gesture) == .paste {
+            updated.touchpad.setAction(.none, for: gesture)
+        }
+        for gesture in GyroGesture.allCases where updated.gyro.action(for: gesture) == .paste {
+            updated.gyro.setAction(.none, for: gesture)
+        }
+        updated.setAction(.textSelectionHold, for: .r3)
+        updated.setAction(.paste, for: .triangle)
+        for action in displaced {
+            if ControllerInput.allCases.contains(where: { updated.action(for: $0) == action }) { continue }
+            if let destination = candidates.first(where: { input in
+                let current = updated.action(for: input)
+                return current == .none || ControllerInput.allCases.contains {
+                    $0 != input && updated.action(for: $0) == current
+                }
+            }) {
+                updated.setAction(action, for: destination)
+            } else if let gesture = [TouchGesture.twoFingerLongPress, .oneFingerLongPress,
+                                     .twoFingerTap, .oneFingerTap].first(where: {
+                let existing = updated.touchpad.action(for: $0)
+                let candidate = $0
+                return existing == .none || ControllerInput.allCases.contains {
+                    updated.action(for: $0) == existing
+                } || TouchGesture.allCases.contains {
+                    $0 != candidate && updated.touchpad.action(for: $0) == existing
+                }
+            }) {
+                updated.touchpad.setAction(action, for: gesture)
+            } else {
+                return false
+            }
         }
         self = updated
         return true

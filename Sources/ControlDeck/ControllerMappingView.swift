@@ -133,6 +133,11 @@ struct ControllerMappingView: View {
                 }
                 .buttonStyle(.plain)
             }
+            if profile.action(for: .r3) == .textSelectionHold && profile.pointer.caretSource == .right {
+                Text("Hold R3 while moving the right stick to select text. Release R3 to keep the selection.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Text("Caret movement takes priority over pointer movement, then scrolling.")
                 .font(.caption).foregroundStyle(.secondary)
         }

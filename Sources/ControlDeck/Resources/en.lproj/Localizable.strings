@@ -1248,3 +1248,7 @@
 
 "On" = "On";
 "Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop." = "Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop.";
+
+"Text · Hold to select" = "Text · Hold to select";
+"Hold R3 while moving the right stick to select text. Release R3 to keep the selection." = "Hold R3 while moving the right stick to select text. Release R3 to keep the selection.";
+"Hold a controller button to select text with the caret stick." = "Hold a controller button to select text with the caret stick.";

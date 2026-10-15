@@ -516,6 +516,11 @@ struct ContextControllerOverlay: View {
             ForEach([ControllerStick.left, .right]) { stick in
                 mappingRow(stick.label, action: stickAction(stick))
             }
+            if profile.action(for: .r3) == .textSelectionHold && profile.pointer.caretSource == .right {
+                Text("Hold R3 while moving the right stick to select text. Release R3 to keep the selection.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Text("Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop.")
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

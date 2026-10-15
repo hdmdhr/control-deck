@@ -57,7 +57,7 @@ VALID_ACTIONS = {
     "screenshotSelection",
     "back", "forward", "missionControl", "showDesktop", "appSwitcher",
     "returnKey", "escapeKey", "spaceKey", "tabKey",
-    "copy", "paste", "cut", "selectAll", "undo", "redo",
+    "copy", "paste", "cut", "selectAll", "textSelectionHold", "undo", "redo",
     "zoomIn", "zoomOut",
     "arrowUp", "arrowDown", "arrowLeft", "arrowRight",
     "browserAddress", "browserNewTab", "browserCloseTab",

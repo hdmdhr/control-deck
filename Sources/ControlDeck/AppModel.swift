@@ -578,7 +578,10 @@ final class AppModel: ObservableObject {
     /// Only centered readings are forwarded: sampling can arm the safety gate,
     /// but a value-changed controller event must still initiate every movement.
     private func refreshCaretNeutral() {
-        guard caretInputAvailable else { return }
+        guard caretInputAvailable else {
+            pointer.stopCaret()
+            return
+        }
         let settings = profiles.activeProfile.pointer
         guard let sample = controller.currentStickPosition(settings.caretSource) else { return }
         pointer.observeCaretNeutral(x: sample.x, y: sample.y, settings: settings)
@@ -724,6 +727,11 @@ final class AppModel: ObservableObject {
         pressed: Bool,
         allowAppSwitcherHold: Bool = true
     ) {
+        // Selection release must survive overlays, layers and profile changes.
+        if !pressed, pointer.isSelectionHeld(by: input) {
+            pointer.setCaretSelection(input, pressed: false)
+            return
+        }
         // Release the initiating input before overlays, layers, and remapped profiles
         // can consume its key-up event.
         if !pressed, assistantDictationInput == input {
@@ -807,6 +815,13 @@ final class AppModel: ObservableObject {
             pointer.setButton(button, pressed: true)
             lastAction = String(localized: "\(action.label) · hold and move to drag", bundle: AppResources.localizationBundle)
             controller.playHaptic(.selection)
+            return
+        }
+        if action == .textSelectionHold {
+            guard !pressed || caretInputAvailable else { return }
+            if pressed { refreshCaretNeutral() }
+            pointer.setCaretSelection(input, pressed: pressed)
+            if pressed { controller.playHaptic(.selection) }
             return
         }
         if action == .cursorDictation || action == .grokDictation {

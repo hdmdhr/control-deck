@@ -1248,3 +1248,7 @@
 
 "On" = "开启";
 "Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop." = "推动即移动一步；持续推动 350 毫秒后，每 90 毫秒重复一次。回中即停。";
+
+"Text · Hold to select" = "文字 · 按住选择";
+"Hold R3 while moving the right stick to select text. Release R3 to keep the selection." = "按住 R3 并推动右摇杆选择文本；松开 R3 保留选区。";
+"Hold a controller button to select text with the caret stick." = "按住绑定此动作的手柄按键，并推动文字光标摇杆选择文本。";

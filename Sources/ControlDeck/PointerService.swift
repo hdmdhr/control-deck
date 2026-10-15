@@ -28,7 +28,20 @@ final class PointerService: ObservableObject {
     private var caretApplicationPID: pid_t?
     /// Rechecked by the repeat timer even if no further controller report arrives.
     var caretInputAllowed: () -> Bool = { true }
-    var onCaretStep: (CaretStickEngine.Direction) -> Void = PointerService.postCaretStep
+    private var selectionInputs: Set<ControllerInput> = []
+    var isSelectingText: Bool { !selectionInputs.isEmpty }
+    var onCaretStep: (CaretStickEngine.Direction, Bool) -> Void = PointerService.postCaretStep
+
+    func isSelectionHeld(by input: ControllerInput) -> Bool { selectionInputs.contains(input) }
+
+    func setCaretSelection(_ input: ControllerInput, pressed: Bool) {
+        if pressed {
+            selectionInputs.insert(input)
+        } else if selectionInputs.remove(input) != nil, selectionInputs.isEmpty {
+            // Do not let a still-tilted stick collapse the selection on release.
+            stopCaret()
+        }
+    }
     private var screenshotGeneration = 0
     private var screenshotDragStarted = false
     private var screenshotPasteboardChangeCount = 0
@@ -116,7 +129,7 @@ final class PointerService: ObservableObject {
         if let direction = caretEngine.update(
             x: x, y: y, now: ProcessInfo.processInfo.systemUptime
         ) {
-            onCaretStep(direction)
+            onCaretStep(direction, isSelectingText)
         }
         if caretEngine.hasPendingRepeat {
             ensureCaretTimer()
@@ -136,6 +149,7 @@ final class PointerService: ObservableObject {
 
     /// A fresh neutral sample is required after every takeover or context change.
     func stopCaret() {
+        selectionInputs.removeAll()
         caretEngine.reset()
         caretTimer?.invalidate()
         caretTimer = nil
@@ -349,7 +363,7 @@ final class PointerService: ObservableObject {
                     return
                 }
                 if let direction = self.caretEngine.tick(now: ProcessInfo.processInfo.systemUptime) {
-                    self.onCaretStep(direction)
+                    self.onCaretStep(direction, self.isSelectingText)
                 }
                 if !self.caretEngine.hasPendingRepeat {
                     self.caretTimer?.invalidate()
@@ -361,7 +375,14 @@ final class PointerService: ObservableObject {
         caretTimer = repeatTimer
     }
 
-    private static func postCaretStep(_ direction: CaretStickEngine.Direction) {
+    private static func postCaretStep(_ direction: CaretStickEngine.Direction, selecting: Bool) {
+        for event in caretKeyEvents(direction, selecting: selecting) {
+            event.post(tap: .cghidEventTap)
+        }
+    }
+
+    /// Selection is carried by each arrow pair, never by a global held Shift key.
+    static func caretKeyEvents(_ direction: CaretStickEngine.Direction, selecting: Bool) -> [CGEvent] {
         let key: Int
         switch direction {
         case .left: key = kVK_LeftArrow
@@ -371,11 +392,10 @@ final class PointerService: ObservableObject {
         }
         guard let down = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(key), keyDown: true),
               let up = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(key), keyDown: false)
-        else { return }
-        down.flags = []
-        up.flags = []
-        down.post(tap: .cghidEventTap)
-        up.post(tap: .cghidEventTap)
+        else { return [] }
+        down.flags = selecting ? .maskShift : []
+        up.flags = down.flags
+        return [down, up]
     }
 
     private func ensureTimer() {

@@ -1248,3 +1248,7 @@
 
 "On" = "オン";
 "Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop." = "倒すとすぐに1ステップ移動。350ミリ秒保持すると90ミリ秒ごとに繰り返し、中央に戻すと停止します。";
+
+"Text · Hold to select" = "テキスト · 押して選択";
+"Hold R3 while moving the right stick to select text. Release R3 to keep the selection." = "R3を押しながら右スティックを倒すとテキストを選択。R3を離すと選択範囲を保持します。";
+"Hold a controller button to select text with the caret stick." = "この動作を割り当てたボタンを押しながら、文字カーソルのスティックでテキストを選択してください。";

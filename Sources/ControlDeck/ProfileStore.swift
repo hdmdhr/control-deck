@@ -15,6 +15,7 @@ final class ProfileStore: ObservableObject {
         }
     }
 
+    private let textSelectionControlsKey = "textSelectionControls.v1"
     private let caretStickMigrationKey = "textCaretStick.v1"
     private let unifiedClipboardKey = "unifiedClipboardControls.v1"
     private let storageKey = "controllerProfiles.v3"
@@ -277,6 +278,17 @@ final class ProfileStore: ObservableObject {
                 }
             }
             UserDefaults.standard.set(complete, forKey: unifiedClipboardKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: textSelectionControlsKey) {
+            var complete = true
+            for index in profiles.indices {
+                if !profiles[index].migrateTextSelectionControls() {
+                    complete = false
+                    logger.error("Selection migration preserved a fully customized profile: \(self.profiles[index].kind.rawValue, privacy: .public)")
+                }
+            }
+            UserDefaults.standard.set(complete, forKey: textSelectionControlsKey)
         }
 
         if let data = try? JSONEncoder().encode(profiles) {
