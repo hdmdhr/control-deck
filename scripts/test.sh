@@ -24,6 +24,7 @@ swiftc \
   "$ROOT/Sources/ControlDeck/GrokBotNavigation.swift" \
   "$ROOT/Sources/ControlDeck/CursorConversationNavigation.swift" \
   "$ROOT/Sources/ControlDeck/TouchpadGestureEngine.swift" \
+  "$ROOT/Sources/ControlDeck/CaretStickEngine.swift" \
   "$ROOT/Sources/ControlDeck/PointerService.swift" \
   "$ROOT/Sources/ControlDeck/ScreenshotEditorModels.swift" \
   "$ROOT/Sources/ControlDeck/ScreenshotEditorController.swift" \
@@ -32,6 +33,13 @@ swiftc \
   "$ROOT/Tests/ControlDeckTests/ControlDeckTests.swift"
 
 "$OUTPUT"
+CARET_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-caret.XXXXXX")"
+swiftc -parse-as-library \
+  "$ROOT/Sources/ControlDeck/CaretStickEngine.swift" \
+  "$ROOT/Tests/ControlDeckTests/CaretStickTests.swift" \
+  -o "$CARET_OUTPUT"
+"$CARET_OUTPUT"
+rm -f "$CARET_OUTPUT"
 ACTIVATION_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-activation.XXXXXX")"
 trap 'rm -f "$ACTIVATION_OUTPUT"' EXIT
 swiftc -parse-as-library -framework AppKit \
