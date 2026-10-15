@@ -340,14 +340,14 @@ struct ControlDeckLogicTestRunner {
                GrokBotNavigation.verification(current: "B", initial: "A", target: "B") == .confirmed &&
                GrokBotNavigation.verification(current: "C", initial: "A", target: "B") == .unexpected,
                "accepted click alone is not success; only the requested bot confirms navigation")
-        expect(ControllerProfile.cursor.action(for: .square) == .none &&
-               ControllerProfile.grokBot.action(for: .square) == .none &&
+        expect(ControllerProfile.cursor.action(for: .square) == .deleteBackward &&
+               ControllerProfile.grokBot.action(for: .square) == .deleteBackward &&
                ControllerProfile.cursor.action(for: .l3) == .copy &&
                ControllerProfile.grokBot.action(for: .r3) == .textSelectionHold &&
                ControllerProfile.grokBot.action(for: .triangle) == .paste,
-               "assistant square stays free while panels, copy and paste stay accessible")
+               "assistant square deletes backward while panels, copy and paste stay accessible")
         for profile in [ControllerProfile.codex, .cursor, .grokBot] {
-            expect(profile.action(for: .square) == .none, "AI Square is intentionally unassigned")
+            expect(profile.action(for: .square) == .deleteBackward, "AI Square deletes backward")
             var repeated = profile
             expect(repeated.migrateAIConversationLayout() && repeated == profile,
                    "AI layout migration is idempotent")
@@ -368,11 +368,24 @@ struct ControlDeckLogicTestRunner {
         expect(oldLayout.migrateAIConversationLayout() &&
                originalActions.isSubset(of: Set(ControllerInput.allCases.map { oldLayout.action(for: $0) } +
                    TouchGesture.allCases.map { oldLayout.touchpad.action(for: $0) })) &&
-               oldLayout.action(for: .square) == .none,
-               "Saved AI layout migrates axes and frees Square without losing independent actions")
+               oldLayout.action(for: .square) == .deleteBackward,
+               "Saved AI layout migrates axes and assigns Square without losing independent actions")
         var unaffectedSlackLayout = ControllerProfile.slack
         expect(unaffectedSlackLayout.migrateAIConversationLayout() && unaffectedSlackLayout == ControllerProfile.slack,
                "AI layout migration leaves other app profiles intact")
+        var emptyAISquare = ControllerProfile.codex
+        emptyAISquare.setAction(.none, for: .square)
+        emptyAISquare.migrateAIDeleteButton()
+        expect(emptyAISquare.action(for: .square) == .deleteBackward,
+               "Existing unassigned AI Square gains ordinary backward delete")
+        emptyAISquare.setAction(.cut, for: .square)
+        emptyAISquare.migrateAIDeleteButton()
+        expect(emptyAISquare.action(for: .square) == .cut,
+               "Delete migration preserves a separately customized Square")
+        var emptyOtherSquare = ControllerProfile.general
+        emptyOtherSquare.migrateAIDeleteButton()
+        expect(emptyOtherSquare == ControllerProfile.general && MappedAction.deleteBackward.category == .keyboard,
+               "Delete remains selectable from Keyboard without changing other profiles")
         let snapshotEvents = AppSnapshotShortcut.events() ?? []
         expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
                "app snapshot uses four modifier transitions")

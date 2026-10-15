@@ -15,6 +15,7 @@ final class ProfileStore: ObservableObject {
         }
     }
 
+    private let aiDeleteButtonKey = "aiDeleteButton.v1"
     private let aiConversationLayoutKey = "aiConversationLayout.v1"
     private let textSelectionControlsKey = "textSelectionControls.v1"
     private let caretStickMigrationKey = "textCaretStick.v1"
@@ -301,6 +302,11 @@ final class ProfileStore: ObservableObject {
                 }
             }
             UserDefaults.standard.set(complete, forKey: aiConversationLayoutKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: aiDeleteButtonKey) {
+            for index in profiles.indices { profiles[index].migrateAIDeleteButton() }
+            UserDefaults.standard.set(true, forKey: aiDeleteButtonKey)
         }
 
         if let data = try? JSONEncoder().encode(profiles) {

@@ -319,6 +319,8 @@ final class CodexAutomation: ObservableObject {
             return key(kVK_ANSI_Equal, flags: .maskCommand, focusCodex: false)
         case .zoomOut:
             return key(kVK_ANSI_Minus, flags: .maskCommand, focusCodex: false)
+        case .deleteBackward:
+            return key(kVK_Delete, focusCodex: false)
         case .arrowUp:
             return key(kVK_UpArrow, focusCodex: false)
         case .arrowDown:

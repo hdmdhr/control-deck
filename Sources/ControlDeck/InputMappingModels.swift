@@ -412,6 +412,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case appSwitcher
 
     case returnKey
+    case deleteBackward
     case escapeKey
     case spaceKey
     case tabKey
@@ -558,6 +559,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .missionControl: String(localized: "Mission Control", bundle: AppResources.localizationBundle)
         case .showDesktop: String(localized: "Show desktop", bundle: AppResources.localizationBundle)
         case .appSwitcher: String(localized: "App switcher", bundle: AppResources.localizationBundle)
+        case .deleteBackward: String(localized: "Keyboard · Delete (Backspace)", bundle: AppResources.localizationBundle)
         case .returnKey: String(localized: "Return", bundle: AppResources.localizationBundle)
         case .escapeKey: String(localized: "Escape", bundle: AppResources.localizationBundle)
         case .spaceKey: String(localized: "Space", bundle: AppResources.localizationBundle)
@@ -662,7 +664,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
             .mouse
         case .back, .forward, .missionControl, .showDesktop, .appSwitcher:
             .navigation
-        case .returnKey, .escapeKey, .spaceKey, .tabKey, .copy, .paste, .cut,
+        case .returnKey, .deleteBackward, .escapeKey, .spaceKey, .tabKey, .copy, .paste, .cut,
              .selectAll, .textSelectionHold, .undo, .redo, .zoomIn, .zoomOut, .arrowUp,
              .arrowDown, .arrowLeft, .arrowRight:
             .keyboard
@@ -1517,20 +1519,20 @@ extension ControllerProfile {
 
 extension ControllerProfile {
     /// Up/down navigate conversations; left/right toggle their respective panels.
-    /// Square is intentionally free. Unique replaced actions remain reachable.
+    /// Square deletes backward. Unique replaced actions remain reachable.
     @discardableResult
     mutating func migrateAIConversationLayout() -> Bool {
         let desired: [ControllerInput: MappedAction]
         switch kind {
         case .codex:
             desired = [.dpadUp: .chatGPTPreviousConversation, .dpadDown: .chatGPTNextConversation,
-                       .dpadLeft: .codexSidebar, .dpadRight: .codexReview, .square: .none]
+                       .dpadLeft: .codexSidebar, .dpadRight: .codexReview, .square: .deleteBackward]
         case .cursor:
             desired = [.dpadUp: .cursorPreviousConversation, .dpadDown: .cursorNextConversation,
-                       .dpadLeft: .assistantLeftPanel, .dpadRight: .assistantRightPanel, .square: .none]
+                       .dpadLeft: .assistantLeftPanel, .dpadRight: .assistantRightPanel, .square: .deleteBackward]
         case .grokBot:
             desired = [.dpadUp: .grokPreviousBot, .dpadDown: .grokNextBot,
-                       .dpadLeft: .assistantLeftPanel, .dpadRight: .assistantRightPanel, .square: .none]
+                       .dpadLeft: .assistantLeftPanel, .dpadRight: .assistantRightPanel, .square: .deleteBackward]
         default: return true
         }
         let changed: [ControllerInput] = [.dpadUp, .dpadDown, .dpadLeft, .dpadRight, .square]
@@ -1555,5 +1557,13 @@ extension ControllerProfile {
         }
         self = updated
         return true
+    }
+}
+
+
+extension ControllerProfile {
+    mutating func migrateAIDeleteButton() {
+        guard [.codex, .cursor, .grokBot].contains(kind), action(for: .square) == .none else { return }
+        setAction(.deleteBackward, for: .square)
     }
 }

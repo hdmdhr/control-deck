@@ -56,7 +56,7 @@ VALID_ACTIONS = {
     "mouseLeftClick", "mouseRightClick", "mouseMiddleClick",
     "screenshotSelection",
     "back", "forward", "missionControl", "showDesktop", "appSwitcher",
-    "returnKey", "escapeKey", "spaceKey", "tabKey",
+    "returnKey", "deleteBackward", "escapeKey", "spaceKey", "tabKey",
     "copy", "paste", "cut", "selectAll", "textSelectionHold", "undo", "redo",
     "zoomIn", "zoomOut",
     "arrowUp", "arrowDown", "arrowLeft", "arrowRight",
