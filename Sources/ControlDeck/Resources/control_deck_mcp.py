@@ -268,6 +268,11 @@ def _tool_result(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         for key in ("speed", "acceleration", "deadZone"):
             if key in arguments:
                 pointer[key] = float(arguments[key])
+        if "caretSource" in arguments:
+            caret_source = str(arguments["caretSource"])
+            if caret_source not in VALID_STICKS:
+                raise ValueError("caretSource must be off, left, or right")
+            pointer["caretSource"] = caret_source
         if "scrollSource" in arguments:
             scroll_source = str(arguments["scrollSource"])
             if scroll_source not in VALID_STICKS:
@@ -407,7 +412,7 @@ TOOLS = [
     },
     {
         "name": "set_pointer",
-        "description": "Choose pointer and scroll sticks and tune their tracking values.",
+        "description": "Choose pointer, text caret, and scroll sticks. Text caret takes priority, then pointer, then scrolling.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -416,6 +421,10 @@ TOOLS = [
                 "speed": {"type": "number", "minimum": 100, "maximum": 2400},
                 "acceleration": {"type": "number", "minimum": 1, "maximum": 3},
                 "deadZone": {"type": "number", "minimum": 0.02, "maximum": 0.5},
+                "caretSource": {
+                    "type": "string",
+                    "enum": sorted(VALID_STICKS),
+                },
                 "scrollSource": {
                     "type": "string",
                     "enum": sorted(VALID_STICKS),

@@ -15,6 +15,8 @@ final class ProfileStore: ObservableObject {
         }
     }
 
+    private let caretStickMigrationKey = "textCaretStick.v1"
+    private let unifiedClipboardKey = "unifiedClipboardControls.v1"
     private let storageKey = "controllerProfiles.v3"
     private let autoSwitchKey = "profileAutoSwitch.v3"
     private let mouseRefinementKey = "mouseRefinement.v1"
@@ -256,6 +258,27 @@ final class ProfileStore: ObservableObject {
             UserDefaults.standard.set(true, forKey: grokSectionControlsKey)
         }
 
+        if !UserDefaults.standard.bool(forKey: caretStickMigrationKey) {
+            for index in profiles.indices {
+                profiles[index].pointer.caretSource = .right
+                profiles[index].pointer.scrollSource = .off
+                if profiles[index].pointer.source == .right {
+                    profiles[index].pointer.source = .left
+                }
+            }
+            UserDefaults.standard.set(true, forKey: caretStickMigrationKey)
+        }
+        if !UserDefaults.standard.bool(forKey: unifiedClipboardKey) {
+            var complete = true
+            for index in profiles.indices {
+                if !profiles[index].migrateUnifiedClipboardControls() {
+                    complete = false
+                    logger.error("Clipboard migration preserved a fully customized profile: \(self.profiles[index].kind.rawValue, privacy: .public)")
+                }
+            }
+            UserDefaults.standard.set(complete, forKey: unifiedClipboardKey)
+        }
+
         if let data = try? JSONEncoder().encode(profiles) {
             UserDefaults.standard.set(data, forKey: storageKey)
         }
@@ -342,6 +365,10 @@ final class ProfileStore: ObservableObject {
         updateEditingProfile { profile in
             profile.touchpad.setAction(action, for: gesture)
         }
+    }
+
+    func updateCaretSource(_ source: ControllerStick) {
+        updateEditingProfile { $0.pointer.caretSource = source }
     }
 
     func updatePointerSource(_ source: ControllerStick) {

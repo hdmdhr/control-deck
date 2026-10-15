@@ -68,6 +68,49 @@ struct ControlDeckLogicTestRunner {
             },
             "Every profile uses the global app snapshot shortcut on R2"
         )
+        for profile in ControllerProfile.defaults {
+            expect(profile.action(for: .l3) == .copy && profile.action(for: .r3) == .paste,
+                   "Every new profile has consistent clipboard stick clicks")
+            expect(ControllerInput.allCases.filter { profile.action(for: $0) == .copy } == [.l3] &&
+                   ControllerInput.allCases.filter { profile.action(for: $0) == .paste } == [.r3],
+                   "New profiles have no redundant clipboard buttons")
+            var repeated = profile
+            expect(repeated.migrateUnifiedClipboardControls() && repeated == profile,
+                   "Clipboard migration is idempotent")
+            expect((try? ProfileTransfer.decode(ProfileTransfer.encode(profile: profile)))?.profile == profile,
+                   "Caret settings and relocated mappings survive profile export")
+        }
+        var oldFinder = ControllerProfile.finder
+        oldFinder.setAction(.copy, for: .square)
+        oldFinder.setAction(.paste, for: .triangle)
+        oldFinder.setAction(.browserFind, for: .l3)
+        oldFinder.setAction(.spaceKey, for: .r3)
+        oldFinder.touchpad.setAction(.paste, for: .twoFingerLongPress)
+        oldFinder.gyro.setAction(.copy, for: .shake)
+        expect(oldFinder.migrateUnifiedClipboardControls() &&
+               oldFinder.action(for: .square) == .browserFind &&
+               oldFinder.action(for: .triangle) == .spaceKey &&
+               oldFinder.touchpad.action(for: .twoFingerLongPress) == .none &&
+               oldFinder.gyro.action(for: .shake) == .none,
+               "Old Finder moves search and Quick Look to freed face buttons and removes clipboard gestures")
+        var oldSlack = ControllerProfile.slack
+        oldSlack.setAction(.slackJumpConversation, for: .l3)
+        oldSlack.setAction(.slackHuddle, for: .r3)
+        oldSlack.setAction(.escapeKey, for: .options)
+        expect(oldSlack.migrateUnifiedClipboardControls() &&
+               oldSlack.action(for: .create) == .slackJumpConversation &&
+               oldSlack.action(for: .options) == .slackHuddle &&
+               oldSlack.action(for: .circle) == .escapeKey &&
+               oldSlack.action(for: .l1) == .back && oldSlack.action(for: .r1) == .forward,
+               "Old Slack preserves huddle, quick switcher, escape and history when stick clicks change")
+        var customClipboard = ControllerProfile.codex
+        customClipboard.setAction(.cut, for: .l3)
+        customClipboard.setAction(.selectAll, for: .r3)
+        let uniqueBefore = Set(ControllerInput.allCases.map { customClipboard.action(for: $0) }).subtracting([.none, .copy, .paste])
+        expect(customClipboard.migrateUnifiedClipboardControls() &&
+               uniqueBefore.isSubset(of: Set(ControllerInput.allCases.map { customClipboard.action(for: $0) } +
+                   TouchGesture.allCases.map { customClipboard.touchpad.action(for: $0) })),
+               "Custom unique stick click actions retain reachable buttons")
         var legacyCodexCapture = ControllerProfile.codex
         legacyCodexCapture.setAction(.screenshotSelection, for: .r2)
         legacyCodexCapture.migrateLegacyCodexSnapshot()
@@ -256,7 +299,8 @@ struct ControlDeckLogicTestRunner {
         expect(ControllerProfile.cursor.action(for: .square) == .assistantRightPanel &&
                ControllerProfile.grokBot.action(for: .square) == .assistantRightPanel &&
                ControllerProfile.cursor.action(for: .l3) == .copy &&
-               ControllerProfile.grokBot.action(for: .triangle) == .paste,
+               ControllerProfile.grokBot.action(for: .r3) == .paste &&
+               ControllerProfile.grokBot.action(for: .triangle) == .none,
                "assistant square opens the right panel while copy and paste stay accessible")
         let snapshotEvents = AppSnapshotShortcut.events() ?? []
         expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
@@ -567,12 +611,12 @@ struct ControlDeckLogicTestRunner {
         expect(
             ControllerProfile.terminal.action(for: .l2) == .systemDictation &&
                 ControllerProfile.terminal.action(for: .create) == .terminalNewTab &&
-                ControllerProfile.terminal.action(for: .r3) == .terminalClear,
+                ControllerProfile.terminal.action(for: .triangle) == .terminalClear,
             "Terminal provides dictation, tab creation and clear-screen controls"
         )
         expect(
             ControllerProfile.meetings.action(for: .l2) == .systemDictation &&
-                ControllerProfile.meetings.action(for: .r3) == .meetingVideo,
+                ControllerProfile.meetings.action(for: .dpadRight) == .meetingVideo,
             "Meetings provide universal dictation and camera controls"
         )
         expect(
@@ -666,17 +710,18 @@ struct ControlDeckLogicTestRunner {
             "General pointer uses left stick"
         )
         expect(
-            ControllerProfile.general.pointer.scrollSource == .right,
-            "General scrolling uses right stick"
+            ControllerProfile.general.pointer.scrollSource == .off &&
+                ControllerProfile.general.pointer.caretSource == .right,
+            "General right stick moves the text caret while touchpad handles scrolling"
         )
         expect(
             TouchpadSettings.trackpadDefault.oneFingerMode == .scroll,
             "Touchpad defaults to one-finger scrolling"
         )
         expect(
-            ControllerProfile.general.action(for: .square) == .copy &&
-                ControllerProfile.general.action(for: .triangle) == .paste,
-            "General face buttons provide copy and paste"
+            ControllerProfile.general.action(for: .square) == .none &&
+                ControllerProfile.general.action(for: .triangle) == .none,
+            "General redundant clipboard face buttons are released"
         )
         expect(
             ControllerProfile.general.action(for: .l3) == .copy &&
@@ -911,6 +956,7 @@ struct ControlDeckLogicTestRunner {
         )
         expect(
             migratedPointer.scrollSource == .right &&
+                migratedPointer.caretSource == .off &&
                 migratedPointer.scrollSpeed == 1_050,
             "legacy pointer settings gain right-stick scrolling"
         )

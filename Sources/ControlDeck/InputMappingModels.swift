@@ -661,6 +661,7 @@ struct StickPointerSettings: Codable, Equatable, Sendable {
     var acceleration: Double
     var deadZone: Double
     var scrollSource: ControllerStick
+    var caretSource: ControllerStick
     var scrollSpeed: Double
     var scrollAcceleration: Double
     var scrollDeadZone: Double
@@ -670,7 +671,8 @@ struct StickPointerSettings: Codable, Equatable, Sendable {
         speed: Double,
         acceleration: Double,
         deadZone: Double,
-        scrollSource: ControllerStick = .right,
+        scrollSource: ControllerStick = .off,
+        caretSource: ControllerStick = .right,
         scrollSpeed: Double = 1_050,
         scrollAcceleration: Double = 1.35,
         scrollDeadZone: Double = 0.18
@@ -680,6 +682,7 @@ struct StickPointerSettings: Codable, Equatable, Sendable {
         self.acceleration = acceleration
         self.deadZone = deadZone
         self.scrollSource = scrollSource
+        self.caretSource = caretSource
         self.scrollSpeed = scrollSpeed
         self.scrollAcceleration = scrollAcceleration
         self.scrollDeadZone = scrollDeadZone
@@ -691,6 +694,7 @@ struct StickPointerSettings: Codable, Equatable, Sendable {
         case acceleration
         case deadZone
         case scrollSource
+        case caretSource
         case scrollSpeed
         case scrollAcceleration
         case scrollDeadZone
@@ -706,6 +710,8 @@ struct StickPointerSettings: Codable, Equatable, Sendable {
             ControllerStick.self,
             forKey: .scrollSource
         ) ?? .right
+        // Legacy imports retain their original behavior until the explicit app migration.
+        caretSource = try values.decodeIfPresent(ControllerStick.self, forKey: .caretSource) ?? .off
         scrollSpeed = try values.decodeIfPresent(
             Double.self,
             forKey: .scrollSpeed
@@ -960,6 +966,8 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         self.pointer = pointer
         self.touchpad = touchpad
         self.gyro = gyro
+        // Built-in layouts use the same lossless normalization as saved layouts.
+        _ = migrateUnifiedClipboardControls()
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -1365,5 +1373,59 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         Dictionary(
             uniqueKeysWithValues: values.map { ($0.key.rawValue, $0.value.rawValue) }
         )
+    }
+}
+
+extension ControllerProfile {
+    /// Make stick clicks consistent without discarding a unique existing action.
+    /// Work on a copy: an unusually full custom layout is preserved if no usable
+    /// destination remains. Ordinary defaults have spare or duplicate controls.
+    @discardableResult
+    mutating func migrateUnifiedClipboardControls() -> Bool {
+        var updated = self
+        let displaced = [action(for: .l3), action(for: .r3)]
+            .filter { $0 != .none && $0 != .copy && $0 != .paste }
+        let otherButtons = ControllerInput.allCases.filter { $0 != .l3 && $0 != .r3 }
+        let freed = otherButtons.filter { [.copy, .paste].contains(action(for: $0)) }
+        for input in freed { updated.setAction(.none, for: input) }
+        // Clipboard actions on gestures also become redundant with stick clicks.
+        for gesture in TouchGesture.allCases where [.copy, .paste].contains(updated.touchpad.action(for: gesture)) {
+            updated.touchpad.setAction(.none, for: gesture)
+        }
+        for gesture in GyroGesture.allCases where [.copy, .paste].contains(updated.gyro.action(for: gesture)) {
+            updated.gyro.setAction(.none, for: gesture)
+        }
+        updated.setAction(.copy, for: .l3)
+        updated.setAction(.paste, for: .r3)
+
+        // Prefer the just-freed face buttons, then non-layer controls whose
+        // existing action still has another button. Never replace the shoulder
+        // conventions, profile layers or overlay click to find relocation room.
+        let candidates = freed + [.square, .triangle, .create, .options, .microphone,
+                                  .dpadUp, .dpadDown, .dpadLeft, .dpadRight]
+        for action in displaced {
+            if ControllerInput.allCases.contains(where: { updated.action(for: $0) == action }) { continue }
+            if let destination = candidates.first(where: { input in
+                let existing = updated.action(for: input)
+                return existing == .none || otherButtons.contains {
+                    $0 != input && updated.action(for: $0) == existing
+                }
+            }) {
+                updated.setAction(action, for: destination)
+                continue
+            }
+            // A stationary long press works even when pad movement scrolls.
+            // Do not put a displaced action on a swipe suppressed by scrolling.
+            if let gesture = [TouchGesture.twoFingerLongPress, .oneFingerLongPress,
+                              .twoFingerTap, .oneFingerTap].first(where: {
+                updated.touchpad.action(for: $0) == .none
+            }) {
+                updated.touchpad.setAction(action, for: gesture)
+                continue
+            }
+            return false
+        }
+        self = updated
+        return true
     }
 }
