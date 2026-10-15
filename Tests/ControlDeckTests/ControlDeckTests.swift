@@ -107,6 +107,7 @@ struct ControlDeckLogicTestRunner {
                oldSlack.action(for: .l1) == .back && oldSlack.action(for: .r1) == .forward,
                "Old Slack preserves huddle, quick switcher, escape and history when stick clicks change")
         var customClipboard = ControllerProfile.codex
+        customClipboard.touchpad.setAction(.none, for: .twoFingerLongPress)
         customClipboard.setAction(.cut, for: .l3)
         customClipboard.setAction(.selectAll, for: .r3)
         let uniqueBefore = Set(ControllerInput.allCases.map { customClipboard.action(for: $0) }).subtracting([.none, .copy, .paste])
@@ -133,6 +134,11 @@ struct ControlDeckLogicTestRunner {
                    "Ordinary caret arrows carry no selection modifier")
         }
         var oldSelectionLayout = ControllerProfile.codex
+        oldSelectionLayout.touchpad.setAction(.none, for: .twoFingerLongPress)
+        oldSelectionLayout.setAction(.codexReview, for: .square)
+        oldSelectionLayout.setAction(.chatGPTPreviousConversation, for: .dpadLeft)
+        oldSelectionLayout.setAction(.chatGPTNextConversation, for: .dpadRight)
+        oldSelectionLayout.setAction(.codexSidebar, for: .dpadDown)
         oldSelectionLayout.setAction(.paste, for: .r3)
         oldSelectionLayout.setAction(.codexPlan, for: .triangle)
         oldSelectionLayout.setAction(.codexSend, for: .dpadUp)
@@ -175,22 +181,24 @@ struct ControlDeckLogicTestRunner {
         previousCodex.migrateCodexUniversalDictation()
         expect(previousCodex.action(for: .l2) == .copy,
                "Codex dictation migration preserves a custom L2 action")
-        expect(ControllerProfile.grokBot.action(for: .dpadUp) == .grokCollapseSection &&
-               ControllerProfile.grokBot.action(for: .dpadLeft) == .grokPreviousBot &&
-               ControllerProfile.grokBot.action(for: .dpadDown) == .grokExpandSection &&
-               ControllerProfile.grokBot.action(for: .dpadRight) == .grokNextBot,
-               "Grok horizontal controls select bots and vertical controls collapse or expand sections")
-        expect(ControllerProfile.cursor.action(for: .dpadLeft) == .cursorPreviousConversation &&
-               ControllerProfile.cursor.action(for: .dpadRight) == .cursorNextConversation &&
-               ControllerProfile.cursor.action(for: .dpadUp) == .cursorCollapseWorkspace &&
-               ControllerProfile.cursor.action(for: .dpadDown) == .cursorExpandWorkspace,
-               "Cursor defaults navigate conversations horizontally and workspaces vertically")
+        expect(ControllerProfile.grokBot.action(for: .dpadUp) == .grokPreviousBot &&
+               ControllerProfile.grokBot.action(for: .dpadLeft) == .assistantLeftPanel &&
+               ControllerProfile.grokBot.action(for: .dpadDown) == .grokNextBot &&
+               ControllerProfile.grokBot.action(for: .dpadRight) == .assistantRightPanel,
+               "Grok vertical controls select bots and horizontal controls toggle panels")
+        expect(ControllerProfile.cursor.action(for: .dpadLeft) == .assistantLeftPanel &&
+               ControllerProfile.cursor.action(for: .dpadRight) == .assistantRightPanel &&
+               ControllerProfile.cursor.action(for: .dpadUp) == .cursorPreviousConversation &&
+               ControllerProfile.cursor.action(for: .dpadDown) == .cursorNextConversation,
+               "Cursor defaults navigate conversations vertically and panels horizontally")
         expect(ControllerProfile.codex.action(for: .circle) == .codexSend &&
                ControllerProfile.cursor.action(for: .circle) == .assistantSend &&
                ControllerProfile.grokBot.action(for: .circle) == .assistantSend,
                "AI circles send rather than stop or escape")
-        expect(ControllerProfile.codex.action(for: .dpadLeft) == .chatGPTPreviousConversation &&
-               ControllerProfile.codex.action(for: .dpadRight) == .chatGPTNextConversation &&
+        expect(ControllerProfile.codex.action(for: .dpadUp) == .chatGPTPreviousConversation &&
+               ControllerProfile.codex.action(for: .dpadDown) == .chatGPTNextConversation &&
+               ControllerProfile.codex.action(for: .dpadLeft) == .codexSidebar &&
+               ControllerProfile.codex.action(for: .dpadRight) == .codexReview &&
                ControllerProfile.codex.action(for: .l1) == .back &&
                ControllerProfile.codex.action(for: .r1) == .forward &&
                ControllerProfile.codex.action(for: .l2) == .systemDictation,
@@ -202,6 +210,7 @@ struct ControlDeckLogicTestRunner {
         }
         oldAI.migrateAIConversationControls()
         oldAI.migrateChatGPTSidebarNavigation()
+        oldAI.migrateAIConversationLayout()
         expect(oldAI == ControllerProfile.codex, "Legacy Codex controls migrate to requested conversation mapping")
         oldAI.setAction(.copy, for: .circle)
         oldAI.migrateAIConversationControls()
@@ -216,6 +225,7 @@ struct ControlDeckLogicTestRunner {
         oldChatGPT.setAction(.codexPreviousTask, for: .dpadLeft)
         oldChatGPT.setAction(.codexNextTask, for: .dpadRight)
         oldChatGPT.migrateChatGPTSidebarNavigation()
+        oldChatGPT.migrateAIConversationLayout()
         expect(oldChatGPT == ControllerProfile.codex, "ChatGPT recent-task arrows migrate to sidebar conversation actions")
         oldChatGPT.setAction(.copy, for: .dpadLeft)
         oldChatGPT.migrateChatGPTSidebarNavigation()
@@ -226,6 +236,7 @@ struct ControlDeckLogicTestRunner {
             oldCursor.setAction(action, for: input)
         }
         oldCursor.migrateCursorConversationNavigation()
+        oldCursor.migrateAIConversationLayout()
         expect(oldCursor == ControllerProfile.cursor, "Cursor legacy arrows migrate to conversation controls")
         oldCursor.migrateCursorConversationNavigation()
         expect(oldCursor == ControllerProfile.cursor, "Cursor navigation migration is idempotent")
@@ -238,6 +249,8 @@ struct ControlDeckLogicTestRunner {
         unaffectedGrok.migrateCursorConversationNavigation()
         expect(unaffectedGrok == ControllerProfile.grokBot, "Cursor migration leaves Grok profile unchanged")
         var previousGrok = ControllerProfile.grokBot
+        previousGrok.setAction(.grokPreviousBot, for: .dpadLeft)
+        previousGrok.setAction(.grokNextBot, for: .dpadRight)
         previousGrok.setAction(.grokPreviousBot, for: .dpadUp)
         previousGrok.setAction(.grokNextBot, for: .dpadDown)
         previousGrok.migrateGrokSectionControls()
@@ -327,12 +340,39 @@ struct ControlDeckLogicTestRunner {
                GrokBotNavigation.verification(current: "B", initial: "A", target: "B") == .confirmed &&
                GrokBotNavigation.verification(current: "C", initial: "A", target: "B") == .unexpected,
                "accepted click alone is not success; only the requested bot confirms navigation")
-        expect(ControllerProfile.cursor.action(for: .square) == .assistantRightPanel &&
-               ControllerProfile.grokBot.action(for: .square) == .assistantRightPanel &&
+        expect(ControllerProfile.cursor.action(for: .square) == .none &&
+               ControllerProfile.grokBot.action(for: .square) == .none &&
                ControllerProfile.cursor.action(for: .l3) == .copy &&
                ControllerProfile.grokBot.action(for: .r3) == .textSelectionHold &&
                ControllerProfile.grokBot.action(for: .triangle) == .paste,
-               "assistant square opens the right panel while copy and paste stay accessible")
+               "assistant square stays free while panels, copy and paste stay accessible")
+        for profile in [ControllerProfile.codex, .cursor, .grokBot] {
+            expect(profile.action(for: .square) == .none, "AI Square is intentionally unassigned")
+            var repeated = profile
+            expect(repeated.migrateAIConversationLayout() && repeated == profile,
+                   "AI layout migration is idempotent")
+        }
+        expect(ControllerProfile.cursor.touchpad.action(for: .twoFingerLongPress) == .cursorCollapseWorkspace &&
+               ControllerProfile.cursor.touchpad.action(for: .oneFingerLongPress) == .cursorExpandWorkspace &&
+               ControllerProfile.grokBot.touchpad.action(for: .twoFingerLongPress) == .grokCollapseSection &&
+               ControllerProfile.grokBot.touchpad.action(for: .oneFingerLongPress) == .grokExpandSection,
+               "AI workspace and section controls remain reachable by stationary pad gestures")
+        var oldLayout = ControllerProfile.cursor
+        oldLayout.touchpad = .trackpadDefault
+        oldLayout.setAction(.cursorCollapseWorkspace, for: .dpadUp)
+        oldLayout.setAction(.cursorExpandWorkspace, for: .dpadDown)
+        oldLayout.setAction(.cursorPreviousConversation, for: .dpadLeft)
+        oldLayout.setAction(.cursorNextConversation, for: .dpadRight)
+        oldLayout.setAction(.assistantRightPanel, for: .square)
+        let originalActions = Set(ControllerInput.allCases.map { oldLayout.action(for: $0) }).subtracting([.none])
+        expect(oldLayout.migrateAIConversationLayout() &&
+               originalActions.isSubset(of: Set(ControllerInput.allCases.map { oldLayout.action(for: $0) } +
+                   TouchGesture.allCases.map { oldLayout.touchpad.action(for: $0) })) &&
+               oldLayout.action(for: .square) == .none,
+               "Saved AI layout migrates axes and frees Square without losing independent actions")
+        var unaffectedSlackLayout = ControllerProfile.slack
+        expect(unaffectedSlackLayout.migrateAIConversationLayout() && unaffectedSlackLayout == ControllerProfile.slack,
+               "AI layout migration leaves other app profiles intact")
         let snapshotEvents = AppSnapshotShortcut.events() ?? []
         expect(snapshotEvents.count == 4 && snapshotEvents.allSatisfy { $0.type == .flagsChanged },
                "app snapshot uses four modifier transitions")
@@ -623,8 +663,8 @@ struct ControlDeckLogicTestRunner {
         )
         captureDefaults.removePersistentDomain(forName: captureDefaultsName)
         expect(
-            ControllerProfile.codex.action(for: .dpadUp) == .codexPlan,
-            "Codex D-pad Up retains Plan after Triangle becomes paste"
+            ControllerProfile.codex.touchpad.action(for: .twoFingerLongPress) == .codexPlan,
+            "Codex Plan remains reachable after D-pad Up becomes conversation navigation"
         )
         expect(
             ControllerProfile.codex.action(for: .touchpadClick) ==

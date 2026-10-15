@@ -400,12 +400,14 @@ final class CodexAutomation: ObservableObject {
                 return false
             }
             return key(kVK_Return, focusCodex: false)
-        case .assistantRightPanel:
+        case .assistantLeftPanel, .assistantRightPanel:
             guard ["com.anysphere.sand", "com.todesktop.230313mzl4w4u92"].contains(frontmostBundleIdentifier ?? "") else {
                 lastResult = String(localized: "Bring Cursor or Grok Bot to the foreground first", bundle: AppResources.localizationBundle)
                 return false
             }
-            return key(kVK_ANSI_B, flags: [.maskCommand, .maskAlternate], focusCodex: false)
+            return key(kVK_ANSI_B,
+                       flags: action == .assistantLeftPanel ? .maskCommand : [.maskCommand, .maskAlternate],
+                       focusCodex: false)
         case .cursorDictation, .grokDictation:
             lastResult = String(localized: "Hold the assigned controller button to dictate", bundle: AppResources.localizationBundle)
             return false

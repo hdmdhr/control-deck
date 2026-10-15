@@ -1252,3 +1252,7 @@
 "Text · Hold to select" = "文字 · 按住选择";
 "Hold R3 while moving the right stick to select text. Release R3 to keep the selection." = "按住 R3 并推动右摇杆选择文本；松开 R3 保留选区。";
 "Hold a controller button to select text with the caret stick." = "按住绑定此动作的手柄按键，并推动文字光标摇杆选择文本。";
+
+"Assistant · Left panel" = "助手 · 左侧面板";
+"Codex · Left panel" = "Codex · 左侧面板";
+"Codex · Right panel" = "Codex · 右侧面板";

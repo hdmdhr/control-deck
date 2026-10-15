@@ -1252,3 +1252,7 @@
 "Text · Hold to select" = "Text · Hold to select";
 "Hold R3 while moving the right stick to select text. Release R3 to keep the selection." = "Hold R3 while moving the right stick to select text. Release R3 to keep the selection.";
 "Hold a controller button to select text with the caret stick." = "Hold a controller button to select text with the caret stick.";
+
+"Assistant · Left panel" = "Assistant · Left panel";
+"Codex · Left panel" = "Codex · Left panel";
+"Codex · Right panel" = "Codex · Right panel";

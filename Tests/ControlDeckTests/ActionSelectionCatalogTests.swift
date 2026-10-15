@@ -25,11 +25,11 @@ struct ActionSelectionCatalogTests {
         }
         let cursor = relevantActions(.cursor)
         expect(cursor.contains(.cursorDictation) && cursor.contains(.cursorNextConversation), "Cursor scope includes native actions")
-        expect(cursor.contains(.assistantSend) && cursor.contains(.assistantRightPanel), "Cursor scope includes shared assistant actions")
+        expect(cursor.contains(.assistantSend) && cursor.contains(.assistantRightPanel) && cursor.contains(.assistantLeftPanel), "Cursor scope includes shared assistant actions")
         expect(!cursor.contains(.grokNextBot), "Cursor scope excludes unrelated Grok actions")
         let grok = relevantActions(.grokBot)
         expect(grok.contains(.grokDictation) && grok.contains(.grokNextBot), "Grok scope includes native actions")
-        expect(grok.contains(.assistantSend) && grok.contains(.assistantRightPanel), "Grok scope includes shared assistant actions")
+        expect(grok.contains(.assistantSend) && grok.contains(.assistantRightPanel) && grok.contains(.assistantLeftPanel), "Grok scope includes shared assistant actions")
         let browser = relevantActions(.chrome)
         expect(browser.contains(.codexAppSnapshot) && !browser.contains(.codexSend),
                "global snapshot stays visible without exposing unrelated Codex actions in other profiles")

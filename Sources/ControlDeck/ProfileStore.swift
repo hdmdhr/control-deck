@@ -15,6 +15,7 @@ final class ProfileStore: ObservableObject {
         }
     }
 
+    private let aiConversationLayoutKey = "aiConversationLayout.v1"
     private let textSelectionControlsKey = "textSelectionControls.v1"
     private let caretStickMigrationKey = "textCaretStick.v1"
     private let unifiedClipboardKey = "unifiedClipboardControls.v1"
@@ -289,6 +290,17 @@ final class ProfileStore: ObservableObject {
                 }
             }
             UserDefaults.standard.set(complete, forKey: textSelectionControlsKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: aiConversationLayoutKey) {
+            var complete = true
+            for index in profiles.indices {
+                if !profiles[index].migrateAIConversationLayout() {
+                    complete = false
+                    logger.error("AI layout migration preserved a fully customized profile: \(self.profiles[index].kind.rawValue, privacy: .public)")
+                }
+            }
+            UserDefaults.standard.set(complete, forKey: aiConversationLayoutKey)
         }
 
         if let data = try? JSONEncoder().encode(profiles) {

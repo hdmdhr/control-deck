@@ -66,7 +66,7 @@ VALID_ACTIONS = {
     "mediaPlayPause", "mediaNext", "mediaPrevious",
     "volumeUp", "volumeDown", "volumeMute",
     "openCodex", "openChrome", "openSpotify", "openClaude",
-    "systemDictation", "cursorDictation", "grokDictation", "cursorPreviousConversation", "cursorNextConversation", "cursorCollapseWorkspace", "cursorExpandWorkspace", "grokPreviousBot", "grokNextBot", "grokCollapseSection", "grokExpandSection", "assistantRightPanel", "assistantSend", "showControllerOverlay", "deleteTextWithConfirmation",
+    "systemDictation", "cursorDictation", "grokDictation", "cursorPreviousConversation", "cursorNextConversation", "cursorCollapseWorkspace", "cursorExpandWorkspace", "grokPreviousBot", "grokNextBot", "grokCollapseSection", "grokExpandSection", "assistantRightPanel", "assistantLeftPanel", "assistantSend", "showControllerOverlay", "deleteTextWithConfirmation",
 }
 
 

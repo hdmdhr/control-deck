@@ -461,6 +461,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
     case grokCollapseSection
     case grokExpandSection
     case assistantRightPanel
+    case assistantLeftPanel
     case assistantSend
     case showControllerOverlay
     case deleteTextWithConfirmation
@@ -472,7 +473,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .none: String(localized: "No action", bundle: AppResources.localizationBundle)
         case .codexSend: String(localized: "Codex · Send", bundle: AppResources.localizationBundle)
         case .codexStop: String(localized: "Codex · Stop", bundle: AppResources.localizationBundle)
-        case .codexReview: String(localized: "Codex · Review changes", bundle: AppResources.localizationBundle)
+        case .codexReview: String(localized: "Codex · Right panel", bundle: AppResources.localizationBundle)
         case .codexPlan: String(localized: "Codex · Plan mode", bundle: AppResources.localizationBundle)
         case .codexNewTask: String(localized: "Codex · New task", bundle: AppResources.localizationBundle)
         case .codexCommandMenu: String(localized: "Codex · Command menu", bundle: AppResources.localizationBundle)
@@ -483,7 +484,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .codexNextTask: String(localized: "Codex · Next task", bundle: AppResources.localizationBundle)
         case .codexBack: String(localized: "Codex · Back", bundle: AppResources.localizationBundle)
         case .codexForward: String(localized: "Codex · Forward", bundle: AppResources.localizationBundle)
-        case .codexSidebar: String(localized: "Codex · Toggle sidebar", bundle: AppResources.localizationBundle)
+        case .codexSidebar: String(localized: "Codex · Left panel", bundle: AppResources.localizationBundle)
         case .codexQuickChat: String(localized: "Codex · Quick chat", bundle: AppResources.localizationBundle)
         case .codexTerminal: String(localized: "Codex · Toggle terminal", bundle: AppResources.localizationBundle)
         case .codexApprove: String(localized: "Codex · Approve", bundle: AppResources.localizationBundle)
@@ -599,6 +600,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
         case .cursorExpandWorkspace: String(localized: "Cursor · Expand current workspace", bundle: AppResources.localizationBundle)
         case .grokPreviousBot: String(localized: "Grok Bot · Previous bot", bundle: AppResources.localizationBundle)
         case .assistantSend: String(localized: "Assistant · Send message", bundle: AppResources.localizationBundle)
+        case .assistantLeftPanel: String(localized: "Assistant · Left panel", bundle: AppResources.localizationBundle)
         case .assistantRightPanel: String(localized: "Assistant · Right panel", bundle: AppResources.localizationBundle)
         case .grokNextBot: String(localized: "Grok Bot · Next bot", bundle: AppResources.localizationBundle)
         case .grokCollapseSection: String(localized: "Grok Bot · Collapse current section", bundle: AppResources.localizationBundle)
@@ -641,7 +643,7 @@ enum MappedAction: String, Codable, CaseIterable, Identifiable, Sendable {
             .slack
         case .mailArchive, .mailReply, .mailUnread:
             .mail
-        case .assistantSend, .assistantRightPanel:
+        case .assistantSend, .assistantRightPanel, .assistantLeftPanel:
             .communication
         case .photosFavorite, .photosEdit, .photosRotate, .photosInfo:
             .files
@@ -1085,38 +1087,42 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         ]
     }
 
-    static let codex = ControllerProfile(
-        kind: .codex,
-        name: "Codex",
-        bundleIdentifiers: [
-            "com.openai.codex",
-            "com.ianhansel.controldeck",
-            "com.ianhansel.ps5codex"
-        ],
-        bindings: mapping([
-            .cross: .mouseLeftClick,
-            .circle: .codexSend,
-            .square: .codexReview,
-            .triangle: .codexPlan,
-            .l1: .back,
-            .r1: .forward,
-            .l2: .systemDictation,
-            .r2: .codexAppSnapshot,
-            .l3: .copy,
-            .r3: .paste,
-            .create: .codexNewTask,
-            .options: .codexCommandMenu,
-            .ps: .codexFocus,
-            .dpadUp: .codexSend,
-            .dpadDown: .codexSidebar,
-            .dpadLeft: .chatGPTPreviousConversation,
-            .dpadRight: .chatGPTNextConversation,
-            .touchpadClick: .showControllerOverlay,
-            .microphone: .codexDictation
-        ]),
-        pointer: .codexDefault,
-        touchpad: .trackpadDefault
-    )
+    static let codex: ControllerProfile = {
+        var profile = ControllerProfile(
+            kind: .codex,
+            name: "Codex",
+            bundleIdentifiers: [
+                "com.openai.codex",
+                "com.ianhansel.controldeck",
+                "com.ianhansel.ps5codex"
+            ],
+            bindings: mapping([
+                .cross: .mouseLeftClick,
+                .circle: .codexSend,
+                .square: .codexReview,
+                .triangle: .codexPlan,
+                .l1: .back,
+                .r1: .forward,
+                .l2: .systemDictation,
+                .r2: .codexAppSnapshot,
+                .l3: .copy,
+                .r3: .paste,
+                .create: .codexNewTask,
+                .options: .codexCommandMenu,
+                .ps: .codexFocus,
+                .dpadUp: .codexSend,
+                .dpadDown: .codexSidebar,
+                .dpadLeft: .chatGPTPreviousConversation,
+                .dpadRight: .chatGPTNextConversation,
+                .touchpadClick: .showControllerOverlay,
+                .microphone: .codexDictation
+            ]),
+            pointer: .codexDefault,
+            touchpad: .trackpadDefault
+        )
+        _ = profile.migrateAIConversationLayout()
+        return profile
+    }()
 
     static let general = ControllerProfile(
         kind: .general,
@@ -1321,6 +1327,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
             bundleIdentifier: "com.todesktop.230313mzl4w4u92", dictation: .cursorDictation
         )
         profile.migrateCursorConversationNavigation()
+        _ = profile.migrateAIConversationLayout()
         return profile
     }()
 
@@ -1333,6 +1340,7 @@ struct ControllerProfile: Codable, Equatable, Identifiable, Sendable {
         profile.setAction(.grokPreviousBot, for: .dpadLeft)
         profile.setAction(.grokExpandSection, for: .dpadDown)
         profile.setAction(.grokNextBot, for: .dpadRight)
+        _ = profile.migrateAIConversationLayout()
         return profile
     }()
 
@@ -1500,6 +1508,50 @@ extension ControllerProfile {
             } else {
                 return false
             }
+        }
+        self = updated
+        return true
+    }
+}
+
+
+extension ControllerProfile {
+    /// Up/down navigate conversations; left/right toggle their respective panels.
+    /// Square is intentionally free. Unique replaced actions remain reachable.
+    @discardableResult
+    mutating func migrateAIConversationLayout() -> Bool {
+        let desired: [ControllerInput: MappedAction]
+        switch kind {
+        case .codex:
+            desired = [.dpadUp: .chatGPTPreviousConversation, .dpadDown: .chatGPTNextConversation,
+                       .dpadLeft: .codexSidebar, .dpadRight: .codexReview, .square: .none]
+        case .cursor:
+            desired = [.dpadUp: .cursorPreviousConversation, .dpadDown: .cursorNextConversation,
+                       .dpadLeft: .assistantLeftPanel, .dpadRight: .assistantRightPanel, .square: .none]
+        case .grokBot:
+            desired = [.dpadUp: .grokPreviousBot, .dpadDown: .grokNextBot,
+                       .dpadLeft: .assistantLeftPanel, .dpadRight: .assistantRightPanel, .square: .none]
+        default: return true
+        }
+        let changed: [ControllerInput] = [.dpadUp, .dpadDown, .dpadLeft, .dpadRight, .square]
+        let displaced = changed.map { action(for: $0) }.filter { $0 != .none }
+        var updated = self
+        for input in changed { updated.setAction(desired[input]!, for: input) }
+        let stationary: [TouchGesture] = [.twoFingerLongPress, .oneFingerLongPress,
+                                         .twoFingerTap, .oneFingerTap]
+        for action in displaced {
+            if ControllerInput.allCases.contains(where: { updated.action(for: $0) == action }) ||
+                stationary.contains(where: { updated.touchpad.action(for: $0) == action }) { continue }
+            if let destination = stationary.first(where: { candidate in
+                let existing = updated.touchpad.action(for: candidate)
+                return existing == .none || ControllerInput.allCases.contains {
+                    updated.action(for: $0) == existing
+                } || stationary.contains {
+                    $0 != candidate && updated.touchpad.action(for: $0) == existing
+                }
+            }) {
+                updated.touchpad.setAction(action, for: destination)
+            } else { return false }
         }
         self = updated
         return true
