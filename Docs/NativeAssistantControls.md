@@ -85,10 +85,12 @@ ChatGPT/Codex、Cursor、Grok Bot 三个配置统一：↑ 上一个会话／Bot
 
 三个 AI 配置的 □ 改为普通 Delete/Backspace：无选区时删除插入点前的字符，有选区时删除选中文字。R3＋右摇杆选字后，松开 R3，再按 □ 删除选区。此动作只发送一次普通退格键，不调用「确认后清空整个输入框」。本次更新增加可选的「键盘 · 删除（退格）」动作；以后可在按键映射页面自行分配到任意按键。只迁移三个 AI 配置原本未分配的 □，不覆盖用户另设的功能。
 
-## 2026-10-19：Electron 辅助功能树初始化
+## 2026-10-19：浏览器辅助功能树初始化与面板识别
 
-故障日志中 ChatGPT 侧栏搜索仅访问 11–12 个节点，Cursor 仅访问 12–13 个节点且侧栏、面板、标签根均缺失；没有触及深度或节点预算。当前安装的 ChatGPT 26.1013.40934、Cursor 3.25.9 仍保留解析器依赖的静态侧栏标记。该现象符合 Electron 未启用 Chromium 辅助功能树的情况，不能据此提示侧栏一定折叠。
+故障日志中 ChatGPT 侧栏搜索仅访问 11–12 个节点，Cursor 仅访问 12–13 个节点且侧栏、面板、标签根均缺失；没有触及深度或节点预算。当前安装版本仍保留静态侧栏标记，但不能据此假定其运行时：ChatGPT 26.1013.40934 使用 Codex Framework 155.0.8059.80，二进制支持 AXEnhancedUserInterface，不支持 AXManualAccessibility；Cursor 3.25.9 支持后者。首版只请求 Electron 属性时，ChatGPT 返回 -25205，用户确认未恢复。
 
-ChatGPT 与 Cursor 导航现在先按 [Electron 官方接口](https://www.electronjs.org/docs/latest/tutorial/accessibility) 请求应用级 `AXManualAccessibility`，再读取会话；未就绪时每 100 毫秒重试，最多读取 8 次。不改变 macOS 隐私授权，不启用 VoiceOver。等待期间焦点、窗口或 ChatGPT 菜单状态改变即退出，继续保留原有唯一识别与点击后读回验证。结构测试覆盖延迟就绪、超时、焦点改变及取消；真实重启后的手柄导航需安装后复测。
+导航先尝试读取现有树，缺失时 Cursor 按 [Electron 官方接口](https://www.electronjs.org/docs/latest/tutorial/accessibility) 请求应用级 AXManualAccessibility，ChatGPT 按 [Chromium 实现](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/chrome/browser/chrome_browser_application_mac.mm) 请求 AXEnhancedUserInterface。Chromium 会延迟 2 秒启用，因此每 100 毫秒重试、最多读取 35 次；Electron 最多 8 次。同一进程成功请求后不重复设置，避免每次按键重置 Chromium 的启用计时。不改变 macOS 隐私授权，不启动 VoiceOver。焦点、窗口或 ChatGPT 菜单状态改变即退出，保留原有唯一识别与点击后读回验证。
 
-Cursor 复测时界面树恢复，但仍报告当前标签不在 16 个侧栏会话中。旧搜索选择第一个 `ui-tiling-panel`，且 Chats 与 Apps 都使用 `ui-tab-system-tabs__viewport`，因此可能将较浅的 Apps 标签作为会话。现在收集面板边界，并使用安装源码中的 `agentPanel.chatTabsAriaLabel`（当前为 Chats）识别聊天标签栏，跳过 Apps 和正文；多个 Chats 面板时保守拒绝。回归覆盖 Apps 在前且聊天标签在深层、只有 Apps、多 Chats 面板以及原有第 19 层标签栏。当前识别依赖英文 Chats 标签；其他 Cursor 界面语言及多聊天面板不声称支持。
+Cursor 复测时界面树恢复，但仍报告当前标签不在 16 个侧栏会话中。Chats 与 Apps 共用 ui-tab-system-tabs__viewport，旧版选择第一个面板，可能把 Apps 标签当作会话。现在收集面板边界并识别唯一的 Chats 标签栏；到达任一面板的标签栏即停止该面板搜索。标签栏也位于 ui-tiling-panel-content 内容宿主内，该类不能作为正文裁剪边界。多个 Chats 面板保守拒绝，当前依赖英文 Chats 标签，其他语言及多聊天面板暂不声明支持。
+
+回归覆盖异步就绪、Chromium 2 秒延迟、超时、焦点改变、取消、Apps 在前且聊天标签在内容宿主深层、仅 Apps、多 Chats，以及原有第 19 层标签栏。结构测试不能替代安装后的物理手柄复测。

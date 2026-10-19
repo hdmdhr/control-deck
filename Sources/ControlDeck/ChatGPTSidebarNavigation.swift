@@ -122,7 +122,7 @@ enum ChatGPTSidebarNavigation {
                 && !focusedMenu(application)
                 && element(application, kAXFocusedWindowAttribute).map { CFEqual($0, window) } == true
         }
-        guard let initial = await ElectronAccessibility.snapshot(application: application, isFocused: focused,
+        guard let initial = await ElectronAccessibility.snapshot(application: application, runtime: .chromium, isFocused: focused,
                                                                   read: { snapshot(window) }) else {
             return result(false, "ChatGPT sidebar conversation is unavailable; open the chat sidebar")
         }

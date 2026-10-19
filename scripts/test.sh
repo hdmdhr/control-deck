@@ -84,7 +84,7 @@ swiftc -parse-as-library -framework AppKit -framework ApplicationServices \
 "$CHAT_SIDEBAR_OUTPUT"
 rm -f "$CHAT_SIDEBAR_OUTPUT"
 ELECTRON_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-electron.XXXXXX")"
-swiftc -parse-as-library -framework ApplicationServices \
+swiftc -parse-as-library -framework AppKit -framework ApplicationServices \
   "$ROOT/Sources/ControlDeck/ElectronAccessibility.swift" \
   "$ROOT/Tests/ControlDeckTests/ElectronAccessibilityTests.swift" \
   -o "$ELECTRON_OUTPUT"

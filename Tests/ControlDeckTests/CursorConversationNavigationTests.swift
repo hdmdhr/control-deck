@@ -48,6 +48,9 @@ import ApplicationServices
         let unrelatedRoleTab = node(kAXTabGroupRole, "Unrelated nested group")
         var panelBody = node(kAXGroupRole, children: [unrelatedRoleTab, semanticTab, node(kAXGroupRole, "transcript")])
         for _ in 0..<24 { panelBody = node(kAXScrollAreaRole, children: [panelBody]) }
+        // Cursor mounts the entire agent panel, including its tabs, inside
+        // the tiling content host; it is not a transcript-only boundary.
+        panelBody.domClasses = ["ui-tiling-panel-content"]
         var semanticPanel = node(kAXGroupRole, "Panel", children: [panelBody])
         semanticPanel.domClasses = ["ui-tiling-panel"]
         let appsTab = node(kAXTabGroupRole, "Tabs", children: [node(kAXRadioButtonRole, "Changes", selected: true)])

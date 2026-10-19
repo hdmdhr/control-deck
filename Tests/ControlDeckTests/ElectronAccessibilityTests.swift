@@ -14,6 +14,13 @@ import Foundation
         require(ready == 42 && reads == 3 && waits == 2, "Wait for the asynchronously populated renderer tree")
 
         reads = 0
+        let chromium: Int? = await ElectronAccessibility.waitForSnapshot(attempts: 35, isFocused: { true }, read: {
+            reads += 1
+            return reads == 23 ? 42 : nil
+        }, pause: {})
+        require(chromium == 42 && reads == 23, "Chromium's two-second enhanced-UI debounce fits the startup wait")
+
+        reads = 0
         waits = 0
         let absent: Int? = await ElectronAccessibility.waitForSnapshot(isFocused: { true }, read: {
             reads += 1

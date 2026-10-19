@@ -206,15 +206,15 @@ enum CursorConversationNavigation {
         for panel in panels {
             var exactTab: Element?
             var roleTab: Element?
-            search(panel, prune: { _, names in
-                names.contains("ui-tab-system-tabs__viewport") || names.contains("ui-tiling-panel-content")
-            }) { node, names in
+            search(panel) { node, names in
                 // Cursor's agentPanel.chatTabsAriaLabel is "Chats"; its
                 // editorPanel.tabsAriaLabel is "Apps". Both use identical
                 // viewport classes, so the class alone cannot select a chat.
-                guard label(node) == "Chats" else { return false }
-                if names.contains("ui-tab-system-tabs__viewport") { exactTab = node; return true }
-                if roleTab == nil && role(node) == kAXTabGroupRole { roleTab = node }
+                if names.contains("ui-tab-system-tabs__viewport") {
+                    if label(node) == "Chats" { exactTab = node }
+                    return true
+                }
+                if roleTab == nil && role(node) == kAXTabGroupRole && label(node) == "Chats" { roleTab = node }
                 return false
             }
             if let tab = exactTab ?? roleTab { matches.append((panel, tab)) }
