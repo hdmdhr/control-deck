@@ -43,7 +43,7 @@ import ApplicationServices
         var semanticSidebar = node(kAXGroupRole, children: [button("Hide Sidebar"), button("Workspaces"),
             node(kAXTabGroupRole, "Unrelated sidebar tabs")])
         semanticSidebar.domClasses = ["ui-sidebar"]
-        var semanticTab = node(kAXGroupRole, children: [node(kAXRadioButtonRole, "Observed Current", selected: true)])
+        var semanticTab = node(kAXGroupRole, "Chats", children: [node(kAXRadioButtonRole, "Observed Current", selected: true)])
         semanticTab.domClasses = ["ui-tab-system-tabs__viewport"]
         let unrelatedRoleTab = node(kAXTabGroupRole, "Unrelated nested group")
         var panelBody = node(kAXGroupRole, children: [unrelatedRoleTab, semanticTab, node(kAXGroupRole, "transcript")])
@@ -54,23 +54,41 @@ import ApplicationServices
         let observedLayout = node(kAXWindowRole, "Cursor Agents", children: [semanticSidebar, semanticPanel,
             node(kAXGroupRole, "Pane", children: [appsTab])])
         let roots = CursorConversationNavigation.semanticRoots(observedLayout,
-            classes: { $0.domClasses }, role: { $0.role }, children: { $0.children })
+            classes: { $0.domClasses }, role: { $0.role }, label: { $0.label }, children: { $0.children })
         require(roots.sidebar?.id == semanticSidebar.id && roots.panel?.id == semanticPanel.id,
                 "Semantic roots stay scoped despite unrelated sidebar and Apps branches")
         require(roots.tab?.id == semanticTab.id, "Source-defined tab viewport outranks earlier generic tab group and survives wrappers beyond depth18")
         require(!roots.budgetExhausted && roots.depthPruned == 0, "Observed semantic layout fits bounded BFS")
+        var appsViewport = node(kAXTabGroupRole, "Apps", children: [node(kAXRadioButtonRole, "Changes", selected: true)])
+        appsViewport.domClasses = ["ui-tab-system-tabs__viewport"]
+        var appsPanel = node(kAXGroupRole, "Pane", children: [appsViewport])
+        appsPanel.domClasses = ["ui-tiling-panel"]
+        // The Apps panel is first and shallower, while the actual Chats tab
+        // lives behind 24 wrappers. The old first-panel BFS selected Changes.
+        let withApps = node(kAXWindowRole, children: [appsPanel, semanticSidebar, semanticPanel])
+        let chatRoots = CursorConversationNavigation.semanticRoots(withApps,
+            classes: { $0.domClasses }, role: { $0.role }, label: { $0.label }, children: { $0.children })
+        require(chatRoots.panel?.id == semanticPanel.id && chatRoots.tab?.id == semanticTab.id && chatRoots.chatPanels == 1,
+                "A shallower Apps panel never supplies the current chat tab")
+        let appsOnly = CursorConversationNavigation.semanticRoots(node(kAXWindowRole, children: [semanticSidebar, appsPanel]),
+            classes: { $0.domClasses }, role: { $0.role }, label: { $0.label }, children: { $0.children })
+        require(appsOnly.tab == nil, "Apps cannot substitute for a missing Chats panel")
+        let multipleChats = CursorConversationNavigation.semanticRoots(node(kAXWindowRole, children: [semanticSidebar, semanticPanel, semanticPanel]),
+            classes: { $0.domClasses }, role: { $0.role }, label: { $0.label }, children: { $0.children })
+        require(multipleChats.chatPanels == 2 && multipleChats.tab == nil,
+                "Multiple Chats panels fail safely rather than choosing the first")
         let normalized = CursorConversationNavigation.normalizedTabRoot(roots.tab!)
         require(normalized.role == kAXTabGroupRole && normalized.children[0].selected,
                 "Normalize only identified viewport so selected tab can be parsed")
         let exhausted = CursorConversationNavigation.semanticRoots(observedLayout, budget: 1,
-            classes: { $0.domClasses }, role: { $0.role }, children: { $0.children })
+            classes: { $0.domClasses }, role: { $0.role }, label: { $0.label }, children: { $0.children })
         require(exhausted.budgetExhausted && exhausted.tab == nil, "Discovery budget fails safely before roots are found")
         let bounded = CursorConversationNavigation.semanticRoots(observedLayout, maxDepth: 18,
-            classes: { $0.domClasses }, role: { $0.role }, children: { $0.children })
+            classes: { $0.domClasses }, role: { $0.role }, label: { $0.label }, children: { $0.children })
         require(bounded.tab == nil && bounded.depthPruned > 0, "Depth bound remains effective")
         let absentClasses = node(kAXWindowRole, children: [button("Hide Sidebar"), button("Workspaces"), appsTab])
         let absent = CursorConversationNavigation.semanticRoots(absentClasses,
-            classes: { $0.domClasses }, role: { $0.role }, children: { $0.children })
+            classes: { $0.domClasses }, role: { $0.role }, label: { $0.label }, children: { $0.children })
         require(absent.sidebar == nil && absent.panel == nil && absent.tab == nil, "Markers alone never select broad arbitrary ancestors")
         // Authorized raw metadata probe: window depth0, ui-sidebar depth12,
         // ui-tiling-panel depth15, tab viewport AXTabGroup depth19, selected
@@ -89,7 +107,7 @@ import ApplicationServices
             node(kAXButtonRole, "Probe Workspace", sortable: true), button("New Agent"), wrap(probeRows, count: 1)])
         probeSidebar.domClasses = ["ui-sidebar"]
         let selectedRadio = node(kAXRadioButtonRole, "Probe Current", selected: true)
-        var probeTabs = node(kAXTabGroupRole, children: [selectedRadio])
+        var probeTabs = node(kAXTabGroupRole, "Chats", children: [selectedRadio])
         probeTabs.domClasses = ["ui-tab-system-tabs__viewport"]
         var probePanel = node(kAXGroupRole, "Panel", children: [wrap(probeTabs, count: 3)])
         probePanel.domClasses = ["ui-tiling-panel"]
@@ -105,7 +123,7 @@ import ApplicationServices
         require(depth(of: probeTabs.id, in: probeLayout) == 19 && depth(of: selectedRadio.id, in: probeLayout) == 20,
                 "Fixture reproduces definitive old depth18 cutoff failure")
         let probeRoots = CursorConversationNavigation.semanticRoots(probeLayout,
-            classes: { $0.domClasses }, role: { $0.role }, children: { $0.children })
+            classes: { $0.domClasses }, role: { $0.role }, label: { $0.label }, children: { $0.children })
         require(probeRoots.sidebar?.id == probeSidebar.id && probeRoots.panel?.id == probePanel.id && probeRoots.tab?.id == probeTabs.id,
                 "Production semantic BFS recognizes exact authorized-probe hierarchy")
         let probeReadTree = node(kAXWindowRole, children: [probeRoots.sidebar!, CursorConversationNavigation.normalizedTabRoot(probeRoots.tab!)])

@@ -22,6 +22,7 @@ swiftc \
   "$ROOT/Sources/ControlDeck/AppSnapshotShortcut.swift" \
   "$ROOT/Sources/ControlDeck/AssistantDictationShortcut.swift" \
   "$ROOT/Sources/ControlDeck/GrokBotNavigation.swift" \
+  "$ROOT/Sources/ControlDeck/ElectronAccessibility.swift" \
   "$ROOT/Sources/ControlDeck/CursorConversationNavigation.swift" \
   "$ROOT/Sources/ControlDeck/TouchpadGestureEngine.swift" \
   "$ROOT/Sources/ControlDeck/CaretStickEngine.swift" \
@@ -67,6 +68,7 @@ swiftc -parse-as-library -framework AppKit \
 CURSOR_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-cursor.XXXXXX")"
 swiftc -parse-as-library -framework AppKit -framework ApplicationServices \
   "$ROOT/Sources/ControlDeck/AppResources.swift" \
+  "$ROOT/Sources/ControlDeck/ElectronAccessibility.swift" \
   "$ROOT/Sources/ControlDeck/CursorConversationNavigation.swift" \
   "$ROOT/Tests/ControlDeckTests/CursorConversationNavigationTests.swift" \
   -o "$CURSOR_OUTPUT"
@@ -75,11 +77,19 @@ rm -f "$CURSOR_OUTPUT"
 CHAT_SIDEBAR_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-chat-sidebar.XXXXXX")"
 swiftc -parse-as-library -framework AppKit -framework ApplicationServices \
   "$ROOT/Sources/ControlDeck/AppResources.swift" \
+  "$ROOT/Sources/ControlDeck/ElectronAccessibility.swift" \
   "$ROOT/Sources/ControlDeck/ChatGPTSidebarNavigation.swift" \
   "$ROOT/Tests/ControlDeckTests/ChatGPTSidebarNavigationTests.swift" \
   -o "$CHAT_SIDEBAR_OUTPUT"
 "$CHAT_SIDEBAR_OUTPUT"
 rm -f "$CHAT_SIDEBAR_OUTPUT"
+ELECTRON_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-electron.XXXXXX")"
+swiftc -parse-as-library -framework ApplicationServices \
+  "$ROOT/Sources/ControlDeck/ElectronAccessibility.swift" \
+  "$ROOT/Tests/ControlDeckTests/ElectronAccessibilityTests.swift" \
+  -o "$ELECTRON_OUTPUT"
+"$ELECTRON_OUTPUT"
+rm -f "$ELECTRON_OUTPUT"
 "$ROOT/scripts/test-resource-bundle.sh"
 "$ROOT/scripts/test-localization.sh"
 

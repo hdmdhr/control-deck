@@ -160,17 +160,19 @@ enum CursorConversationNavigation {
         var visited = 0
         var depthPruned = 0
         var budgetExhausted = false
+        var chatPanels = 0
     }
     /// Cursor's source gives semantic classes to the sidebar, main panel and
     /// tab viewport. Search breadth first through layout wrappers; never use a
     /// marker's arbitrary ancestor as a boundary for the rest of the window.
     static func semanticRoots<Element>(
         _ root: Element, budget: Int = 3000, maxDepth: Int = 60,
-        classes: (Element) -> [String], role: (Element) -> String,
+        classes: (Element) -> [String], role: (Element) -> String, label: (Element) -> String,
         children: (Element) -> [Element]
     ) -> SemanticDiscovery<Element> {
         var result = SemanticDiscovery<Element>()
-        func search(_ start: Element, visit: (Element, [String]) -> Bool) {
+        func search(_ start: Element, prune: (Element, [String]) -> Bool = { _, _ in false },
+                    visit: (Element, [String]) -> Bool) {
             var queue: [(Element, Int)] = [(start, 0)]
             var cursor = 0
             while cursor < queue.count {
@@ -181,28 +183,48 @@ enum CursorConversationNavigation {
                 result.visited += 1
                 let names = classes(node)
                 if visit(node, names) { return }
+                if prune(node, names) { continue }
                 guard ![kAXTextAreaRole, kAXTextFieldRole, kAXStaticTextRole].contains(role(node)) else { continue }
                 queue.append(contentsOf: children(node).map { ($0, depth + 1) })
             }
         }
         var sidebar: Element?
-        var panel: Element?
-        search(root) { node, names in
+        var panels: [Element] = []
+        // Collect panel boundaries without walking their transcripts or sidebar
+        // contents. Breadth-first order does not identify the main chat panel:
+        // the Apps panel can be shallower in the native AX tree.
+        search(root, prune: { _, names in
+            names.contains("ui-sidebar") || names.contains("ui-tiling-panel")
+        }) { node, names in
             if sidebar == nil && names.contains("ui-sidebar") { sidebar = node }
-            if panel == nil && names.contains("ui-tiling-panel") { panel = node }
-            return sidebar != nil && panel != nil
-        }
-        result.sidebar = sidebar
-        result.panel = panel
-        guard let panel, !result.budgetExhausted else { return result }
-        var exactTab: Element?
-        var roleTab: Element?
-        search(panel) { node, names in
-            if names.contains("ui-tab-system-tabs__viewport") { exactTab = node; return true }
-            if roleTab == nil && role(node) == kAXTabGroupRole { roleTab = node }
+            if names.contains("ui-tiling-panel") { panels.append(node) }
             return false
         }
-        result.tab = exactTab ?? roleTab
+        result.sidebar = sidebar
+        guard !result.budgetExhausted else { return result }
+        var matches: [(Element, Element)] = []
+        for panel in panels {
+            var exactTab: Element?
+            var roleTab: Element?
+            search(panel, prune: { _, names in
+                names.contains("ui-tab-system-tabs__viewport") || names.contains("ui-tiling-panel-content")
+            }) { node, names in
+                // Cursor's agentPanel.chatTabsAriaLabel is "Chats"; its
+                // editorPanel.tabsAriaLabel is "Apps". Both use identical
+                // viewport classes, so the class alone cannot select a chat.
+                guard label(node) == "Chats" else { return false }
+                if names.contains("ui-tab-system-tabs__viewport") { exactTab = node; return true }
+                if roleTab == nil && role(node) == kAXTabGroupRole { roleTab = node }
+                return false
+            }
+            if let tab = exactTab ?? roleTab { matches.append((panel, tab)) }
+        }
+        result.chatPanels = matches.count
+        // Multiple chat panels are ambiguous; never pick one based on depth.
+        if matches.count == 1, !result.budgetExhausted {
+            result.panel = matches[0].0
+            result.tab = matches[0].1
+        }
         return result
     }
 
@@ -231,7 +253,9 @@ enum CursorConversationNavigation {
         logger.error("Cursor snapshot unavailable: \(detail, privacy: .public)")
     }
     private static func result(_ success: Bool, _ message: String.LocalizationValue) -> (Bool, String) {
-        (success, String(localized: message, bundle: AppResources.localizationBundle))
+        let text = String(localized: message, bundle: AppResources.localizationBundle)
+        logger.notice("Navigation outcome success=\(success, privacy: .public): \(text, privacy: .public)")
+        return (success, text)
     }
     @MainActor private static func snapshot(_ window: AXUIElement) -> Live? {
         var elements: [Int: AXUIElement] = [:]
@@ -256,11 +280,12 @@ enum CursorConversationNavigation {
         let roots = semanticRoots(window,
             classes: { attribute($0, "AXDOMClassList") as? [String] ?? [] },
             role: { string($0, kAXRoleAttribute) },
+            label: { label($0) },
             children: { attribute($0, kAXChildrenAttribute) as? [AXUIElement] ?? [] })
         guard let sidebar = roots.sidebar, let panel = roots.panel, let tab = roots.tab else {
             let sidebarRole = roots.sidebar.map { string($0, kAXRoleAttribute) } ?? "missing"
             let panelRole = roots.panel.map { string($0, kAXRoleAttribute) } ?? "missing"
-            diagnose("semantic discovery sidebar=\(roots.sidebar != nil) panel=\(roots.panel != nil) tab=\(roots.tab != nil) sidebarRole=\(sidebarRole) panelRole=\(panelRole) visits=\(roots.visited) depthPruned=\(roots.depthPruned) exhausted=\(roots.budgetExhausted)")
+            diagnose("semantic discovery sidebar=\(roots.sidebar != nil) panel=\(roots.panel != nil) tab=\(roots.tab != nil) chatPanels=\(roots.chatPanels) sidebarRole=\(sidebarRole) panelRole=\(panelRole) visits=\(roots.visited) depthPruned=\(roots.depthPruned) exhausted=\(roots.budgetExhausted)")
             return nil
         }
         let rawTabTree = read(tab, depth: 0)
@@ -302,12 +327,16 @@ enum CursorConversationNavigation {
             return result(false, "Bring Cursor to the foreground to navigate conversations")
         }
         let root = AXUIElementCreateApplication(app.processIdentifier)
-        guard let window = element(root, kAXFocusedWindowAttribute), let initial = snapshot(window) else {
+        guard let window = element(root, kAXFocusedWindowAttribute) else {
             return result(false, "Cursor current conversation is unavailable or ambiguous")
         }
         func focused() -> Bool {
             NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier &&
                 element(root, kAXFocusedWindowAttribute).map { CFEqual($0, window) } == true
+        }
+        guard let initial = await ElectronAccessibility.snapshot(application: root, isFocused: focused,
+                                                                  read: { snapshot(window) }) else {
+            return result(false, "Cursor current conversation is unavailable or ambiguous")
         }
         let target: AXUIElement
         let targetName: String

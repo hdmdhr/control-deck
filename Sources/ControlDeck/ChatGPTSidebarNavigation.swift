@@ -114,13 +114,17 @@ enum ChatGPTSidebarNavigation {
         guard !focusedMenu(application) else {
             return result(false, "Close the ChatGPT menu before switching conversations")
         }
-        guard let window = element(application, kAXFocusedWindowAttribute), let initial = snapshot(window) else {
+        guard let window = element(application, kAXFocusedWindowAttribute) else {
             return result(false, "ChatGPT sidebar conversation is unavailable; open the chat sidebar")
         }
         func focused() -> Bool {
             NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier
                 && !focusedMenu(application)
                 && element(application, kAXFocusedWindowAttribute).map { CFEqual($0, window) } == true
+        }
+        guard let initial = await ElectronAccessibility.snapshot(application: application, isFocused: focused,
+                                                                  read: { snapshot(window) }) else {
+            return result(false, "ChatGPT sidebar conversation is unavailable; open the chat sidebar")
         }
         let index: Int
         do {
