@@ -94,3 +94,5 @@ ChatGPT/Codex、Cursor、Grok Bot 三个配置统一：↑ 上一个会话／Bot
 Cursor 复测时界面树恢复，但仍报告当前标签不在 16 个侧栏会话中。Chats 与 Apps 共用 ui-tab-system-tabs__viewport，旧版选择第一个面板，可能把 Apps 标签当作会话。现在收集面板边界并识别唯一的 Chats 标签栏；到达任一面板的标签栏即停止该面板搜索。标签栏也位于 ui-tiling-panel-content 内容宿主内，该类不能作为正文裁剪边界。多个 Chats 面板保守拒绝，当前依赖英文 Chats 标签，其他语言及多聊天面板暂不声明支持。
 
 回归覆盖异步就绪、Chromium 2 秒延迟、超时、焦点改变、取消、Apps 在前且聊天标签在内容宿主深层、仅 Apps、多 Chats，以及原有第 19 层标签栏。结构测试不能替代安装后的物理手柄复测。
+
+安装第二版后，用户确认 ChatGPT、Cursor 均恢复。运行日志记录 ChatGPT 连续 2 次、Cursor 连续 4 次切换成功且读回确认。ChatGPT 的增强接口返回 -25208，但约 2 秒后完整树出现并完成导航，因此不能单凭属性设置返回值断定初始化失败；实际快照和切换后选中状态仍是最终依据。安装应用、交付应用及 ZIP 的 40 个文件一致，18 个保存配置不变。Grok Bot 使用独立的命名 Bot 列表与标题/选中状态解析，不经过 Cursor 的 Chats/Apps 面板选择。
