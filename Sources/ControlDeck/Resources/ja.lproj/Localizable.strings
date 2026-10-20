@@ -1258,3 +1258,15 @@
 "Codex · Right panel" = "Codex · 右パネル";
 
 "Keyboard · Delete (Backspace)" = "キーボード · 後方削除（Delete）";
+
+/* Sogou right-Option shortcut */
+"Universal dictation provider" = "汎用音声入力サービス";
+"Provide the DualSense microphone to Sogou" = "DualSenseマイクをSogouに提供";
+"Select DualSense Microphone in Sogou's audio settings to use the controller microphone. Otherwise Sogou uses its own selected microphone. Native app voice controls remain available." = "コントローラーマイクを使うには、Sogouの音声設定でDualSense Microphoneを選択してください。それ以外はSogouで選択されたマイクを使用します。各アプリの音声入力は引き続き使えます。";
+"Universal dictation uses the selected ControlDeck engine. Cursor and Grok Bot keep their native L2 voice controls; Claude tries native voice first. Downloaded models run locally." = "汎用音声入力は選択したControlDeckエンジンを使います。CursorとGrok BotのL2音声入力は維持され、Claudeはアプリの音声入力を優先します。ダウンロードしたモデルはローカルで動作します。";
+
+"Sogou · Right Option" = "Sogou · 右Option";
+"Hold L2 to hold right Option; release L2 to release it. Enable Sogou's hold-right-Option voice shortcut first. Speak after Sogou shows it is ready." = "L2を押すと右Optionを押し、離すと解除します。先にSogouの「右Option長押し」音声ショートカットを有効にし、録音の準備ができてから話してください。";
+"Right Option held · release to finish" = "右Optionを押しています · 離すと終了";
+"Right Option released" = "右Optionを解除しました";
+"Unable to press right Option. Check Accessibility access and release other modifier keys." = "右Optionを押せません。アクセシビリティの許可を確認し、ほかの修飾キーを離してください。";

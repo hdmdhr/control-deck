@@ -1258,3 +1258,15 @@
 "Codex · Right panel" = "Codex · 右侧面板";
 
 "Keyboard · Delete (Backspace)" = "键盘 · 删除（退格）";
+
+/* Sogou right-Option shortcut */
+"Universal dictation provider" = "通用听写服务";
+"Provide the DualSense microphone to Sogou" = "向搜狗提供 DualSense 麦克风";
+"Select DualSense Microphone in Sogou's audio settings to use the controller microphone. Otherwise Sogou uses its own selected microphone. Native app voice controls remain available." = "使用手柄麦克风时，请在搜狗音频设置中选择 DualSense Microphone；否则使用搜狗自己选定的麦克风。各应用的原生语音入口保留。";
+"Universal dictation uses the selected ControlDeck engine. Cursor and Grok Bot keep their native L2 voice controls; Claude tries native voice first. Downloaded models run locally." = "通用听写使用所选的 ControlDeck 引擎。Cursor 与 Grok Bot 保留原生 L2 语音入口；Claude 优先尝试原生语音。本地下载的模型在本机运行。";
+
+"Sogou · Right Option" = "搜狗 · 右 Option";
+"Hold L2 to hold right Option; release L2 to release it. Enable Sogou's hold-right-Option voice shortcut first. Speak after Sogou shows it is ready." = "按住 L2 即按住右 Option，松开 L2 即松开。请先启用搜狗的「长按右 Option」语音快捷键，等搜狗显示就绪后再说话。";
+"Right Option held · release to finish" = "右 Option 已按住 · 松开结束";
+"Right Option released" = "右 Option 已松开";
+"Unable to press right Option. Check Accessibility access and release other modifier keys." = "无法按下右 Option。请检查辅助功能授权，并松开其他修饰键。";

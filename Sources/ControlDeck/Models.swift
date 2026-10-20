@@ -319,6 +319,7 @@ struct ControllerPreferences {
         static let soundTheme = "soundTheme.v2"
         static let statusHaptics = "statusHaptics"
         static let generalDictationEngine = "generalDictationEngine.v1"
+        static let generalDictationBackend = "generalDictationBackend.v1"
         static let generalDictationUsesControllerMicrophone =
             "generalDictationUsesControllerMicrophone.v1"
     }
@@ -362,6 +363,11 @@ struct ControllerPreferences {
         }
     }
 
+    static var generalDictationBackend: GeneralDictationBackend {
+        get { GeneralDictationBackend(rawValue: UserDefaults.standard.string(forKey: Key.generalDictationBackend) ?? "") ?? .sogouAssistant }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: Key.generalDictationBackend) }
+    }
+
     static var generalDictationUsesControllerMicrophone: Bool {
         get {
             if UserDefaults.standard.object(
@@ -378,6 +384,17 @@ struct ControllerPreferences {
                 newValue,
                 forKey: Key.generalDictationUsesControllerMicrophone
             )
+        }
+    }
+}
+
+enum GeneralDictationBackend: String, CaseIterable, Identifiable {
+    case sogouAssistant, controlDeck
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .sogouAssistant: String(localized: "Sogou · Right Option", bundle: AppResources.localizationBundle)
+        case .controlDeck: "ControlDeck"
         }
     }
 }

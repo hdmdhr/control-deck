@@ -1519,206 +1519,221 @@ struct DashboardView: View {
 
             GroupBox("Dictation & speech extensions") {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(
-                        "Apple Speech is ready immediately. Optional local speech extensions download only when you choose them, stay outside the ControlDeck app, and can be removed here at any time."
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                    Picker(
-                        "Transcription engine",
-                        selection: $model.generalDictationEngine
-                    ) {
-                        ForEach(GeneralDictationEngine.allCases) { engine in
-                            Text(engine.label).tag(engine)
+                    Picker("Universal dictation provider", selection: $model.generalDictationBackend) {
+                        ForEach(GeneralDictationBackend.allCases) { backend in
+                            Text(backend.label).tag(backend)
                         }
                     }
                     .pickerStyle(.segmented)
-
-                    Toggle(
-                        "Use the controller microphone when available",
-                        isOn:
-                            $model
-                                .generalDictationUsesControllerMicrophone
-                    )
-                    Text(
-                        model.generalDictationUsesControllerMicrophone
-                            ? String(localized: "Default · L2 uses the DualSense microphone over USB or Bluetooth.", bundle: AppResources.localizationBundle)
-                            : String(localized: "Comparison mode · L2 uses the Mac’s selected input while controller buttons still control dictation.", bundle: AppResources.localizationBundle)
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                    let selectedEngine = model.generalDictationEngine
-                    let selectedState = localSpeech.state(
-                        for: selectedEngine
-                    )
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(
-                            systemName:
-                                model.generalDictationEngine == .appleSpeech
-                                ? "apple.logo"
-                                : "waveform.badge.mic"
+                    if model.generalDictationBackend == .sogouAssistant {
+                        Text("Hold L2 to hold right Option; release L2 to release it. Enable Sogou's hold-right-Option voice shortcut first. Speak after Sogou shows it is ready.")
+                            .font(.callout)
+                        Toggle("Provide the DualSense microphone to Sogou", isOn: $model.generalDictationUsesControllerMicrophone)
+                        Text("Select DualSense Microphone in Sogou's audio settings to use the controller microphone. Otherwise Sogou uses its own selected microphone. Native app voice controls remain available.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(
+                            "Apple Speech is ready immediately. Optional local speech extensions download only when you choose them, stay outside the ControlDeck app, and can be removed here at any time."
                         )
-                        .font(.title2)
-                        .foregroundStyle(Color.accentColor)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(model.generalDictationEngine.detail)
-                                .font(.callout.weight(.medium))
-                            if selectedEngine != .appleSpeech {
-                                Text(
-                                    localSpeech.status(
-                                        for: selectedEngine
-                                    )
-                                )
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                if selectedState == .downloading {
-                                    Group {
-                                        if selectedEngine.isWhisperKit {
-                                            let progress =
-                                                selectedEngine ==
-                                                    .whisperKitSmallEnglish
-                                                ? localSpeech
-                                                    .whisperKitSmallProgress
-                                                : localSpeech
-                                                    .whisperKitProgress
-                                            VStack(
-                                                alignment: .leading,
-                                                spacing: 4
-                                            ) {
-                                                ProgressView(value: progress)
-                                                Text(
-                                                    "\(Int((progress * 100).rounded()))% · approximately \(ByteCountFormatter.string(fromByteCount: selectedEngine.estimatedDownloadBytes, countStyle: .file))"
-                                                )
-                                                .font(
-                                                    .caption2
-                                                        .monospacedDigit()
-                                                )
-                                                .foregroundStyle(.secondary)
-                                            }
-                                        } else {
-                                            ProgressView()
-                                        }
-                                    }
-                                    .frame(maxWidth: 360)
-                                }
-                                if selectedState == .loading {
-                                    HStack(spacing: 8) {
-                                        ProgressView()
-                                            .controlSize(.small)
-                                        Text(
-                                            "Loading and optimizing the model for this Mac…"
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                        Picker(
+                            "Transcription engine",
+                            selection: $model.generalDictationEngine
+                        ) {
+                            ForEach(GeneralDictationEngine.allCases) { engine in
+                                Text(engine.label).tag(engine)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        Toggle(
+                            "Use the controller microphone when available",
+                            isOn:
+                                $model
+                                    .generalDictationUsesControllerMicrophone
+                        )
+                        Text(
+                            model.generalDictationUsesControllerMicrophone
+                                ? String(localized: "Default · L2 uses the DualSense microphone over USB or Bluetooth.", bundle: AppResources.localizationBundle)
+                                : String(localized: "Comparison mode · L2 uses the Mac’s selected input while controller buttons still control dictation.", bundle: AppResources.localizationBundle)
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                        let selectedEngine = model.generalDictationEngine
+                        let selectedState = localSpeech.state(
+                            for: selectedEngine
+                        )
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(
+                                systemName:
+                                    model.generalDictationEngine == .appleSpeech
+                                    ? "apple.logo"
+                                    : "waveform.badge.mic"
+                            )
+                            .font(.title2)
+                            .foregroundStyle(Color.accentColor)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(model.generalDictationEngine.detail)
+                                    .font(.callout.weight(.medium))
+                                if selectedEngine != .appleSpeech {
+                                    Text(
+                                        localSpeech.status(
+                                            for: selectedEngine
                                         )
+                                    )
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
+                                    if selectedState == .downloading {
+                                        Group {
+                                            if selectedEngine.isWhisperKit {
+                                                let progress =
+                                                    selectedEngine ==
+                                                        .whisperKitSmallEnglish
+                                                    ? localSpeech
+                                                        .whisperKitSmallProgress
+                                                    : localSpeech
+                                                        .whisperKitProgress
+                                                VStack(
+                                                    alignment: .leading,
+                                                    spacing: 4
+                                                ) {
+                                                    ProgressView(value: progress)
+                                                    Text(
+                                                        "\(Int((progress * 100).rounded()))% · approximately \(ByteCountFormatter.string(fromByteCount: selectedEngine.estimatedDownloadBytes, countStyle: .file))"
+                                                    )
+                                                    .font(
+                                                        .caption2
+                                                            .monospacedDigit()
+                                                    )
+                                                    .foregroundStyle(.secondary)
+                                                }
+                                            } else {
+                                                ProgressView()
+                                            }
+                                        }
+                                        .frame(maxWidth: 360)
                                     }
-                                }
-                                if !localSpeech.partialTranscript.isEmpty {
+                                    if selectedState == .loading {
+                                        HStack(spacing: 8) {
+                                            ProgressView()
+                                                .controlSize(.small)
+                                            Text(
+                                                "Loading and optimizing the model for this Mac…"
+                                            )
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    if !localSpeech.partialTranscript.isEmpty {
+                                        Text(
+                                            "Live: \(localSpeech.partialTranscript)"
+                                        )
+                                        .font(.caption)
+                                        .lineLimit(2)
+                                    }
+                                } else {
                                     Text(
-                                        "Live: \(localSpeech.partialTranscript)"
+                                        "Uses Apple’s on-device model and requires no ControlDeck model storage."
                                     )
                                     .font(.caption)
-                                    .lineLimit(2)
-                                }
-                            } else {
-                                Text(
-                                    "Uses Apple’s on-device model and requires no ControlDeck model storage."
-                                )
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            }
-                        }
-                        Spacer()
-                        if selectedEngine != .appleSpeech {
-                            VStack(alignment: .trailing, spacing: 6) {
-                                if localSpeech.isReady(selectedEngine) {
-                                    Label(
-                                        "Ready",
-                                        systemImage: "checkmark.circle.fill"
-                                    )
-                                    .foregroundStyle(.green)
-                                } else {
-                                    Button("Download extension") {
-                                        localSpeech.prepareModel(
-                                            selectedEngine
-                                        )
-                                    }
-                                    .disabled(
-                                        selectedState == .downloading ||
-                                            selectedState == .loading
-                                    )
-                                }
-                                if localSpeech.installedBytes(
-                                    for: selectedEngine
-                                ) > 0 {
-                                    Text(
-                                        ByteCountFormatter.string(
-                                            fromByteCount:
-                                                localSpeech.installedBytes(
-                                                    for: selectedEngine
-                                                ),
-                                            countStyle: .file
-                                        )
-                                    )
-                                    .font(.caption.monospacedDigit())
                                     .foregroundStyle(.secondary)
-                                    Button("Remove model") {
-                                        localSpeech.removeDownloadedModel(
-                                            selectedEngine
+                                }
+                            }
+                            Spacer()
+                            if selectedEngine != .appleSpeech {
+                                VStack(alignment: .trailing, spacing: 6) {
+                                    if localSpeech.isReady(selectedEngine) {
+                                        Label(
+                                            "Ready",
+                                            systemImage: "checkmark.circle.fill"
+                                        )
+                                        .foregroundStyle(.green)
+                                    } else {
+                                        Button("Download extension") {
+                                            localSpeech.prepareModel(
+                                                selectedEngine
+                                            )
+                                        }
+                                        .disabled(
+                                            selectedState == .downloading ||
+                                                selectedState == .loading
                                         )
                                     }
-                                    .buttonStyle(.link)
-                                    .disabled(localSpeech.isActive)
+                                    if localSpeech.installedBytes(
+                                        for: selectedEngine
+                                    ) > 0 {
+                                        Text(
+                                            ByteCountFormatter.string(
+                                                fromByteCount:
+                                                    localSpeech.installedBytes(
+                                                        for: selectedEngine
+                                                    ),
+                                                countStyle: .file
+                                            )
+                                        )
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                        Button("Remove model") {
+                                            localSpeech.removeDownloadedModel(
+                                                selectedEngine
+                                            )
+                                        }
+                                        .buttonStyle(.link)
+                                        .disabled(localSpeech.isActive)
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if localSpeech.isActive {
-                        HStack(spacing: 10) {
-                            Text(localSpeech.activeStatus)
-                                .font(.caption.weight(.semibold))
-                            ProgressView(
-                                value: Double(localSpeech.inputLevel)
-                            )
-                            .frame(maxWidth: 220)
-                            Text(
-                                localSpeech.audioDuration,
-                                format: .number.precision(
-                                    .fractionLength(1)
+                        if localSpeech.isActive {
+                            HStack(spacing: 10) {
+                                Text(localSpeech.activeStatus)
+                                    .font(.caption.weight(.semibold))
+                                ProgressView(
+                                    value: Double(localSpeech.inputLevel)
                                 )
-                            )
-                            .font(.caption.monospacedDigit())
-                            Text("seconds")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: 220)
+                                Text(
+                                    localSpeech.audioDuration,
+                                    format: .number.precision(
+                                        .fractionLength(1)
+                                    )
+                                )
+                                .font(.caption.monospacedDigit())
+                                Text("seconds")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
-                    }
 
-                    Text(
-                        "L2 still uses Codex’s native dictation in Codex and Claude’s native dictation in Claude. This setting applies to Notes, browsers, editors and other apps. Live uses Parakeet and automatically retries buffered audio with a ready WhisperKit model when needed. Balanced keeps the download compact; High Accuracy is an optional larger Whisper model. Downloaded models never receive your audio over a network."
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                        Text(
+                            "Universal dictation uses the selected ControlDeck engine. Cursor and Grok Bot keep their native L2 voice controls; Claude tries native voice first. Downloaded models run locally."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                    HStack(spacing: 16) {
-                        Link(
-                            String(localized: "Parakeet model & license", bundle: AppResources.localizationBundle),
-                            destination: URL(
-                                string:
-                                    "https://huggingface.co/FluidInference/parakeet-realtime-eou-120m-coreml"
-                            )!
-                        )
-                        Link(
-                            String(localized: "WhisperKit model", bundle: AppResources.localizationBundle),
-                            destination: URL(
-                                string:
-                                    "https://huggingface.co/argmaxinc/whisperkit-coreml"
-                            )!
-                        )
+                        HStack(spacing: 16) {
+                            Link(
+                                String(localized: "Parakeet model & license", bundle: AppResources.localizationBundle),
+                                destination: URL(
+                                    string:
+                                        "https://huggingface.co/FluidInference/parakeet-realtime-eou-120m-coreml"
+                                )!
+                            )
+                            Link(
+                                String(localized: "WhisperKit model", bundle: AppResources.localizationBundle),
+                                destination: URL(
+                                    string:
+                                        "https://huggingface.co/argmaxinc/whisperkit-coreml"
+                                )!
+                            )
+                        }
+                        .font(.caption)
                     }
-                    .font(.caption)
                 }
                 .padding(8)
             }
