@@ -34,6 +34,13 @@ swiftc \
   "$ROOT/Tests/ControlDeckTests/ControlDeckTests.swift"
 
 "$OUTPUT"
+SOGOU_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-sogou.XXXXXX")"
+swiftc -parse-as-library -framework AppKit -framework ApplicationServices \
+  "$ROOT/Sources/ControlDeck/SogouDictationService.swift" \
+  "$ROOT/Tests/ControlDeckTests/SogouDictationTests.swift" \
+  -o "$SOGOU_OUTPUT"
+"$SOGOU_OUTPUT"
+rm -f "$SOGOU_OUTPUT"
 CARET_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/control-deck-caret.XXXXXX")"
 swiftc -parse-as-library \
   "$ROOT/Sources/ControlDeck/CaretStickEngine.swift" \

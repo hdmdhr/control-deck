@@ -1258,3 +1258,16 @@
 "Codex · Right panel" = "Codex · Right panel";
 
 "Keyboard · Delete (Backspace)" = "Keyboard · Delete (Backspace)";
+
+/* Sogou managed dictation */
+"Sogou Voice Assistant" = "Sogou Voice Assistant";
+"Universal dictation provider" = "Universal dictation provider";
+"Hold L2 to speak, release to finish. Sogou Voice Assistant handles recording, recognition and text insertion." = "Hold L2 to speak, release to finish. Sogou Voice Assistant handles recording, recognition and text insertion.";
+"Provide the DualSense microphone to Sogou" = "Provide the DualSense microphone to Sogou";
+"Select DualSense Microphone in Sogou's audio settings to use the controller microphone. Otherwise Sogou uses its own selected microphone. Native app voice controls remain available." = "Select DualSense Microphone in Sogou's audio settings to use the controller microphone. Otherwise Sogou uses its own selected microphone. Native app voice controls remain available.";
+"Sogou is listening · release to finish" = "Sogou is listening · release to finish";
+"Sogou recording ended" = "Sogou recording ended";
+"Sogou recording could not be verified" = "Sogou recording could not be verified";
+"Sogou 1.0.12 must be installed and idle" = "Sogou 1.0.12 must be installed and idle";
+"Starting Sogou Voice Assistant" = "Starting Sogou Voice Assistant";
+"Universal dictation uses the selected ControlDeck engine. Cursor and Grok Bot keep their native L2 voice controls; Claude tries native voice first. Downloaded models run locally." = "Universal dictation uses the selected ControlDeck engine. Cursor and Grok Bot keep their native L2 voice controls; Claude tries native voice first. Downloaded models run locally.";

@@ -1258,3 +1258,16 @@
 "Codex · Right panel" = "Codex · 右侧面板";
 
 "Keyboard · Delete (Backspace)" = "键盘 · 删除（退格）";
+
+/* Sogou managed dictation */
+"Sogou Voice Assistant" = "搜狗语音助手";
+"Universal dictation provider" = "通用听写服务";
+"Hold L2 to speak, release to finish. Sogou Voice Assistant handles recording, recognition and text insertion." = "按住 L2 说话，松开结束。搜狗语音助手负责录音、识别和上屏。";
+"Provide the DualSense microphone to Sogou" = "向搜狗提供 DualSense 麦克风";
+"Select DualSense Microphone in Sogou's audio settings to use the controller microphone. Otherwise Sogou uses its own selected microphone. Native app voice controls remain available." = "使用手柄麦克风时，请在搜狗音频设置中选择 DualSense Microphone；否则使用搜狗自己选定的麦克风。各应用的原生语音入口保留。";
+"Sogou is listening · release to finish" = "搜狗正在聆听 · 松开结束";
+"Sogou recording ended" = "搜狗录音已结束";
+"Sogou recording could not be verified" = "无法确认搜狗录音状态";
+"Sogou 1.0.12 must be installed and idle" = "需要安装空闲状态的搜狗语音助手 1.0.12";
+"Starting Sogou Voice Assistant" = "正在启动搜狗语音助手";
+"Universal dictation uses the selected ControlDeck engine. Cursor and Grok Bot keep their native L2 voice controls; Claude tries native voice first. Downloaded models run locally." = "通用听写使用所选的 ControlDeck 引擎。Cursor 与 Grok Bot 保留原生 L2 语音入口；Claude 优先尝试原生语音。本地下载的模型在本机运行。";

@@ -23,6 +23,18 @@ final class AppModel: ObservableObject {
     let codexExtension = CodexExtensionService()
     let gyroTelemetry = GyroTelemetry()
     private var chatGPTNavigationInFlight = false
+    private let sogouDictation = SogouDictationService()
+    private var sogouDictationInput: ControllerInput?
+    private var sogouDictationTransport: ControllerTransport?
+    @Published var generalDictationBackend = ControllerPreferences.generalDictationBackend {
+        didSet {
+            ControllerPreferences.generalDictationBackend = generalDictationBackend
+            sogouDictation.stop()
+            if generalDictationBackend == .controlDeck, generalDictationEngine != .appleSpeech {
+                localSpeechTranscriber.prepareModel(generalDictationEngine)
+            }
+        }
+    }
 
     @Published private(set) var currentState: CodexTaskState = .disconnected
     @Published private(set) var recentTasks: [RecentCodexTask] = []
@@ -40,7 +52,7 @@ final class AppModel: ObservableObject {
         didSet {
             ControllerPreferences.generalDictationEngine =
                 generalDictationEngine
-            if generalDictationEngine != .appleSpeech {
+            if generalDictationBackend == .controlDeck, generalDictationEngine != .appleSpeech {
                 localSpeechTranscriber.prepareModel(
                     generalDictationEngine
                 )
@@ -138,6 +150,20 @@ final class AppModel: ObservableObject {
     func start() {
         guard !started else { return }
         started = true
+        sogouDictation.onListening = { [weak self] in
+            guard let self else { return }
+            self.lastAction = String(localized: "Sogou is listening · release to finish", bundle: AppResources.localizationBundle)
+            self.controller.playHaptic(.selection)
+        }
+        sogouDictation.onFinished = { [weak self] succeeded in
+            guard let self else { return }
+            if let transport = self.sogouDictationTransport { self.stopVoiceCaptureResources(for: transport) }
+            self.sogouDictationTransport = nil
+            self.sogouDictationInput = nil
+            self.lastAction = String(localized: succeeded ? "Sogou recording ended" : "Sogou recording could not be verified", bundle: AppResources.localizationBundle)
+            self.hud.dismiss()
+            self.controller.playHaptic(succeeded ? .success : .error)
+        }
 
         pointer.caretInputAllowed = { [weak self] in
             self?.caretInputAvailable == true
@@ -146,10 +172,13 @@ final class AppModel: ObservableObject {
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
+        ) { [weak self] notification in
             MainActor.assumeIsolated {
                 self?.pointer.stopCaret()
                 self?.refreshCaretNeutral()
+                if (notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.bundleIdentifier != SogouDictationService.bundleID {
+                    self?.sogouDictation.stop()
+                }
             }
         }
         let neutralTimer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
@@ -232,6 +261,7 @@ final class AppModel: ObservableObject {
                 if !connected {
                     self?.pointer.stop()
                     self?.endAssistantDictationHold()
+                    self?.sogouDictation.stop()
                 }
             }
             .store(in: &cancellables)
@@ -242,6 +272,7 @@ final class AppModel: ObservableObject {
                 // A mapping change must also cancel pointer/scroll vectors that
                 // may now belong to the caret source without a fresh report.
                 self.pointer.stop()
+                self.sogouDictation.stop()
                 if self.assistantDictationInput != nil {
                     self.endAssistantDictationHold()
                 }
@@ -284,7 +315,7 @@ final class AppModel: ObservableObject {
         }
         controller.start()
         taskMonitor.start()
-        if generalDictationEngine != .appleSpeech {
+        if generalDictationBackend == .controlDeck, generalDictationEngine != .appleSpeech {
             localSpeechTranscriber.prepareModel(
                 generalDictationEngine
             )
@@ -569,7 +600,7 @@ final class AppModel: ObservableObject {
 
     private var caretInputAvailable: Bool {
         controller.isConnected && !selfTestRunning && !microphoneDiagnosticRunning &&
-        !voiceStopPending && !pushToTalkActive && !universalDictationActive &&
+        !voiceStopPending && !pushToTalkActive && !universalDictationActive && !sogouDictation.isActive &&
         !universalTranscriptionStopPending && assistantDictationInput == nil &&
         !controller.isBluetoothMicrophoneInputSuppressed && !screenshotEditor.isPresented &&
         !tutorial.isPresented && !optionsPressed && !createPressed && !appSwitcherHold.isActive
@@ -728,6 +759,14 @@ final class AppModel: ObservableObject {
         allowAppSwitcherHold: Bool = true
     ) {
         // Selection release must survive overlays, layers and profile changes.
+        if !pressed, sogouDictationInput == input {
+            sogouDictation.stop()
+            return
+        }
+        if sogouDictation.isActive {
+            if pressed, input == .microphone || input == .circle { sogouDictation.stop() }
+            return
+        }
         if !pressed, pointer.isSelectionHeld(by: input) {
             pointer.setCaretSelection(input, pressed: false)
             return
@@ -1347,6 +1386,10 @@ final class AppModel: ObservableObject {
         input: ControllerInput,
         pressed: Bool
     ) {
+        if generalDictationBackend == .sogouAssistant, profiles.activeKind != .claude {
+            handleSogouDictation(input: input, pressed: pressed)
+            return
+        }
         if pressed {
             universalDictationPressed = true
             universalDictationGeneration += 1
@@ -1389,6 +1432,10 @@ final class AppModel: ObservableObject {
                 return
             }
 
+            if generalDictationBackend == .sogouAssistant {
+                handleSogouDictation(input: input, pressed: true)
+                return
+            }
             guard let insertionTarget =
                 SpeechTextInsertionTarget.capture()
             else {
@@ -1606,6 +1653,36 @@ final class AppModel: ObservableObject {
         return terms.filter {
             !$0.isEmpty && seen.insert($0.lowercased()).inserted
         }
+    }
+
+    private func handleSogouDictation(input: ControllerInput, pressed: Bool) {
+        guard pressed else { sogouDictation.stop(); return }
+        guard !pushToTalkActive, !universalDictationActive, !universalTranscriptionStopPending else { return }
+        pointer.stop(); touchpad.cancel()
+        if generalDictationUsesControllerMicrophone {
+            let transport = controller.transport
+            if transport == .bluetooth {
+                guard bluetoothMicrophone.prepare(), bluetoothMicrophone.startCapture(),
+                      controller.setBluetoothMicrophoneCapture(true) else {
+                    stopVoiceCaptureResources(for: transport)
+                    feedbackFailure(bluetoothMicrophone.lastResult)
+                    return
+                }
+                sogouDictationTransport = transport
+            } else if transport == .usb {
+                audio.refresh()
+                _ = audio.ensureCodexMicrophone()
+                sogouDictationTransport = transport
+            }
+        }
+        guard sogouDictation.begin() else {
+            if let transport = sogouDictationTransport { stopVoiceCaptureResources(for: transport) }
+            sogouDictationTransport = nil
+            feedbackFailure(String(localized: "Sogou 1.0.12 must be installed and idle", bundle: AppResources.localizationBundle))
+            return
+        }
+        sogouDictationInput = input
+        lastAction = String(localized: "Starting Sogou Voice Assistant", bundle: AppResources.localizationBundle)
     }
 
     private func stopUniversalDictation(handsFree: Bool) {
@@ -1880,6 +1957,11 @@ final class AppModel: ObservableObject {
     }
 
     private func toggleUniversalDictation() {
+        if generalDictationBackend == .sogouAssistant, profiles.activeKind != .claude {
+            if sogouDictation.isActive { sogouDictation.stop() }
+            else { handleSogouDictation(input: .microphone, pressed: true) }
+            return
+        }
         let initiator = universalDictationMode?.initiator ?? .microphone
         handleUniversalDictation(input: initiator, pressed: true)
         handleUniversalDictation(input: initiator, pressed: false)
@@ -2184,6 +2266,7 @@ final class AppModel: ObservableObject {
 
     private func controllerTransportChanged(_ transport: ControllerTransport) {
         pointer.stop()
+        sogouDictation.stop()
         endAssistantDictationHold()
         appSwitcherSafetyGeneration += 1
         appSwitcherStick.reset()
@@ -2246,6 +2329,7 @@ final class AppModel: ObservableObject {
         else {
             return false
         }
+        if sogouDictation.isActive { return input == sogouDictationInput && !pressed }
         if universalDictationActive {
             if input == .microphone, pressed {
                 return true
@@ -2347,6 +2431,8 @@ final class AppModel: ObservableObject {
 
     private func shutdown() {
         pointer.stop()
+        sogouDictation.stopBeforeExit()
+        if let transport = sogouDictationTransport { stopVoiceCaptureResources(for: transport) }
         caretNeutralTimer?.invalidate()
         caretNeutralTimer = nil
         if let caretApplicationObserver {
