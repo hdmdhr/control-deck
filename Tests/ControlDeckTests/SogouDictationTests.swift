@@ -44,6 +44,9 @@ import AppKit
         let leftHeld = RightOptionShortcut.releaseFlags(current: held, leftOptionHeld: true)
         check(leftHeld.contains(.maskAlternate) && !leftHeld.contains(RightOptionShortcut.rightOptionFlag),
               "Cleanup preserves the user's physical left Option")
+        let capsDown = RightOptionShortcut.event(source: source, pressed: true, currentFlags: .maskAlphaShift)!
+        check(capsDown.flags.contains(.maskAlphaShift) && capsDown.flags.contains(.maskAlternate),
+              "Holding the shortcut preserves Caps Lock state")
         up.timestamp = 1
         RightOptionShortcut.prepareRelease(up, current: held, leftOptionHeld: false, timestamp: 5_000_000_001)
         check(up.timestamp == 5_000_000_001 && up.flags == [.maskShift, .maskCommand],

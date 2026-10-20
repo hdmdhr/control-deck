@@ -48,11 +48,12 @@ final class RightOptionShortcut {
 
     func press() -> Bool {
         let modifiers: CGEventFlags = [.maskShift, .maskControl, .maskAlternate, .maskCommand, .maskSecondaryFn]
+        let currentFlags = CGEventSource.flagsState(.combinedSessionState)
         guard pendingRelease == nil, AXIsProcessTrusted(),
-              CGEventSource.flagsState(.combinedSessionState).intersection(modifiers).isEmpty,
+              currentFlags.intersection(modifiers).isEmpty,
               !CGEventSource.keyState(.hidSystemState, key: Self.rightOption),
               let source = CGEventSource(stateID: .privateState),
-              let down = Self.event(source: source, pressed: true),
+              let down = Self.event(source: source, pressed: true, currentFlags: currentFlags),
               let up = Self.event(source: source, pressed: false) else { return false }
         pendingRelease = up
         down.post(tap: .cghidEventTap)
@@ -85,10 +86,10 @@ final class RightOptionShortcut {
         return flags
     }
 
-    static func event(source: CGEventSource, pressed: Bool) -> CGEvent? {
+    static func event(source: CGEventSource, pressed: Bool, currentFlags: CGEventFlags = []) -> CGEvent? {
         guard let event = CGEvent(keyboardEventSource: source, virtualKey: rightOption, keyDown: pressed) else { return nil }
         event.type = .flagsChanged
-        event.flags = pressed ? [.maskAlternate, rightOptionFlag] : []
+        event.flags = pressed ? currentFlags.union([.maskAlternate, rightOptionFlag]) : []
         return event
     }
 }
