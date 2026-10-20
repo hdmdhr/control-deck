@@ -47,9 +47,10 @@ import AppKit
         let capsDown = RightOptionShortcut.event(source: source, pressed: true, currentFlags: .maskAlphaShift)!
         check(capsDown.flags.contains(.maskAlphaShift) && capsDown.flags.contains(.maskAlternate),
               "Holding the shortcut preserves Caps Lock state")
+        let nativeReleaseFlags = up.flags
         up.timestamp = 1
         RightOptionShortcut.prepareRelease(up, current: held, leftOptionHeld: false, timestamp: 5_000_000_001)
-        check(up.timestamp == 5_000_000_001 && up.flags == [.maskShift, .maskCommand],
+        check(up.timestamp == 5_000_000_001 && up.flags == nativeReleaseFlags.union([.maskShift, .maskCommand]),
               "Reserved key-up gets its actual release time so a long hold is not mistaken for a tap")
         print("PASS: Sogou right-Option hold/release, denied press, shutdown and modifier identity")
     }

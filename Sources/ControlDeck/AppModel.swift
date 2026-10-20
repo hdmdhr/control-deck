@@ -1671,8 +1671,14 @@ final class AppModel: ObservableObject {
                 sogouDictationTransport = transport
             } else if transport == .usb {
                 audio.refresh()
-                _ = audio.ensureCodexMicrophone()
+                guard audio.ensureCodexMicrophone() else {
+                    feedbackFailure(audio.lastAudioResult)
+                    return
+                }
                 sogouDictationTransport = transport
+            } else {
+                feedbackFailure(String(localized: "Controller microphone unavailable", bundle: AppResources.localizationBundle))
+                return
             }
         }
         guard sogouDictation.begin() else {
