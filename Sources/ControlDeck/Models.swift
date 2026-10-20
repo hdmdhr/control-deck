@@ -393,7 +393,7 @@ enum GeneralDictationBackend: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .sogouAssistant: String(localized: "Sogou Voice Assistant", bundle: AppResources.localizationBundle)
+        case .sogouAssistant: String(localized: "Sogou · Right Option", bundle: AppResources.localizationBundle)
         case .controlDeck: "ControlDeck"
         }
     }

@@ -150,19 +150,19 @@ final class AppModel: ObservableObject {
     func start() {
         guard !started else { return }
         started = true
-        sogouDictation.onListening = { [weak self] in
+        sogouDictation.onPressed = { [weak self] in
             guard let self else { return }
-            self.lastAction = String(localized: "Sogou is listening · release to finish", bundle: AppResources.localizationBundle)
+            self.lastAction = String(localized: "Right Option held · release to finish", bundle: AppResources.localizationBundle)
             self.controller.playHaptic(.selection)
         }
-        sogouDictation.onFinished = { [weak self] succeeded in
+        sogouDictation.onReleased = { [weak self] in
             guard let self else { return }
             if let transport = self.sogouDictationTransport { self.stopVoiceCaptureResources(for: transport) }
             self.sogouDictationTransport = nil
             self.sogouDictationInput = nil
-            self.lastAction = String(localized: succeeded ? "Sogou recording ended" : "Sogou recording could not be verified", bundle: AppResources.localizationBundle)
+            self.lastAction = String(localized: "Right Option released", bundle: AppResources.localizationBundle)
             self.hud.dismiss()
-            self.controller.playHaptic(succeeded ? .success : .error)
+            self.controller.playHaptic(.selection)
         }
 
         pointer.caretInputAllowed = { [weak self] in
@@ -1678,11 +1678,10 @@ final class AppModel: ObservableObject {
         guard sogouDictation.begin() else {
             if let transport = sogouDictationTransport { stopVoiceCaptureResources(for: transport) }
             sogouDictationTransport = nil
-            feedbackFailure(String(localized: "Sogou 1.0.12 must be installed and idle", bundle: AppResources.localizationBundle))
+            feedbackFailure(String(localized: "Unable to press right Option. Check Accessibility access and release other modifier keys.", bundle: AppResources.localizationBundle))
             return
         }
         sogouDictationInput = input
-        lastAction = String(localized: "Starting Sogou Voice Assistant", bundle: AppResources.localizationBundle)
     }
 
     private func stopUniversalDictation(handsFree: Bool) {

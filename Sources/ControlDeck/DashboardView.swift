@@ -1526,7 +1526,7 @@ struct DashboardView: View {
                     }
                     .pickerStyle(.segmented)
                     if model.generalDictationBackend == .sogouAssistant {
-                        Text("Hold L2 to speak, release to finish. Sogou Voice Assistant handles recording, recognition and text insertion.")
+                        Text("Hold L2 to hold right Option; release L2 to release it. Enable Sogou's hold-right-Option voice shortcut first. Speak after Sogou shows it is ready.")
                             .font(.callout)
                         Toggle("Provide the DualSense microphone to Sogou", isOn: $model.generalDictationUsesControllerMicrophone)
                         Text("Select DualSense Microphone in Sogou's audio settings to use the controller microphone. Otherwise Sogou uses its own selected microphone. Native app voice controls remain available.")
