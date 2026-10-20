@@ -22,6 +22,26 @@ final class PointerService: ObservableObject {
     private var scrollVectorSource: ControllerStick = .off
     private var scrollSettings = StickPointerSettings.generalDefault
     private var lastScrollTick = Date()
+    private var caretTimer: Timer?
+    private var caretEngine = CaretStickEngine()
+    private var caretSource: ControllerStick = .off
+    private var caretApplicationPID: pid_t?
+    /// Rechecked by the repeat timer even if no further controller report arrives.
+    var caretInputAllowed: () -> Bool = { true }
+    private var selectionInputs: Set<ControllerInput> = []
+    var isSelectingText: Bool { !selectionInputs.isEmpty }
+    var onCaretStep: (CaretStickEngine.Direction, Bool) -> Void = PointerService.postCaretStep
+
+    func isSelectionHeld(by input: ControllerInput) -> Bool { selectionInputs.contains(input) }
+
+    func setCaretSelection(_ input: ControllerInput, pressed: Bool) {
+        if pressed {
+            selectionInputs.insert(input)
+        } else if selectionInputs.remove(input) != nil, selectionInputs.isEmpty {
+            // Do not let a still-tilted stick collapse the selection on release.
+            stopCaret()
+        }
+    }
     private var screenshotGeneration = 0
     private var screenshotDragStarted = false
     private var screenshotPasteboardChangeCount = 0
@@ -37,12 +57,15 @@ final class PointerService: ObservableObject {
         settings: StickPointerSettings
     ) {
         self.settings = settings
-        if vectorSource != settings.source {
+        // Explicit caret assignments take precedence over pointer and scrolling.
+        let effectiveSource = settings.source == settings.caretSource
+            ? ControllerStick.off : settings.source
+        if vectorSource != effectiveSource {
             vector = .zero
-            vectorSource = settings.source
+            vectorSource = effectiveSource
         }
-        guard settings.source != .off, settings.source == stick else {
-            if settings.source == .off {
+        guard effectiveSource != .off, effectiveSource == stick else {
+            if effectiveSource == .off {
                 vector = .zero
                 lastMovementSource = "Off"
             }
@@ -62,7 +85,8 @@ final class PointerService: ObservableObject {
         pointerSource: ControllerStick
     ) {
         scrollSettings = settings
-        let effectiveSource = settings.scrollSource == pointerSource
+        let effectiveSource = settings.scrollSource == pointerSource ||
+            settings.scrollSource == settings.caretSource
             ? ControllerStick.off
             : settings.scrollSource
         if scrollVectorSource != effectiveSource {
@@ -82,7 +106,57 @@ final class PointerService: ObservableObject {
         ensureScrollTimer()
     }
 
+    func updateCaretStick(
+        _ stick: ControllerStick,
+        x: Float,
+        y: Float,
+        settings: StickPointerSettings
+    ) {
+        if caretSource != settings.caretSource {
+            stopCaret()
+            caretSource = settings.caretSource
+        }
+        guard caretSource != .off, caretSource == stick else { return }
+        guard caretInputAllowed(), !isSelectingScreenshot else {
+            stopCaret()
+            return
+        }
+        let applicationPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        if caretApplicationPID != applicationPID {
+            stopCaret()
+            caretApplicationPID = applicationPID
+        }
+        if let direction = caretEngine.update(
+            x: x, y: y, now: ProcessInfo.processInfo.systemUptime
+        ) {
+            onCaretStep(direction, isSelectingText)
+        }
+        if caretEngine.hasPendingRepeat {
+            ensureCaretTimer()
+        } else {
+            caretTimer?.invalidate()
+            caretTimer = nil
+        }
+    }
+
+    /// Context recovery may observe a real centered hardware sample even when
+    /// the controller emits no value-changed event. This path never emits keys.
+    func observeCaretNeutral(x: Float, y: Float, settings: StickPointerSettings) {
+        guard x.isFinite, y.isFinite,
+              max(abs(x), abs(y)) <= CaretStickEngine.releaseThreshold else { return }
+        updateCaretStick(settings.caretSource, x: x, y: y, settings: settings)
+    }
+
+    /// A fresh neutral sample is required after every takeover or context change.
+    func stopCaret() {
+        selectionInputs.removeAll()
+        caretEngine.reset()
+        caretTimer?.invalidate()
+        caretTimer = nil
+    }
+
     func stop() {
+        stopCaret()
         vector = .zero
         vectorSource = .off
         timer?.invalidate()
@@ -146,6 +220,7 @@ final class PointerService: ObservableObject {
             return false
         }
 
+        stopCaret()
         screenshotGeneration += 1
         let generation = screenshotGeneration
         isSelectingScreenshot = true
@@ -273,6 +348,54 @@ final class PointerService: ObservableObject {
             wheel2: horizontal,
             wheel3: 0
         )?.post(tap: .cghidEventTap)
+    }
+
+    private func ensureCaretTimer() {
+        guard caretTimer == nil else { return }
+        let repeatTimer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                guard self.caretInputAllowed(),
+                      !self.isSelectingScreenshot,
+                      self.caretApplicationPID == NSWorkspace.shared.frontmostApplication?.processIdentifier
+                else {
+                    self.stopCaret()
+                    return
+                }
+                if let direction = self.caretEngine.tick(now: ProcessInfo.processInfo.systemUptime) {
+                    self.onCaretStep(direction, self.isSelectingText)
+                }
+                if !self.caretEngine.hasPendingRepeat {
+                    self.caretTimer?.invalidate()
+                    self.caretTimer = nil
+                }
+            }
+        }
+        ContinuousInputRunLoop.add(repeatTimer)
+        caretTimer = repeatTimer
+    }
+
+    private static func postCaretStep(_ direction: CaretStickEngine.Direction, selecting: Bool) {
+        for event in caretKeyEvents(direction, selecting: selecting) {
+            event.post(tap: .cghidEventTap)
+        }
+    }
+
+    /// Selection is carried by each arrow pair, never by a global held Shift key.
+    static func caretKeyEvents(_ direction: CaretStickEngine.Direction, selecting: Bool) -> [CGEvent] {
+        let key: Int
+        switch direction {
+        case .left: key = kVK_LeftArrow
+        case .right: key = kVK_RightArrow
+        case .up: key = kVK_UpArrow
+        case .down: key = kVK_DownArrow
+        }
+        guard let down = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(key), keyDown: true),
+              let up = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(key), keyDown: false)
+        else { return [] }
+        down.flags = selecting ? .maskShift : []
+        up.flags = down.flags
+        return [down, up]
     }
 
     private func ensureTimer() {

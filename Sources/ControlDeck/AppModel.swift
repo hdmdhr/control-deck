@@ -22,6 +22,7 @@ final class AppModel: ObservableObject {
     let touchpad = TouchpadGestureEngine()
     let codexExtension = CodexExtensionService()
     let gyroTelemetry = GyroTelemetry()
+    private var chatGPTNavigationInFlight = false
 
     @Published private(set) var currentState: CodexTaskState = .disconnected
     @Published private(set) var recentTasks: [RecentCodexTask] = []
@@ -70,6 +71,8 @@ final class AppModel: ObservableObject {
     private var lastStates: [String: CodexTaskState] = [:]
     private var accessibilityObserver: NSObjectProtocol?
     private var terminationObserver: NSObjectProtocol?
+    private var caretApplicationObserver: NSObjectProtocol?
+    private var caretNeutralTimer: Timer?
     private var voiceCaptureMode: VoiceCaptureMode?
     private var voiceCaptureTransport: ControllerTransport?
     private var voiceStopPending = false
@@ -135,6 +138,25 @@ final class AppModel: ObservableObject {
     func start() {
         guard !started else { return }
         started = true
+
+        pointer.caretInputAllowed = { [weak self] in
+            self?.caretInputAvailable == true
+        }
+        caretApplicationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.pointer.stopCaret()
+                self?.refreshCaretNeutral()
+            }
+        }
+        let neutralTimer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshCaretNeutral() }
+        }
+        ContinuousInputRunLoop.add(neutralTimer)
+        caretNeutralTimer = neutralTimer
 
         controller.onEvent = { [weak self] event in
             self?.handle(event)
@@ -207,13 +229,19 @@ final class AppModel: ObservableObject {
         controller.$isConnected
             .removeDuplicates()
             .sink { [weak self] connected in
-                if !connected { self?.endAssistantDictationHold() }
+                if !connected {
+                    self?.pointer.stop()
+                    self?.endAssistantDictationHold()
+                }
             }
             .store(in: &cancellables)
         profiles.$activeKind
             .combineLatest(profiles.$profiles)
             .sink { [weak self] kind, profiles in
                 guard let self else { return }
+                // A mapping change must also cancel pointer/scroll vectors that
+                // may now belong to the caret source without a fresh report.
+                self.pointer.stop()
                 if self.assistantDictationInput != nil {
                     self.endAssistantDictationHold()
                 }
@@ -539,7 +567,28 @@ final class AppModel: ObservableObject {
         }
     }
 
+    private var caretInputAvailable: Bool {
+        controller.isConnected && !selfTestRunning && !microphoneDiagnosticRunning &&
+        !voiceStopPending && !pushToTalkActive && !universalDictationActive &&
+        !universalTranscriptionStopPending && assistantDictationInput == nil &&
+        !controller.isBluetoothMicrophoneInputSuppressed && !screenshotEditor.isPresented &&
+        !tutorial.isPresented && !optionsPressed && !createPressed && !appSwitcherHold.isActive
+    }
+
+    /// Only centered readings are forwarded: sampling can arm the safety gate,
+    /// but a value-changed controller event must still initiate every movement.
+    private func refreshCaretNeutral() {
+        guard caretInputAvailable else {
+            pointer.stopCaret()
+            return
+        }
+        let settings = profiles.activeProfile.pointer
+        guard let sample = controller.currentStickPosition(settings.caretSource) else { return }
+        pointer.observeCaretNeutral(x: sample.x, y: sample.y, settings: settings)
+    }
+
     private func handle(_ event: ControllerEvent) {
+        if !caretInputAvailable { pointer.stopCaret() }
         // Diagnostics are output-only. Reports arriving during a hardware test
         // must never execute mouse, keyboard, Codex, browser or media actions.
         if selfTestRunning || microphoneDiagnosticRunning {
@@ -592,6 +641,7 @@ final class AppModel: ObservableObject {
                 return
             }
             let pointerSettings = profiles.activeProfile.pointer
+            pointer.updateCaretStick(stick, x: x, y: y, settings: pointerSettings)
             pointer.updateStick(
                 stick,
                 x: x,
@@ -677,6 +727,11 @@ final class AppModel: ObservableObject {
         pressed: Bool,
         allowAppSwitcherHold: Bool = true
     ) {
+        // Selection release must survive overlays, layers and profile changes.
+        if !pressed, pointer.isSelectionHeld(by: input) {
+            pointer.setCaretSelection(input, pressed: false)
+            return
+        }
         // Release the initiating input before overlays, layers, and remapped profiles
         // can consume its key-up event.
         if !pressed, assistantDictationInput == input {
@@ -762,12 +817,22 @@ final class AppModel: ObservableObject {
             controller.playHaptic(.selection)
             return
         }
+        if action == .textSelectionHold {
+            guard !pressed || caretInputAvailable else { return }
+            if pressed { refreshCaretNeutral() }
+            pointer.setCaretSelection(input, pressed: pressed)
+            if pressed { controller.playHaptic(.selection) }
+            return
+        }
         if action == .cursorDictation || action == .grokDictation {
             if pressed {
                 if assistantDictationInput == input { return }
                 endAssistantDictationHold()
                 let succeeded = automation.beginAssistantDictation(action)
-                if succeeded { assistantDictationInput = input }
+                if succeeded {
+                    pointer.stopCaret()
+                    assistantDictationInput = input
+                }
                 finish(action.label, succeeded: succeeded)
             }
             return
@@ -895,6 +960,7 @@ final class AppModel: ObservableObject {
     }
 
     private func beginAppSwitcherHold() {
+        pointer.stopCaret()
         guard automation.beginAppSwitcher() else {
             failAppSwitcherHold(automation.lastResult)
             return
@@ -1024,6 +1090,7 @@ final class AppModel: ObservableObject {
             acceleration: 1.65,
             deadZone: 0.12,
             scrollSource: .off,
+            caretSource: .off,
             scrollSpeed: 0,
             scrollAcceleration: 1,
             scrollDeadZone: 0.2
@@ -1033,6 +1100,7 @@ final class AppModel: ObservableObject {
     private func handleOptionsButton(pressed: Bool) {
         if pressed {
             guard !optionsPressed else { return }
+            pointer.stopCaret()
             optionsPressed = true
             optionsLayerActive = false
             optionsLayerUsed = false
@@ -1055,6 +1123,7 @@ final class AppModel: ObservableObject {
 
         guard optionsPressed else { return }
         optionsPressed = false
+        refreshCaretNeutral()
         optionsGeneration += 1
         let selectedIndex = profileWheelSelector.selectedIndex
         let shouldRunTapAction = !optionsLayerActive && !optionsLayerUsed
@@ -1140,6 +1209,7 @@ final class AppModel: ObservableObject {
     private func handleCreateButton(pressed: Bool) {
         if pressed {
             guard !createPressed else { return }
+            pointer.stopCaret()
             createPressed = true
             createLayerUsed = false
             reasoningControlOpen = false
@@ -1152,6 +1222,7 @@ final class AppModel: ObservableObject {
 
         guard createPressed else { return }
         createPressed = false
+        refreshCaretNeutral()
         reasoningGate.reset()
         controllerOverlay.hide()
         if createLayerUsed {
@@ -1769,6 +1840,22 @@ final class AppModel: ObservableObject {
             selectAdjacentTask(offset: -1)
         case .codexNextTask:
             selectAdjacentTask(offset: 1)
+        case .chatGPTPreviousConversation, .chatGPTNextConversation:
+            // Ignore held-button repeats while one navigation is awaiting readback.
+            // A repeat must not display an error HUD over the target row.
+            guard !chatGPTNavigationInFlight else { return }
+            chatGPTNavigationInFlight = true
+            hud.dismiss()
+            Task { @MainActor in
+                defer { chatGPTNavigationInFlight = false }
+                let succeeded = await automation.navigateChatGPTSidebar(action)
+                finish(action.label, succeeded: succeeded)
+            }
+        case .cursorPreviousConversation, .cursorNextConversation, .cursorCollapseWorkspace, .cursorExpandWorkspace:
+            Task { @MainActor in
+                let succeeded = await automation.navigateCursorConversation(action)
+                finish(action.label, succeeded: succeeded)
+            }
         case .grokPreviousBot, .grokNextBot, .grokCollapseSection, .grokExpandSection:
             Task { @MainActor in
                 let succeeded = await automation.navigateGrokBot(action)
@@ -2096,6 +2183,7 @@ final class AppModel: ObservableObject {
     }
 
     private func controllerTransportChanged(_ transport: ControllerTransport) {
+        pointer.stop()
         endAssistantDictationHold()
         appSwitcherSafetyGeneration += 1
         appSwitcherStick.reset()
@@ -2258,6 +2346,13 @@ final class AppModel: ObservableObject {
     }
 
     private func shutdown() {
+        pointer.stop()
+        caretNeutralTimer?.invalidate()
+        caretNeutralTimer = nil
+        if let caretApplicationObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(caretApplicationObserver)
+            self.caretApplicationObserver = nil
+        }
         voiceStopGeneration += 1
         universalDictationGeneration += 1
         selfTestGeneration += 1

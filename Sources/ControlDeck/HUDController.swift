@@ -106,6 +106,7 @@ final class HUDController {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
         panel.hasShadow = true
+        panel.ignoresMouseEvents = true
 
         let effect = NSVisualEffectView(frame: panel.contentView!.bounds)
         effect.autoresizingMask = [.width, .height]

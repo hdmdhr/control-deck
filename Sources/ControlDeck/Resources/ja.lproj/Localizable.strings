@@ -58,7 +58,7 @@
 "Accessibility permission required" = "アクセシビリティの許可が必要です";
 "Action" = "アクション";
 "Action unavailable" = "アクションを利用できません";
-"Active profile" = "現在のプロファイル";
+"Active profile" = "使用中のプロファイル";
 "Adaptive trigger" = "アダプティブトリガー";
 "Add a useful controller action for my daily Codex workflow." = "普段の Codex 作業に便利なコントローラ操作を追加してください。";
 "Add behaviour" = "動作を追加";
@@ -1136,3 +1136,125 @@
 "Grok Bot section change could not be verified" = "Grok Bot のセクションの変更を確認できませんでした";
 
 "Grok Bot section updated" = "Grok Bot のセクションを更新しました";
+
+"Cursor · Previous conversation" = "Cursor · 前の会話";
+"Cursor · Next conversation" = "Cursor · 次の会話";
+"Cursor · Collapse current workspace" = "Cursor · 現在のワークスペースを折りたたむ";
+"Cursor · Expand current workspace" = "Cursor · 現在のワークスペースを展開";
+"Cursor navigation requires asynchronous dispatch" = "Cursor の会話移動には非同期処理が必要です";
+
+"Cursor is already switching conversations" = "Cursor は会話を切り替え中です";
+"Bring Cursor to the foreground to navigate conversations" = "会話を切り替えるには Cursor を最前面にしてください";
+"Cursor current conversation is unavailable or ambiguous" = "Cursor の現在の会話を一意に特定できません";
+"Cursor has no adjacent conversation in this direction" = "表示中の会話リストの端に到達しました";
+"Cursor conversation change could not be verified" = "Cursor の会話またはワークスペースの変更を確認できません";
+"Cursor current conversation has no collapsible workspace" = "現在の会話には折りたためるワークスペースがありません";
+"Cursor workspace is already in the requested state" = "Cursor のワークスペースは既に指定の状態です";
+"Cursor focus changed; try again" = "Cursor のフォーカスが変わりました。もう一度お試しください";
+"Cursor workspace updated" = "Cursor のワークスペースを更新しました";
+"Cursor switched conversations" = "Cursor の会話を切り替えました";
+
+"Assistant · Send message" = "アシスタント · メッセージを送信";
+"Bring Cursor or Grok Bot to the foreground to send" = "送信するには Cursor または Grok Bot を最前面にしてください";
+
+"ChatGPT · Previous sidebar conversation" = "ChatGPT · サイドバーの前の会話";
+"ChatGPT · Next sidebar conversation" = "ChatGPT · サイドバーの次の会話";
+"ChatGPT sidebar navigation requires asynchronous dispatch" = "ChatGPT のサイドバー移動には非同期処理が必要です";
+"ChatGPT is already switching conversations" = "ChatGPT は会話を切り替え中です";
+"Bring ChatGPT to the foreground to navigate its sidebar" = "会話一覧を操作するには ChatGPT を最前面にしてください";
+"ChatGPT sidebar conversation is unavailable; open the chat sidebar" = "ChatGPT の会話一覧を読み取れません。サイドバーを開いてください";
+"ChatGPT has no adjacent sidebar conversation" = "ChatGPT の会話一覧の端です";
+"ChatGPT current sidebar conversation is unavailable" = "ChatGPT の会話一覧で現在の会話を特定できません";
+"ChatGPT focus changed; try again" = "ChatGPT のフォーカスが変わりました。再試行してください";
+"ChatGPT sidebar switch could not be verified" = "ChatGPT の会話切り替えを確認できませんでした";
+"ChatGPT switched sidebar conversations" = "ChatGPT のサイドバーの会話を切り替えました";
+"Close the ChatGPT menu before switching conversations" = "会話を切り替える前に ChatGPT のメニューを閉じてください";
+
+"Codex / ChatGPT" = "Codex / ChatGPT";
+
+"Shared assistant actions" = "アシスタント共通アクション";
+
+"Mouse" = "マウス";
+
+"Navigation" = "ナビゲーション";
+
+"Keyboard" = "キーボード";
+
+"Browser" = "ブラウザ";
+
+"Media" = "メディア";
+
+"Apps" = "アプリ";
+
+"System & other" = "システムとその他";
+
+"Editing profile" = "編集中のプロファイル";
+
+"Associated apps" = "関連アプリ";
+
+"Codex / ChatGPT share one app and this profile." = "Codex / ChatGPT は同じアプリで、このプロファイルを共有します。";
+
+"Buttons · press to assign" = "ボタン · 選択して割り当て";
+
+"Stick movement · separate from L3 / R3 presses" = "スティック移動 · L3 / R3 の押し込みとは別";
+
+"Caret movement takes priority over pointer movement, then scrolling." = "同じスティックの割り当てが重なる場合は、文字カーソル、ポインタ、スクロールの順に優先されます。";
+
+"Text caret · tilt to repeat arrows" = "文字カーソル · 傾けて方向キーを連続入力";
+
+"L3 · left stick press" = "L3 · 左スティック押し込み";
+
+"R3 · right stick press" = "R3 · 右スティック押し込み";
+
+"Touchpad movement & gestures" = "タッチパッドの移動とジェスチャ";
+
+"Edit touchpad" = "タッチパッドを編集";
+
+"Touchpad click is a separate button in the list above." = "タッチパッドの押し込みは、上の一覧で独立したボタンとして設定できます。";
+
+"Action scope" = "アクションの範囲";
+
+"This profile" = "このプロファイル";
+
+"All actions" = "すべてのアクション";
+
+"Search actions or apps" = "アクションやアプリを検索";
+
+"Clear search" = "検索をクリア";
+
+"Category" = "カテゴリ";
+
+"All categories" = "すべてのカテゴリ";
+
+"Choose an action to assign it immediately." = "アクションを選ぶとすぐに保存されます。";
+
+"No matching actions" = "一致するアクションがありません";
+
+"Try another search or browse all actions." = "検索語を変えるか、すべてのアクションを表示してください。";
+
+"Show all actions" = "すべてのアクションを表示";
+
+"Reset selected button" = "選択したボタンをリセット";
+
+"Unassign" = "割り当てを解除";
+
+"Used by" = "使用ボタン";
+
+"Assign stick movement to the text caret, pointer or scrolling. Stick presses remain separate button actions." = "スティック移動に文字カーソル、ポインタ、スクロールを割り当てます。押し込みには別のアクションを設定できます。";
+
+"Text caret stick" = "文字カーソル用スティック";
+
+
+
+"On" = "オン";
+"Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop." = "倒すとすぐに1ステップ移動。350ミリ秒保持すると90ミリ秒ごとに繰り返し、中央に戻すと停止します。";
+
+"Text · Hold to select" = "テキスト · 押して選択";
+"Hold R3 while moving the right stick to select text. Release R3 to keep the selection." = "R3を押しながら右スティックを倒すとテキストを選択。R3を離すと選択範囲を保持します。";
+"Hold a controller button to select text with the caret stick." = "この動作を割り当てたボタンを押しながら、文字カーソルのスティックでテキストを選択してください。";
+
+"Assistant · Left panel" = "アシスタント · 左パネル";
+"Codex · Left panel" = "Codex · 左パネル";
+"Codex · Right panel" = "Codex · 右パネル";
+
+"Keyboard · Delete (Backspace)" = "キーボード · 後方削除（Delete）";

@@ -1136,3 +1136,125 @@
 "Grok Bot section change could not be verified" = "Grok Bot section change could not be verified";
 
 "Grok Bot section updated" = "Grok Bot section updated";
+
+"Cursor · Previous conversation" = "Cursor · Previous conversation";
+"Cursor · Next conversation" = "Cursor · Next conversation";
+"Cursor · Collapse current workspace" = "Cursor · Collapse current workspace";
+"Cursor · Expand current workspace" = "Cursor · Expand current workspace";
+"Cursor navigation requires asynchronous dispatch" = "Cursor navigation requires asynchronous dispatch";
+
+"Cursor is already switching conversations" = "Cursor is already switching conversations";
+"Bring Cursor to the foreground to navigate conversations" = "Bring Cursor to the foreground to navigate conversations";
+"Cursor current conversation is unavailable or ambiguous" = "Cursor current conversation is unavailable or ambiguous";
+"Cursor has no adjacent conversation in this direction" = "Cursor has no adjacent conversation in this direction";
+"Cursor conversation change could not be verified" = "Cursor conversation change could not be verified";
+"Cursor current conversation has no collapsible workspace" = "Cursor current conversation has no collapsible workspace";
+"Cursor workspace is already in the requested state" = "Cursor workspace is already in the requested state";
+"Cursor focus changed; try again" = "Cursor focus changed; try again";
+"Cursor workspace updated" = "Cursor workspace updated";
+"Cursor switched conversations" = "Cursor switched conversations";
+
+"Assistant · Send message" = "Assistant · Send message";
+"Bring Cursor or Grok Bot to the foreground to send" = "Bring Cursor or Grok Bot to the foreground to send";
+
+"ChatGPT · Previous sidebar conversation" = "ChatGPT · Previous sidebar conversation";
+"ChatGPT · Next sidebar conversation" = "ChatGPT · Next sidebar conversation";
+"ChatGPT sidebar navigation requires asynchronous dispatch" = "ChatGPT sidebar navigation requires asynchronous dispatch";
+"ChatGPT is already switching conversations" = "ChatGPT is already switching conversations";
+"Bring ChatGPT to the foreground to navigate its sidebar" = "Bring ChatGPT to the foreground to navigate its sidebar";
+"ChatGPT sidebar conversation is unavailable; open the chat sidebar" = "ChatGPT sidebar conversation is unavailable; open the chat sidebar";
+"ChatGPT has no adjacent sidebar conversation" = "ChatGPT has no adjacent sidebar conversation";
+"ChatGPT current sidebar conversation is unavailable" = "ChatGPT current sidebar conversation is unavailable";
+"ChatGPT focus changed; try again" = "ChatGPT focus changed; try again";
+"ChatGPT sidebar switch could not be verified" = "ChatGPT sidebar switch could not be verified";
+"ChatGPT switched sidebar conversations" = "ChatGPT switched sidebar conversations";
+"Close the ChatGPT menu before switching conversations" = "Close the ChatGPT menu before switching conversations";
+
+"Codex / ChatGPT" = "Codex / ChatGPT";
+
+"Shared assistant actions" = "Shared assistant actions";
+
+"Mouse" = "Mouse";
+
+"Navigation" = "Navigation";
+
+"Keyboard" = "Keyboard";
+
+"Browser" = "Browser";
+
+"Media" = "Media";
+
+"Apps" = "Apps";
+
+"System & other" = "System & other";
+
+"Editing profile" = "Editing profile";
+
+"Associated apps" = "Associated apps";
+
+"Codex / ChatGPT share one app and this profile." = "Codex / ChatGPT share one app and this profile.";
+
+"Buttons · press to assign" = "Buttons · press to assign";
+
+"Stick movement · separate from L3 / R3 presses" = "Stick movement · separate from L3 / R3 presses";
+
+"Caret movement takes priority over pointer movement, then scrolling." = "Caret movement takes priority over pointer movement, then scrolling.";
+
+"Text caret · tilt to repeat arrows" = "Text caret · tilt to repeat arrows";
+
+"L3 · left stick press" = "L3 · left stick press";
+
+"R3 · right stick press" = "R3 · right stick press";
+
+"Touchpad movement & gestures" = "Touchpad movement & gestures";
+
+"Edit touchpad" = "Edit touchpad";
+
+"Touchpad click is a separate button in the list above." = "Touchpad click is a separate button in the list above.";
+
+"Action scope" = "Action scope";
+
+"This profile" = "This profile";
+
+"All actions" = "All actions";
+
+"Search actions or apps" = "Search actions or apps";
+
+"Clear search" = "Clear search";
+
+"Category" = "Category";
+
+"All categories" = "All categories";
+
+"Choose an action to assign it immediately." = "Choose an action to assign it immediately.";
+
+"No matching actions" = "No matching actions";
+
+"Try another search or browse all actions." = "Try another search or browse all actions.";
+
+"Show all actions" = "Show all actions";
+
+"Reset selected button" = "Reset selected button";
+
+"Unassign" = "Unassign";
+
+"Used by" = "Used by";
+
+"Assign stick movement to the text caret, pointer or scrolling. Stick presses remain separate button actions." = "Assign stick movement to the text caret, pointer or scrolling. Stick presses remain separate button actions.";
+
+"Text caret stick" = "Text caret stick";
+
+
+
+"On" = "On";
+"Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop." = "Move one step immediately. Hold for 350 ms, then repeat every 90 ms. Return to center to stop.";
+
+"Text · Hold to select" = "Text · Hold to select";
+"Hold R3 while moving the right stick to select text. Release R3 to keep the selection." = "Hold R3 while moving the right stick to select text. Release R3 to keep the selection.";
+"Hold a controller button to select text with the caret stick." = "Hold a controller button to select text with the caret stick.";
+
+"Assistant · Left panel" = "Assistant · Left panel";
+"Codex · Left panel" = "Codex · Left panel";
+"Codex · Right panel" = "Codex · Right panel";
+
+"Keyboard · Delete (Backspace)" = "Keyboard · Delete (Backspace)";

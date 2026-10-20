@@ -18,6 +18,17 @@ final class DualSenseControllerService: ObservableObject {
 
     var isCharging: Bool { batteryState == "Charging" }
 
+    /// Read the actual controller state without inventing a neutral event when
+    /// valueChangedHandler has not fired (for example after a layer closes).
+    func currentStickPosition(_ stick: ControllerStick) -> (x: Float, y: Float)? {
+        guard isConnected, let gamepad = controller?.extendedGamepad else { return nil }
+        switch stick {
+        case .left: return (gamepad.leftThumbstick.xAxis.value, gamepad.leftThumbstick.yAxis.value)
+        case .right: return (gamepad.rightThumbstick.xAxis.value, gamepad.rightThumbstick.yAxis.value)
+        case .off: return nil
+        }
+    }
+
     var onEvent: ((ControllerEvent) -> Void)?
     var onBluetoothMicrophonePacket:
         ((DualSenseBluetoothMicrophonePacket) -> Void)?

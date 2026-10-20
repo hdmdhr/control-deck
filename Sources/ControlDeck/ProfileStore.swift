@@ -15,6 +15,11 @@ final class ProfileStore: ObservableObject {
         }
     }
 
+    private let aiDeleteButtonKey = "aiDeleteButton.v1"
+    private let aiConversationLayoutKey = "aiConversationLayout.v1"
+    private let textSelectionControlsKey = "textSelectionControls.v1"
+    private let caretStickMigrationKey = "textCaretStick.v1"
+    private let unifiedClipboardKey = "unifiedClipboardControls.v1"
     private let storageKey = "controllerProfiles.v3"
     private let autoSwitchKey = "profileAutoSwitch.v3"
     private let mouseRefinementKey = "mouseRefinement.v1"
@@ -26,6 +31,10 @@ final class ProfileStore: ObservableObject {
     private let assistantRightPanelKey = "assistantSquareRightPanel.v1"
     private let grokBotNavigationKey = "grokBotNavigation.v1"
     private let grokSectionControlsKey = "grokSectionControls.v1"
+    private let chatGPTSidebarNavigationKey = "chatGPTSidebarNavigation.v1"
+    private let aiConversationControlsKey = "aiConversationControls.v1"
+    private let slackHistoryNavigationKey = "slackHistoryNavigation.v1"
+    private let cursorNavigationKey = "cursorConversationNavigation.v1"
     private let cursorProfileMigrationKey = "cursorProfile.v1"
     private let allAppsSnapshotKey = "allAppsR2Snapshot.v1"
     private let codexUniversalDictationKey = "codexUniversalDictation.v1"
@@ -227,9 +236,77 @@ final class ProfileStore: ObservableObject {
             UserDefaults.standard.set(true, forKey: grokBotNavigationKey)
         }
 
+        if !UserDefaults.standard.bool(forKey: aiConversationControlsKey) {
+            for index in profiles.indices { profiles[index].migrateAIConversationControls() }
+            UserDefaults.standard.set(true, forKey: aiConversationControlsKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: chatGPTSidebarNavigationKey) {
+            for index in profiles.indices { profiles[index].migrateChatGPTSidebarNavigation() }
+            UserDefaults.standard.set(true, forKey: chatGPTSidebarNavigationKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: slackHistoryNavigationKey) {
+            for index in profiles.indices { profiles[index].migrateSlackHistoryNavigation() }
+            UserDefaults.standard.set(true, forKey: slackHistoryNavigationKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: cursorNavigationKey) {
+            for index in profiles.indices { profiles[index].migrateCursorConversationNavigation() }
+            UserDefaults.standard.set(true, forKey: cursorNavigationKey)
+        }
+
         if !UserDefaults.standard.bool(forKey: grokSectionControlsKey) {
             for index in profiles.indices { profiles[index].migrateGrokSectionControls() }
             UserDefaults.standard.set(true, forKey: grokSectionControlsKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: caretStickMigrationKey) {
+            for index in profiles.indices {
+                profiles[index].pointer.caretSource = .right
+                profiles[index].pointer.scrollSource = .off
+                if profiles[index].pointer.source == .right {
+                    profiles[index].pointer.source = .left
+                }
+            }
+            UserDefaults.standard.set(true, forKey: caretStickMigrationKey)
+        }
+        if !UserDefaults.standard.bool(forKey: unifiedClipboardKey) {
+            var complete = true
+            for index in profiles.indices {
+                if !profiles[index].migrateUnifiedClipboardControls() {
+                    complete = false
+                    logger.error("Clipboard migration preserved a fully customized profile: \(self.profiles[index].kind.rawValue, privacy: .public)")
+                }
+            }
+            UserDefaults.standard.set(complete, forKey: unifiedClipboardKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: textSelectionControlsKey) {
+            var complete = true
+            for index in profiles.indices {
+                if !profiles[index].migrateTextSelectionControls() {
+                    complete = false
+                    logger.error("Selection migration preserved a fully customized profile: \(self.profiles[index].kind.rawValue, privacy: .public)")
+                }
+            }
+            UserDefaults.standard.set(complete, forKey: textSelectionControlsKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: aiConversationLayoutKey) {
+            var complete = true
+            for index in profiles.indices {
+                if !profiles[index].migrateAIConversationLayout() {
+                    complete = false
+                    logger.error("AI layout migration preserved a fully customized profile: \(self.profiles[index].kind.rawValue, privacy: .public)")
+                }
+            }
+            UserDefaults.standard.set(complete, forKey: aiConversationLayoutKey)
+        }
+
+        if !UserDefaults.standard.bool(forKey: aiDeleteButtonKey) {
+            for index in profiles.indices { profiles[index].migrateAIDeleteButton() }
+            UserDefaults.standard.set(true, forKey: aiDeleteButtonKey)
         }
 
         if let data = try? JSONEncoder().encode(profiles) {
@@ -318,6 +395,10 @@ final class ProfileStore: ObservableObject {
         updateEditingProfile { profile in
             profile.touchpad.setAction(action, for: gesture)
         }
+    }
+
+    func updateCaretSource(_ source: ControllerStick) {
+        updateEditingProfile { $0.pointer.caretSource = source }
     }
 
     func updatePointerSource(_ source: ControllerStick) {
